@@ -3,6 +3,11 @@ import { collectPageVitals } from '../browser/diagnostics.mjs';
 import { executeAgentAction, snapshotPage } from '../browser/agent-surface.mjs';
 import { summarizeDurations } from '../core/stats.mjs';
 
+export function navigationWaitUntil(sessionEngine, requested) {
+  if (requested) return requested;
+  return sessionEngine === 'lightpanda' ? 'commit' : 'domcontentloaded';
+}
+
 export class StepEngine {
   constructor({ evidence, session, page, extensionId = null, extensionManifest = null, timeoutMs = 30000, onRestart = null }) {
     this.evidence = evidence;
@@ -41,8 +46,14 @@ export class StepEngine {
     switch (step.action) {
       case 'open':
       case 'goto': {
-        const response = await this.page.goto(step.url, { waitUntil: step.waitUntil || 'domcontentloaded', timeout: step.timeoutMs || this.timeoutMs });
-        return { url: this.page.url(), status: response?.status() ?? null };
+        const waitUntil = navigationWaitUntil(this.session.engine, step.waitUntil);
+        const response = await this.page.goto(step.url, { waitUntil, timeout: step.timeoutMs || this.timeoutMs });
+        if (this.session.engine === 'lightpanda' && waitUntil === 'commit') {
+          await this.page.waitForFunction(() => document.readyState !== 'loading' && document.documentElement != null, null, { timeout: step.readyTimeoutMs || step.timeoutMs || this.timeoutMs }).catch(async () => {
+            await this.page.locator('body').waitFor({ state: 'attached', timeout: Math.min(2000, step.readyTimeoutMs || step.timeoutMs || this.timeoutMs) });
+          });
+        }
+        return { url: this.page.url(), status: response?.status() ?? null, waitUntil };
       }
       case 'wait':
         if (step.selector) await this.page.locator(step.selector).waitFor({ state: step.state || 'visible', timeout: step.timeoutMs || this.timeoutMs });
