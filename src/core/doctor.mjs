@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
-import path from 'node:path';
+import { FERRUM_VERSION } from '../version.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -19,7 +19,7 @@ export async function collectDoctor() {
   if (playwright.available) playwright.chromiumInstalled = await fs.stat(playwright.chromium).then(stat => stat.isFile()).catch(() => false);
   return {
     at: new Date().toISOString(),
-    ferrum: '0.1.0',
+    ferrum: FERRUM_VERSION,
     platform: process.platform,
     arch: process.arch,
     node: process.version,

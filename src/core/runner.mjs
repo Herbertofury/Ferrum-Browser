@@ -1,4 +1,5 @@
 import { EvidenceWriter } from './evidence.mjs';
+import { FERRUM_VERSION } from '../version.mjs';
 import { runWebTarget } from '../runners/web.mjs';
 import { runExtensionTarget } from '../runners/extension.mjs';
 import { runProcessTarget } from '../runners/process.mjs';
@@ -20,7 +21,7 @@ export async function runSpec(spec, options = {}) {
     metadata: {
       specFile: spec.__file || null,
       targetType: spec.target.type,
-      ferrumVersion: '0.1.0',
+      ferrumVersion: FERRUM_VERSION,
       node: process.version,
       platform: process.platform,
       arch: process.arch

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ensureDir, safeName, timestampId } from './paths.mjs';
@@ -6,7 +7,7 @@ export class EvidenceWriter {
   constructor({ root, name, metadata = {} }) {
     this.root = path.resolve(root || 'artifacts');
     this.name = safeName(name);
-    this.id = `${timestampId()}-${this.name}`;
+    this.id = `${timestampId()}-${this.name}-${crypto.randomBytes(4).toString('hex')}`;
     this.dir = path.join(this.root, this.id);
     this.events = [];
     this.metadata = metadata;

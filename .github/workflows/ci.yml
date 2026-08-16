@@ -2,6 +2,8 @@ name: Ferrum CI
 
 on:
   push:
+    paths-ignore:
+      - '.agents-memory/**'
   pull_request:
 
 permissions:
@@ -17,9 +19,17 @@ jobs:
           node-version: 24
       - run: npm install --no-audit --no-fund
       - run: npm test
-      - run: node --check src/cli.mjs
-      - run: node --check src/runners/extension.mjs
-      - run: node --check src/server/dashboard.mjs
+      - name: Syntax check all modules
+        run: find src scripts -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - name: MCP surface smoke
+        shell: bash
+        run: |
+          printf '%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | node ./bin/ferrum.mjs mcp > /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_run_suite' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_benchmark' /tmp/ferrum-mcp.jsonl
 
   chromium-smoke:
     strategy:
@@ -43,5 +53,38 @@ jobs:
         if: always()
         with:
           name: ferrum-evidence-${{ runner.os }}
+          path: artifacts/
+          if-no-files-found: ignore
+
+  lightpanda-smoke:
+    runs-on: ubuntu-latest
+    env:
+      LIGHTPANDA_VERSION: 0.3.7
+      LIGHTPANDA_SHA256: 895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a
+      LIGHTPANDA_DISABLE_TELEMETRY: 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - name: Install verified Lightpanda release
+        shell: bash
+        run: |
+          mkdir -p .ferrum/bin
+          curl --fail --location --retry 3 \
+            --output .ferrum/bin/lightpanda \
+            "https://github.com/lightpanda-io/browser/releases/download/${LIGHTPANDA_VERSION}/lightpanda-x86_64-linux"
+          echo "${LIGHTPANDA_SHA256}  .ferrum/bin/lightpanda" | sha256sum --check --strict
+          chmod +x .ferrum/bin/lightpanda
+          .ferrum/bin/lightpanda version
+      - name: Ferrum Lightpanda fast-lane smoke
+        env:
+          FERRUM_LIGHTPANDA: ${{ github.workspace }}/.ferrum/bin/lightpanda
+        run: npm run smoke:lightpanda
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-Lightpanda
           path: artifacts/
           if-no-files-found: ignore
