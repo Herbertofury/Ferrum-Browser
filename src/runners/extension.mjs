@@ -5,7 +5,6 @@ import { hashDirectory } from '../core/hash.mjs';
 import { launchChromiumSession } from '../browser/chromium.mjs';
 import { StepEngine } from './step-engine.mjs';
 
-
 function extensionIdFromManifestKey(key) {
   if (!key) return null;
   const digest = crypto.createHash('sha256').update(Buffer.from(key, 'base64')).digest().subarray(0, 16);
@@ -21,25 +20,37 @@ async function readManifest(extensionPath) {
 }
 
 async function resolveExtensionId(context, manifest, timeoutMs = 15000) {
-  const keyedId = extensionIdFromManifestKey(manifest.key);
-  if (keyedId) return keyedId;
+  const expectedId = extensionIdFromManifestKey(manifest.key);
   const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const workers = context.serviceWorkers();
-    for (const worker of workers) {
+  let runtimeId = null;
+  let source = null;
+  while (Date.now() < deadline && !runtimeId) {
+    for (const worker of context.serviceWorkers()) {
       const match = /^chrome-extension:\/\/([a-p]{32})\//.exec(worker.url());
-      if (match) return match[1];
+      if (match) { runtimeId = match[1]; source = 'service-worker'; break; }
     }
+    if (runtimeId) break;
     for (const page of context.pages()) {
       const match = /^chrome-extension:\/\/([a-p]{32})\//.exec(page.url());
-      if (match) return match[1];
+      if (match) { runtimeId = match[1]; source = 'extension-page'; break; }
     }
-    if (manifest.background?.service_worker) {
-      await context.newPage().then(page => page.close()).catch(() => {});
-    }
-    await new Promise(resolve => setTimeout(resolve, 150));
+    if (runtimeId) break;
+    const remaining = Math.max(1, deadline - Date.now());
+    await Promise.race([
+      context.waitForEvent('serviceworker', { timeout: Math.min(750, remaining) }).catch(() => null),
+      new Promise(resolve => setTimeout(resolve, Math.min(150, remaining)))
+    ]);
   }
-  throw new Error('Could not resolve loaded extension ID from Chromium runtime targets');
+
+  if (!runtimeId && expectedId && !manifest.background?.service_worker) {
+    runtimeId = expectedId;
+    source = 'manifest-key-fallback';
+  }
+  if (!runtimeId) throw new Error('Could not resolve loaded extension ID from Chromium runtime targets');
+  if (expectedId && runtimeId !== expectedId) {
+    throw new Error(`Loaded extension identity mismatch: runtime=${runtimeId}, manifest-key=${expectedId}`);
+  }
+  return { id: runtimeId, source, expectedId };
 }
 
 export async function runExtensionTarget(spec, evidence, options = {}) {
@@ -66,8 +77,9 @@ export async function runExtensionTarget(spec, evidence, options = {}) {
       browserArgs: spec.target.args || [],
       evidence
     });
-    const id = await resolveExtensionId(launched.context, manifest, spec.timeouts?.startupMs || 20000);
-    evidence.record('extension-loaded', { extensionId: id, profileDir, sha256: digest.sha256 });
+    const identity = await resolveExtensionId(launched.context, manifest, spec.timeouts?.startupMs || 20000);
+    const id = identity.id;
+    evidence.record('extension-loaded', { extensionId: id, identitySource: identity.source, expectedIdFromManifestKey: identity.expectedId, profileDir, sha256: digest.sha256 });
     const activePage = launched.context.pages().find(candidate => !candidate.url().startsWith('chrome-extension://')) || launched.context.pages()[0] || await launched.newPage();
     return { session: launched, extensionId: id, page: activePage };
   };

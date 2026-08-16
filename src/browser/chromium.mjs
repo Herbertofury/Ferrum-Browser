@@ -15,6 +15,7 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
   }
   const context = await chromium.launchPersistentContext(resolvedProfile, {
     headless,
+    channel: !executablePath && headless ? 'chromium' : undefined,
     executablePath: executablePath || undefined,
     viewport: viewport || { width: 1440, height: 1000 },
     args,
