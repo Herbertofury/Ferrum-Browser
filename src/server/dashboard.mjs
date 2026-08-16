@@ -88,7 +88,13 @@ export async function startDashboard({ port = 8788, host = '127.0.0.1', open = t
       const relative = url.pathname === '/' ? 'index.html' : url.pathname.replace(/^\//, '');
       const file = path.resolve(UI, relative);
       if (!file.startsWith(UI)) return json(res, 403, { error: 'forbidden' });
-      const content = await fs.readFile(file);
+      let content;
+      try {
+        content = await fs.readFile(file);
+      } catch (error) {
+        if (error?.code === 'ENOENT') return json(res, 404, { error: 'not found' });
+        throw error;
+      }
       const type = file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html';
       res.writeHead(200, { 'content-type': `${type}; charset=utf-8`, 'cache-control': 'no-store' });
       res.end(content);

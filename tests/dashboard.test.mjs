@@ -17,6 +17,10 @@ test('dashboard binds an ephemeral port and serves its real UI/API', async () =>
     assert.equal(doctor.status, 200);
     const payload = await doctor.json();
     assert.equal(payload.ferrum, '0.2.0');
+
+    const missing = await fetch(`${url}/missing-workbench-resource.js`);
+    assert.equal(missing.status, 404);
+    assert.deepEqual(await missing.json(), { error: 'not found' });
   } finally {
     await new Promise(resolve => server.close(resolve));
   }
