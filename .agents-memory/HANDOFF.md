@@ -4,9 +4,13 @@ Ferrum's canonical target is `Herbertofury/Ferrum-Browser` on `main`. Repository
 
 ## Current verified checkpoint
 
-Ferrum 0.2.0 product code at `f39636f89f5b68af38e1dafb87e589b7c77657ab` passed GitHub Actions run `31964361536` across all four required lanes: unit/syntax/MCP, Lightpanda, Ubuntu Chromium, and Windows Chromium. The three downloaded evidence archives were independently SHA-256 checked against GitHub's recorded artifact digests.
+Ferrum 0.2.0 product code at `b94902e34db716ffc88395909108901cd4de415a` passed GitHub Actions run `31964792142` across unit/syntax/MCP, Lightpanda, Ubuntu Chromium, and Windows Chromium. The downloaded Linux, Windows, and Lightpanda evidence archives were independently SHA-256 checked and exactly matched GitHub's recorded provider digests: Linux `9b7230a88f23b939f0719a1e5cfc6bba83b27ed60c6c827c34a4d641ea407a6f`, Windows `d677c0519a0d262e85b6312544c3d9e8029cadaa0e7bff0b1fcb0fa913c27502`, and Lightpanda `146fc1bd68ed559300909465bc6ed7964d9ba37843cde2f33114cb41a1e7d672`.
 
-Both Chromium operating systems loaded the exact same MV3 fixture bytes with SHA-256 `57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb`, resolved runtime extension ID `felmepoiflfponlkemhjaadagpppepgf` from the actual service worker, successfully exercised popup to background messaging, captured screenshots, restarted Chromium using the same persistent profile, rediscovered the same extension, repeated messaging successfully after restart, and finished with zero runtime errors. The after-restart screenshots were visually inspected and show the runtime ID returned by the worker.
+The unit lane passed 11/11 tests, whole-module syntax checking, and the MCP surface smoke.
+
+Both Chromium operating systems loaded the exact same MV3 fixture bytes with SHA-256 `57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb`, resolved runtime extension ID `felmepoiflfponlkemhjaadagpppepgf` from the actual service worker, successfully exercised popup to background messaging, captured screenshots, restarted Chromium using the same persistent profile, rediscovered the same extension, repeated messaging successfully after restart, and finished with zero runtime errors. The downloaded post-restart screenshots were visually inspected on both platforms and visibly show `ok:felmepoiflfponlkemhjaadagpppepgf` returned by the worker.
+
+The visible Ferrum Workbench is also now part of the acceptance gate. On both Ubuntu Chromium and Windows Chromium, CI clicked the Doctor control, filled the Test spec field with `examples/process-app.json`, checked Headless, clicked Run test, executed the real process workload through the Workbench API, waited for a visible green `PASSED` card, required zero browser console/page/request errors, and saved a full-page screenshot. The downloaded Workbench screenshots were visually inspected and show the selected spec, checked Headless control, populated Doctor output, and PASSED result. The Linux screenshot is 263421 bytes and the Windows screenshot is 223267 bytes.
 
 Lightpanda 0.3.7 is a real additive fast lane. CI downloads the official Linux x86_64 release and checks SHA-256 `895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a` before use. Ferrum drives it directly through Lightpanda's native CDP server rather than through Playwright. The verified smoke exercised open, compact snapshot, click, text assertion, and clean runtime diagnostics with no errors.
 
@@ -14,7 +18,7 @@ Lightpanda 0.3.7 is a real additive fast lane. CI downloads the official Linux x
 
 Full Chromium remains the extension correctness lane. Lightpanda is a faster web/agent lane and never substitutes for Chromium-specific behavior. Ferrum also implements Electron, generic process/service, and Appium targets under the same evidence model, but the Electron and Appium lanes still require qualification against real target applications before being described as fully runtime verified.
 
-Ferrum supports unique immutable evidence folders, exact extension build inventories, runtime identity, persistent profiles, restart proof, screenshots and Playwright traces where visual Chromium is used, runtime diagnostics, compact agent refs/actions, bounded parallel suites, repeated median/p95 benchmarks, a local workbench, and MCP tools for doctor, single-run, suite, and benchmark operations.
+Ferrum supports unique immutable evidence folders, exact extension build inventories, runtime identity, persistent profiles, restart proof, screenshots and Playwright traces where visual Chromium is used, runtime diagnostics, compact agent refs/actions, bounded parallel suites, repeated median/p95 benchmarks, a real Chromium Workbench, and MCP tools for doctor, single-run, suite, and benchmark operations.
 
 ## Failures that must not be repeated
 
@@ -23,6 +27,8 @@ Do not use Playwright's reduced default headless shell as proof of MV3 extension
 Do not wrap Lightpanda navigation in Playwright's Chromium lifecycle model. That timed out even when Lightpanda itself was healthy. Use Ferrum's native direct-CDP Lightpanda adapter.
 
 Do not let performance work reduce test steps, runtime fidelity, diagnostics, evidence, target coverage, or output quality. Do not allow parallel runs to share an evidence directory. Preserve explicit benchmark settings such as warmup zero exactly.
+
+Do not treat Workbench controls as decorative. Doctor, spec selection/input, Headless, Run, and visible run status are real product promises and are click-tested on Linux and Windows. Missing static assets must produce truthful 404 responses rather than contaminating browser diagnostics with server 500s.
 
 ## GameSync operating rule
 

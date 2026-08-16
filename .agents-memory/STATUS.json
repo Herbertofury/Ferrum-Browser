@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "projectId": "ferrum-browser",
   "version": "0.2.0",
-  "goal": "Operate Ferrum as the mandatory full-fidelity extension acceptance layer for GameSync and evolve it into a reusable full application tester without sacrificing coverage, diagnostics, evidence, or runtime fidelity.",
+  "goal": "Operate Ferrum as the mandatory full-fidelity extension acceptance layer for GameSync and evolve it into a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, or target breadth.",
   "state": "verified canonical implementation on main",
-  "verifiedCodeCommit": "f39636f89f5b68af38e1dafb87e589b7c77657ab",
-  "verifiedWorkflowRun": 31964361536,
-  "verifiedAt": "2026-08-16T18:23:00Z",
+  "verifiedCodeCommit": "b94902e34db716ffc88395909108901cd4de415a",
+  "verifiedWorkflowRun": 31964792142,
+  "verifiedAt": "2026-08-16T18:33:00Z",
   "verified": {
     "unit": {
       "status": "passed",
-      "tests": 10,
+      "tests": 11,
       "failed": 0,
       "syntaxCheck": "passed",
       "mcpSurface": "passed"
@@ -19,21 +19,29 @@
       "status": "passed",
       "webSmoke": "passed",
       "mv3ExtensionSmoke": "passed",
+      "workbenchSmoke": "passed",
       "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
       "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
       "restartProof": "passed",
+      "postRestartWorkerMessage": "passed",
       "runtimeErrors": 0,
-      "artifactSha256": "fb96bf1fa749685317197a7e78cdd4a750b3e5a212e870139633d88c3705a2c2"
+      "workbenchBrowserErrors": 0,
+      "workbenchScreenshotBytes": 263421,
+      "artifactSha256": "9b7230a88f23b939f0719a1e5cfc6bba83b27ed60c6c827c34a4d641ea407a6f"
     },
     "chromiumWindows": {
       "status": "passed",
       "webSmoke": "passed",
       "mv3ExtensionSmoke": "passed",
+      "workbenchSmoke": "passed",
       "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
       "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
       "restartProof": "passed",
+      "postRestartWorkerMessage": "passed",
       "runtimeErrors": 0,
-      "artifactSha256": "cb0b4a4a826551ccaab552377d1f77e0f78ac447a83ba2c74601ae874512f7b7"
+      "workbenchBrowserErrors": 0,
+      "workbenchScreenshotBytes": 223267,
+      "artifactSha256": "d677c0519a0d262e85b6312544c3d9e8029cadaa0e7bff0b1fcb0fa913c27502"
     },
     "lightpanda": {
       "status": "passed",
@@ -42,7 +50,17 @@
       "releaseBinarySha256": "895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a",
       "smokeActions": ["open", "snapshot", "click", "assert-text", "assert-console-clean"],
       "runtimeErrors": 0,
-      "artifactSha256": "d4f04a4fc671e31eeea605dc7ffe591d6594fea3592410bdc09d781827c7d764"
+      "artifactSha256": "146fc1bd68ed559300909465bc6ed7964d9ba37843cde2f33114cb41a1e7d672"
+    },
+    "artifactRoundTrip": {
+      "status": "passed",
+      "providerDigestMatchedDownloadedBytes": true,
+      "visualInspection": [
+        "Linux Workbench screenshot visibly shows selected process spec, checked Headless control, populated Doctor output, and PASSED run.",
+        "Windows Workbench screenshot visibly shows selected process spec, checked Headless control, populated Doctor output, and PASSED run.",
+        "Linux post-restart MV3 popup screenshot visibly shows ok:felmepoiflfponlkemhjaadagpppepgf.",
+        "Windows post-restart MV3 popup screenshot visibly shows ok:felmepoiflfponlkemhjaadagpppepgf."
+      ]
     }
   },
   "verifiedCapabilities": [
@@ -60,7 +78,8 @@
     "bounded parallel test suites",
     "repeated benchmark runner with median and p95 timing",
     "generic process/service runner",
-    "functional local dashboard/workbench"
+    "functional Workbench opened through real Chromium",
+    "Workbench Doctor, spec input, Headless toggle, Run button, visible result, and browser diagnostics exercised end-to-end on Linux and Windows"
   ],
   "implementedButNotRuntimeQualifiedYet": [
     "Electron target runner against a real Electron application",
@@ -71,12 +90,14 @@
     "Lightpanda through Playwright timed out on Chromium lifecycle expectations. Ferrum now drives Lightpanda through its native CDP server directly.",
     "Parallel runs could collide on evidence directory IDs. Evidence IDs now include a random nonce.",
     "Benchmark warmup 0 was coerced to 1. Explicit zero warmup is now preserved.",
-    "Cross-platform checkout line endings produced different fixture hashes. Repository text checkout is normalized to LF and Linux/Windows extension SHA-256 now matches exactly."
+    "Cross-platform checkout line endings produced different fixture hashes. Repository text checkout is normalized to LF and Linux/Windows extension SHA-256 now matches exactly.",
+    "Workbench ephemeral port mode originally reported port 0 instead of the bound port. The server now reports the actual assigned port.",
+    "A Chromium favicon request exposed missing static assets being returned as HTTP 500. Ferrum now returns a truthful 404 for missing assets and the Workbench uses an inline data favicon; the behavior is regression-tested."
   ],
   "nextActions": [
     "Use Ferrum in every applicable GameSync extension verification and keep Opera GX as additional compatibility coverage.",
     "Turn real GameSync workflows into reusable Ferrum workload packs as changed features are exercised.",
-    "Improve Ferrum whenever testing exposes a reusable speed, reliability, control, or observability problem, then rerun the target workload.",
+    "Improve Ferrum whenever testing exposes a reusable speed, reliability, control, observability, setup, or target-coverage problem, then rerun the target workload.",
     "Add richer extension service-worker CDP console/network inspection.",
     "Qualify Electron and Appium lanes against real applications before claiming those lanes fully verified."
   ],
