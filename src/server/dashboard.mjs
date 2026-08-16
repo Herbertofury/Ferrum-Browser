@@ -96,8 +96,16 @@ export async function startDashboard({ port = 8788, host = '127.0.0.1', open = t
       json(res, 500, { error: error.message });
     }
   });
-  await new Promise(resolve => server.listen(port, host, resolve));
-  const url = `http://${host}:${port}`;
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, host, () => {
+      server.off('error', reject);
+      resolve();
+    });
+  });
+  const address = server.address();
+  const boundPort = typeof address === 'object' && address ? address.port : port;
+  const url = `http://${host}:${boundPort}`;
   const workbench = open ? await openFerrumWorkbench(url) : { mode: 'disabled', context: null };
   if (workbench.context) server.once('close', () => workbench.context.close().catch(() => {}));
   return { server, url, workbench: { mode: workbench.mode, error: workbench.error || null } };

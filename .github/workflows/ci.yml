@@ -49,6 +49,7 @@ jobs:
         run: npx playwright install chromium
       - run: npm run smoke:web
       - run: npm run smoke:extension
+      - run: npm run smoke:dashboard
       - uses: actions/upload-artifact@v7
         if: always()
         with:

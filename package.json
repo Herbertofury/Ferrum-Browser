@@ -15,8 +15,9 @@
     "test": "node --test tests/*.test.mjs",
     "smoke:extension": "node ./bin/ferrum.mjs test ./examples/self-test-extension.json --headless",
     "smoke:web": "node ./bin/ferrum.mjs test ./examples/self-test-web.json --headless",
-    "ci": "npm test && npm run smoke:web && npm run smoke:extension",
-    "smoke:lightpanda": "node ./scripts/lightpanda-smoke.mjs"
+    "ci": "npm test && npm run smoke:web && npm run smoke:extension && npm run smoke:dashboard",
+    "smoke:lightpanda": "node ./scripts/lightpanda-smoke.mjs",
+    "smoke:dashboard": "node ./scripts/dashboard-smoke.mjs"
   },
   "dependencies": {
     "playwright": "1.62.1"
