@@ -1,0 +1,1 @@
+document.querySelector('#ping').onclick = () => chrome.runtime.sendMessage({type:'ferrum-ping'}, response => { document.querySelector('#out').textContent = response?.ok ? `ok:${response.runtimeId}` : 'failed'; });

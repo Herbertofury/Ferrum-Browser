@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "goal": "Establish the first canonical tester-first Ferrum implementation and use it as the mandatory extension acceptance layer for GameSync.",
+  "state": "initial implementation staged for canonical main publication and cross-platform runtime verification",
+  "verifiedLocally": [
+    "all JavaScript syntax checks",
+    "5 node:test unit/regression tests",
+    "real process runner log and exit evidence",
+    "dashboard HTTP API and UI response",
+    "MCP initialize and tools/list"
+  ],
+  "pendingRuntimeProof": [
+    "GitHub-hosted Linux Chromium web and MV3 restart smoke",
+    "GitHub-hosted Windows Chromium web and MV3 restart smoke"
+  ],
+  "nextActions": [
+    "Publish staged tree to main",
+    "Run and inspect cross-platform Chromium smoke workflow",
+    "Fix any real runtime failures and rerun",
+    "Wire future GameSync automation runs to improve Ferrum when tester friction is found"
+  ],
+  "blockers": []
+}

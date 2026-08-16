@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "northpoints": [
+    "Make full-fidelity testing fast enough to run continuously, not only at release time.",
+    "Make browser-extension verification prove the exact loaded build, runtime identity, background/content behavior, diagnostics, restart and persistence.",
+    "Grow Ferrum into one app-testing control plane for web, browser extensions, Electron, processes/services and native/mobile apps.",
+    "Make agent control low-latency and deterministic first, with semantic recovery as a visible fallback rather than hidden magic.",
+    "Improve Ferrum whenever real GameSync or other app testing exposes avoidable slowness, missing observability, flaky control or unsupported workflows."
+  ],
+  "referenceProjects": [
+    "https://github.com/lightpanda-io/browser",
+    "https://github.com/vercel-labs/agent-browser",
+    "https://github.com/citrolabs/ego-lite",
+    "https://github.com/lightpanda-io/agent-benchmarks",
+    "https://github.com/browserless/browserless",
+    "https://github.com/browserbase/stagehand"
+  ],
+  "guardrails": [
+    "Never trade test coverage, data, fidelity, diagnostics or supported target behavior for speed.",
+    "Chromium-specific and extension-specific behavior requires a real Chromium fidelity lane even when Lightpanda or another fast lane also passes.",
+    "Every visible control and CLI command must be wired to a real implementation path.",
+    "A success claim requires an evidence bundle, not a UI state or log message.",
+    "Past Ferrum prototypes are not canonical implementation sources."
+  ],
+  "acceptanceSignals": [
+    "GameSync can be built, loaded, exercised, restarted and diagnosed in Ferrum with exact build identity.",
+    "Ferrum self-tests pass on Linux and Windows Chromium.",
+    "A single test-spec model covers browser and non-browser application targets.",
+    "Agent operations can use compact snapshots and MCP without sacrificing deterministic selectors and direct actions.",
+    "Measured Ferrum performance improves over time on fixed workloads without reducing scope."
+  ]
+}

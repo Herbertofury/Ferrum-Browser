@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "name": "Ferrum",
+  "aliases": ["Ferrum Browser", "Ferrum App Tester", "custom browser tester"],
+  "purpose": "Agent-native full-fidelity browser-extension and application testing workbench that becomes faster and easier to use as real project testing exposes friction.",
+  "canonicalRepository": "https://github.com/Herbertofury/Ferrum-Browser",
+  "canonicalBranch": "main",
+  "sourceOfTruth": "repository",
+  "legacyArtifactsPolicy": "Prior Library archives and prototypes are untrusted reference material only. Never promote them over current repository source without direct verification.",
+  "createdAt": "2026-08-16T18:00:00Z"
+}

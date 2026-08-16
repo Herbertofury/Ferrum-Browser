@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "ferrum-self-test-web",
+  "target": { "type": "web", "engine": "chromium", "headless": true },
+  "steps": [
+    { "action": "open", "url": "data:text/html,<title>Ferrum Self Test</title><button id='go'>Go</button><div id='out'>idle</div><script>go.onclick=()=>out.textContent='passed'</script>" },
+    { "action": "snapshot", "name": "initial", "interactiveOnly": true },
+    { "action": "click", "selector": "#go" },
+    { "action": "assert-text", "selector": "#out", "text": "passed" },
+    { "action": "vitals", "name": "self-test" },
+    { "action": "screenshot", "name": "passed" },
+    { "action": "assert-console-clean" }
+  ]
+}

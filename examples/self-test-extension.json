@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "name": "ferrum-self-test-extension",
+  "target": {
+    "type": "extension",
+    "path": "../tests/fixtures/extension",
+    "headless": true
+  },
+  "timeouts": {
+    "startupMs": 30000,
+    "stepMs": 15000
+  },
+  "steps": [
+    {
+      "action": "extension-page",
+      "path": "popup.html"
+    },
+    {
+      "action": "snapshot",
+      "name": "popup",
+      "interactiveOnly": true
+    },
+    {
+      "action": "click",
+      "selector": "#ping"
+    },
+    {
+      "action": "assert-text",
+      "selector": "#out",
+      "text": "ok:"
+    },
+    {
+      "action": "assert-service-worker"
+    },
+    {
+      "action": "screenshot",
+      "name": "popup-before-restart"
+    },
+    {
+      "action": "restart"
+    },
+    {
+      "action": "assert-service-worker"
+    },
+    {
+      "action": "extension-page",
+      "path": "popup.html"
+    },
+    {
+      "action": "click",
+      "selector": "#ping"
+    },
+    {
+      "action": "assert-text",
+      "selector": "#out",
+      "text": "ok:"
+    },
+    {
+      "action": "screenshot",
+      "name": "popup-after-restart"
+    },
+    {
+      "action": "assert-console-clean"
+    }
+  ]
+}

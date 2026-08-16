@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "name": "gamesync-extension-full-smoke",
+  "target": {
+    "type": "extension",
+    "path": "../../Gamesync/dist",
+    "headless": false
+  },
+  "timeouts": {
+    "startupMs": 45000,
+    "stepMs": 30000
+  },
+  "steps": [
+    {
+      "action": "extension-page",
+      "path": "popup/popup.html"
+    },
+    {
+      "action": "assert-service-worker"
+    },
+    {
+      "action": "snapshot",
+      "name": "popup",
+      "interactiveOnly": true
+    },
+    {
+      "action": "screenshot",
+      "name": "popup"
+    },
+    {
+      "action": "extension-page",
+      "path": "options/options.html"
+    },
+    {
+      "action": "snapshot",
+      "name": "options",
+      "interactiveOnly": true
+    },
+    {
+      "action": "screenshot",
+      "name": "options"
+    },
+    {
+      "action": "restart"
+    },
+    {
+      "action": "assert-service-worker"
+    },
+    {
+      "action": "extension-page",
+      "path": "popup/popup.html"
+    },
+    {
+      "action": "screenshot",
+      "name": "popup-after-restart"
+    },
+    {
+      "action": "assert-console-clean"
+    }
+  ]
+}

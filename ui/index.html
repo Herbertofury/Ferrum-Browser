@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ferrum Test Workbench</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div><span class="eyebrow">FERRUM 0.1</span><h1>Test Workbench</h1></div>
+      <button id="doctor">Run doctor</button>
+    </header>
+    <section class="hero">
+      <div>
+        <span class="eyebrow">ONE HARNESS · MANY RUNTIMES</span>
+        <h2>Extensions, web apps, Electron, processes and Appium targets.</h2>
+        <p>Full Chromium is the correctness lane. Lightpanda is the speed lane. Every run produces evidence instead of a success toast.</p>
+      </div>
+      <div class="lane-grid">
+        <span>Chromium fidelity</span><span>Lightpanda fast path</span><span>MV3 restart proof</span><span>Agent MCP</span>
+      </div>
+    </section>
+    <section class="run-card">
+      <label>Test spec<input id="spec" value="examples/self-test-extension.json" spellcheck="false"></label>
+      <label class="check"><input id="headless" type="checkbox"> Headless</label>
+      <button id="run" class="primary">Run test</button>
+      <div id="runStatus" class="status">Ready.</div>
+    </section>
+    <section class="grid">
+      <article><h3>Runs</h3><div id="runs" class="list"></div></article>
+      <article><h3>Doctor</h3><pre id="doctorOut">Not run yet.</pre></article>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

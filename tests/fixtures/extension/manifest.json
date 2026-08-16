@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Ferrum MV3 Fixture",
+  "version": "1.0.0",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC/5gcsSEXZqXeVAlvDJ44LMizbc2gc3n6ZCyNRRuG5jSkiDBpIsM59CegaIIGa/uzYBPUKUwIHAIOOHbXiz6FlEpnc/uxd3DXhCWJlAoAgVzwfnaHKe1QjurRcqS+wjXQXf9vvKlHYc/sYK8gJRnNpMim+qAMeYH5BbrFAdA6ifwIDAQAB"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "ferrum-tester",
+  "version": "0.1.0",
+  "description": "Agent-native browser, extension, web, Electron, process and Appium test workbench.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "bin": {
+    "ferrum": "./bin/ferrum.mjs"
+  },
+  "scripts": {
+    "start": "node ./bin/ferrum.mjs dashboard",
+    "doctor": "node ./bin/ferrum.mjs doctor",
+    "test": "node --test tests/*.test.mjs",
+    "smoke:extension": "node ./bin/ferrum.mjs test ./examples/self-test-extension.json --headless",
+    "smoke:web": "node ./bin/ferrum.mjs test ./examples/self-test-web.json --headless",
+    "ci": "npm test && npm run smoke:web && npm run smoke:extension"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Herbertofury/Ferrum-Browser.git"
+  }
+}

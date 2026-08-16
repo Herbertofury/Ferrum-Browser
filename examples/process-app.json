@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "name": "process-example",
+  "target": { "type": "process", "command": "node", "args": ["-e", "console.log('ready'); setTimeout(()=>process.exit(0),250)"] },
+  "steps": [
+    { "action": "assert-log", "text": "ready" },
+    { "action": "wait-exit", "code": 0, "timeoutMs": 5000 }
+  ]
+}
