@@ -1,6 +1,7 @@
 const REF_ATTR = 'data-ferrum-ref';
 
 export async function snapshotPage(page, { interactiveOnly = false, max = 400 } = {}) {
+  if (typeof page.ferrumSnapshot === 'function') return await page.ferrumSnapshot({ interactiveOnly, max });
   return await page.evaluate(({ interactiveOnly, max, attr }) => {
     const visible = el => {
       const style = getComputedStyle(el);
