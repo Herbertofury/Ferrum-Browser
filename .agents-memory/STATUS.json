@@ -1,24 +1,84 @@
 {
   "schemaVersion": 1,
   "projectId": "ferrum-browser",
-  "goal": "Establish the first canonical tester-first Ferrum implementation and use it as the mandatory extension acceptance layer for GameSync.",
-  "state": "initial implementation staged for canonical main publication and cross-platform runtime verification",
-  "verifiedLocally": [
-    "all JavaScript syntax checks",
-    "5 node:test unit/regression tests",
-    "real process runner log and exit evidence",
-    "dashboard HTTP API and UI response",
-    "MCP initialize and tools/list"
+  "version": "0.2.0",
+  "goal": "Operate Ferrum as the mandatory full-fidelity extension acceptance layer for GameSync and evolve it into a reusable full application tester without sacrificing coverage, diagnostics, evidence, or runtime fidelity.",
+  "state": "verified canonical implementation on main",
+  "verifiedCodeCommit": "f39636f89f5b68af38e1dafb87e589b7c77657ab",
+  "verifiedWorkflowRun": 31964361536,
+  "verifiedAt": "2026-08-16T18:23:00Z",
+  "verified": {
+    "unit": {
+      "status": "passed",
+      "tests": 10,
+      "failed": 0,
+      "syntaxCheck": "passed",
+      "mcpSurface": "passed"
+    },
+    "chromiumLinux": {
+      "status": "passed",
+      "webSmoke": "passed",
+      "mv3ExtensionSmoke": "passed",
+      "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
+      "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
+      "restartProof": "passed",
+      "runtimeErrors": 0,
+      "artifactSha256": "fb96bf1fa749685317197a7e78cdd4a750b3e5a212e870139633d88c3705a2c2"
+    },
+    "chromiumWindows": {
+      "status": "passed",
+      "webSmoke": "passed",
+      "mv3ExtensionSmoke": "passed",
+      "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
+      "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
+      "restartProof": "passed",
+      "runtimeErrors": 0,
+      "artifactSha256": "cb0b4a4a826551ccaab552377d1f77e0f78ac447a83ba2c74601ae874512f7b7"
+    },
+    "lightpanda": {
+      "status": "passed",
+      "version": "0.3.7",
+      "transport": "direct-cdp",
+      "releaseBinarySha256": "895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a",
+      "smokeActions": ["open", "snapshot", "click", "assert-text", "assert-console-clean"],
+      "runtimeErrors": 0,
+      "artifactSha256": "d4f04a4fc671e31eeea605dc7ffe591d6594fea3592410bdc09d781827c7d764"
+    }
+  },
+  "verifiedCapabilities": [
+    "Playwright Chromium full-fidelity web lane",
+    "unpacked Manifest V3 extension loading",
+    "exact extension SHA-256 inventory and runtime identity",
+    "popup to service-worker messaging",
+    "service-worker discovery",
+    "full browser restart using the same persistent profile",
+    "post-restart extension identity and messaging proof",
+    "screenshots, Playwright traces, console/page/network failure evidence",
+    "Lightpanda 0.3.7 native direct-CDP fast web lane",
+    "compact agent snapshots and actions",
+    "MCP doctor, single-run, suite, and benchmark tools",
+    "bounded parallel test suites",
+    "repeated benchmark runner with median and p95 timing",
+    "generic process/service runner",
+    "functional local dashboard/workbench"
   ],
-  "pendingRuntimeProof": [
-    "GitHub-hosted Linux Chromium web and MV3 restart smoke",
-    "GitHub-hosted Windows Chromium web and MV3 restart smoke"
+  "implementedButNotRuntimeQualifiedYet": [
+    "Electron target runner against a real Electron application",
+    "Appium target runner against a real native/mobile device or emulator"
+  ],
+  "incidentsResolved": [
+    "Headless MV3 verification initially used Playwright's reduced headless shell. Ferrum now uses the full chromium channel for extension-capable headless runs.",
+    "Lightpanda through Playwright timed out on Chromium lifecycle expectations. Ferrum now drives Lightpanda through its native CDP server directly.",
+    "Parallel runs could collide on evidence directory IDs. Evidence IDs now include a random nonce.",
+    "Benchmark warmup 0 was coerced to 1. Explicit zero warmup is now preserved.",
+    "Cross-platform checkout line endings produced different fixture hashes. Repository text checkout is normalized to LF and Linux/Windows extension SHA-256 now matches exactly."
   ],
   "nextActions": [
-    "Publish staged tree to main",
-    "Run and inspect cross-platform Chromium smoke workflow",
-    "Fix any real runtime failures and rerun",
-    "Wire future GameSync automation runs to improve Ferrum when tester friction is found"
+    "Use Ferrum in every applicable GameSync extension verification and keep Opera GX as additional compatibility coverage.",
+    "Turn real GameSync workflows into reusable Ferrum workload packs as changed features are exercised.",
+    "Improve Ferrum whenever testing exposes a reusable speed, reliability, control, or observability problem, then rerun the target workload.",
+    "Add richer extension service-worker CDP console/network inspection.",
+    "Qualify Electron and Appium lanes against real applications before claiming those lanes fully verified."
   ],
   "blockers": []
 }
