@@ -8,18 +8,47 @@ const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 function safeName(value) { return String(value || 'webdriver').replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 120); }
 function elementId(element) { return element?.[ELEMENT_KEY] || element?.ELEMENT || null; }
+function safeDecode(value) {
+  try { return decodeURIComponent(value); }
+  catch { return value; }
+}
+function hasAuthorizationHeader(headers) {
+  return Object.keys(headers || {}).some(key => key.toLowerCase() === 'authorization');
+}
+function normalizeHeaders(headers) {
+  return Object.fromEntries(Object.entries(headers || {}).map(([key, value]) => [String(key), String(value)]));
+}
+function normalizeServer(baseUrl, headers = {}) {
+  const raw = String(baseUrl || 'http://127.0.0.1:4444');
+  const requestHeaders = normalizeHeaders(headers);
+  try {
+    const parsed = new URL(raw);
+    if ((parsed.username || parsed.password) && !hasAuthorizationHeader(requestHeaders)) {
+      const credential = `${safeDecode(parsed.username)}:${safeDecode(parsed.password)}`;
+      requestHeaders.authorization = `Basic ${Buffer.from(credential).toString('base64')}`;
+    }
+    parsed.username = '';
+    parsed.password = '';
+    return { baseUrl: parsed.toString().replace(/\/$/, ''), headers: requestHeaders };
+  } catch {
+    return { baseUrl: raw.replace(/\/$/, ''), headers: requestHeaders };
+  }
+}
 
 export class WebDriverClient {
-  constructor(baseUrl, { timeoutMs = 30000 } = {}) {
-    this.baseUrl = String(baseUrl || 'http://127.0.0.1:4444').replace(/\/$/, '');
+  constructor(baseUrl, { timeoutMs = 30000, headers = {} } = {}) {
+    const normalized = normalizeServer(baseUrl, headers);
+    this.baseUrl = normalized.baseUrl;
+    this.headers = normalized.headers;
     this.timeoutMs = timeoutMs;
     this.sessionId = null;
   }
 
   async request(method, endpoint, body, { timeoutMs = this.timeoutMs } = {}) {
+    const headers = body === undefined ? { ...this.headers } : { ...this.headers, 'content-type': 'application/json' };
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       method,
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs)
     });
@@ -149,20 +178,32 @@ async function findAllWithinConstraints(client, step, timeoutMs) {
   }
 }
 
-async function waitForText(client, element, expected, { equals = false, timeoutMs = 30000 } = {}) {
-  const deadline = Date.now() + timeoutMs;
+async function waitForExpectedText(client, step, aliases, timeoutMs) {
+  const budgetMs = Number(step.timeoutMs || timeoutMs);
+  const deadline = Date.now() + budgetMs;
+  const expected = String(step.text ?? '');
+  const equals = step.equals === true;
   let last = '';
   let attempts = 0;
+  let lastElement = null;
   while (Date.now() < deadline) {
-    const remainingMs = Math.max(1, deadline - Date.now());
-    const response = await client.request('GET', client.sessionPath(`/element/${element}/text`), undefined, { timeoutMs: Math.min(client.timeoutMs, remainingMs) });
+    let remainingMs = Math.max(1, deadline - Date.now());
+    if (step.element) {
+      lastElement = aliases.get(String(step.element));
+      if (!lastElement) throw new Error(`Unknown WebDriver element alias: ${step.element}`);
+    } else {
+      if (!step.using || step.value == null) throw new Error('assert-text requires using/value or element alias');
+      lastElement = await client.find(String(step.using), String(step.value), { timeoutMs: remainingMs, index: step.index || 0 });
+    }
+    remainingMs = Math.max(1, deadline - Date.now());
+    const response = await client.request('GET', client.sessionPath(`/element/${lastElement}/text`), undefined, { timeoutMs: Math.min(client.timeoutMs, remainingMs) });
     last = String(response?.value ?? '');
     attempts += 1;
-    if (equals ? last === expected : last.includes(expected)) return { text: last, attempts };
+    if (equals ? last === expected : last.includes(expected)) return { element: lastElement, text: last, attempts };
     const waitMs = Math.min(200, Math.max(0, deadline - Date.now()));
     if (waitMs > 0) await sleep(waitMs);
   }
-  throw new Error(`WebDriver text mismatch after ${attempts} attempt${attempts === 1 ? '' : 's'}: expected ${equals ? 'exactly ' : ''}${expected}, last observed ${last}`);
+  throw new Error(`WebDriver text mismatch within ${budgetMs}ms after ${attempts} attempt${attempts === 1 ? '' : 's'}: expected ${equals ? 'exactly ' : ''}${expected}, last observed ${last}`);
 }
 
 async function captureScreenshot(client, evidence, name) {
@@ -189,7 +230,10 @@ async function captureSource(client, evidence, name) {
 export async function runWebDriverTarget(spec, evidence) {
   const timeoutMs = spec.timeouts?.stepMs || 30000;
   const startupMs = spec.timeouts?.startupMs || 30000;
-  const client = new WebDriverClient(spec.target.server || 'http://127.0.0.1:4444', { timeoutMs });
+  const client = new WebDriverClient(spec.target.server || 'http://127.0.0.1:4444', {
+    timeoutMs,
+    headers: spec.target.headers || {}
+  });
   const aliases = new Map();
   const durations = [];
   const outputs = [];
@@ -212,7 +256,7 @@ export async function runWebDriverTarget(spec, evidence) {
         switch (step.action) {
           case 'goto':
           case 'navigate':
-            await client.request('POST', client.sessionPath('/url'), { url: String(step.url) });
+            await client.request('POST', client.sessionPath('/url'), { url: String(step.url) }, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { url: String(step.url) };
             break;
           case 'find': {
@@ -226,46 +270,44 @@ export async function runWebDriverTarget(spec, evidence) {
             break;
           case 'click': {
             const id = await elementFor(client, step, aliases, timeoutMs);
-            await client.request('POST', client.sessionPath(`/element/${id}/click`), {});
+            await client.request('POST', client.sessionPath(`/element/${id}/click`), {}, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { element: id };
             break;
           }
           case 'clear': {
             const id = await elementFor(client, step, aliases, timeoutMs);
-            await client.request('POST', client.sessionPath(`/element/${id}/clear`), {});
+            await client.request('POST', client.sessionPath(`/element/${id}/clear`), {}, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { element: id };
             break;
           }
           case 'fill': {
             const id = await elementFor(client, step, aliases, timeoutMs);
             const text = String(step.text ?? step.input ?? '');
-            if (step.clear !== false) await client.request('POST', client.sessionPath(`/element/${id}/clear`), {}).catch(() => {});
-            await client.request('POST', client.sessionPath(`/element/${id}/value`), { text, value: [...text] });
+            if (step.clear !== false) await client.request('POST', client.sessionPath(`/element/${id}/clear`), {}, { timeoutMs: step.timeoutMs || timeoutMs }).catch(() => {});
+            await client.request('POST', client.sessionPath(`/element/${id}/value`), { text, value: [...text] }, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { element: id, length: text.length };
             break;
           }
           case 'get-text': {
             const id = await elementFor(client, step, aliases, timeoutMs);
-            const response = await client.request('GET', client.sessionPath(`/element/${id}/text`));
+            const response = await client.request('GET', client.sessionPath(`/element/${id}/text`), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { element: id, text: String(response?.value ?? '') };
             break;
           }
           case 'get-attribute': {
             const id = await elementFor(client, step, aliases, timeoutMs);
-            const response = await client.request('GET', client.sessionPath(`/element/${id}/attribute/${encodeURIComponent(String(step.name))}`));
+            const response = await client.request('GET', client.sessionPath(`/element/${id}/attribute/${encodeURIComponent(String(step.name))}`), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { element: id, name: step.name, value: response?.value ?? null };
             break;
           }
           case 'assert-text': {
-            const id = await elementFor(client, step, aliases, timeoutMs);
-            const expected = String(step.text ?? '');
-            const matched = await waitForText(client, id, expected, { equals: step.equals === true, timeoutMs: step.timeoutMs || timeoutMs });
-            output = { element: id, text: matched.text, attempts: matched.attempts };
+            const matched = await waitForExpectedText(client, step, aliases, timeoutMs);
+            output = { element: matched.element, text: matched.text, attempts: matched.attempts };
             break;
           }
           case 'assert-visible': {
             const id = await elementFor(client, step, aliases, timeoutMs);
-            const response = await client.request('GET', client.sessionPath(`/element/${id}/displayed`));
+            const response = await client.request('GET', client.sessionPath(`/element/${id}/displayed`), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
             if (response?.value !== true) throw new Error('WebDriver element is not displayed');
             output = { element: id, displayed: true };
             break;
@@ -281,29 +323,29 @@ export async function runWebDriverTarget(spec, evidence) {
             break;
           }
           case 'back':
-            await client.request('POST', client.sessionPath('/back'), {});
+            await client.request('POST', client.sessionPath('/back'), {}, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { back: true };
             break;
           case 'forward':
-            await client.request('POST', client.sessionPath('/forward'), {});
+            await client.request('POST', client.sessionPath('/forward'), {}, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { forward: true };
             break;
           case 'refresh':
-            await client.request('POST', client.sessionPath('/refresh'), {});
+            await client.request('POST', client.sessionPath('/refresh'), {}, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { refresh: true };
             break;
           case 'title': {
-            const response = await client.request('GET', client.sessionPath('/title'));
+            const response = await client.request('GET', client.sessionPath('/title'), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { title: String(response?.value ?? '') };
             break;
           }
           case 'url': {
-            const response = await client.request('GET', client.sessionPath('/url'));
+            const response = await client.request('GET', client.sessionPath('/url'), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { url: String(response?.value ?? '') };
             break;
           }
           case 'execute': {
-            const response = await client.request('POST', client.sessionPath('/execute/sync'), { script: String(step.script || ''), args: Array.isArray(step.args) ? step.args : [] });
+            const response = await client.request('POST', client.sessionPath('/execute/sync'), { script: String(step.script || ''), args: Array.isArray(step.args) ? step.args : [] }, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { value: response?.value ?? null };
             break;
           }
@@ -314,7 +356,7 @@ export async function runWebDriverTarget(spec, evidence) {
             output = await captureSource(client, evidence, step.name || `source-${index}`);
             break;
           case 'assert-session': {
-            const response = await client.request('GET', client.sessionPath());
+            const response = await client.request('GET', client.sessionPath(), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
             output = { sessionId: client.sessionId, capabilities: redactSensitive(response?.value?.capabilities || response?.value || null) };
             break;
           }
