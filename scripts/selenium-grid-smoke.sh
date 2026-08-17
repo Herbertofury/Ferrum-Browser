@@ -35,7 +35,7 @@ fi
 
 export FERRUM_WEBDRIVER_URL="http://127.0.0.1:4444"
 node ./bin/ferrum.mjs test ./examples/self-test-webdriver.json --artifacts "$ARTIFACTS_ROOT" --compact > "$RESULT_FILE"
-node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); if(r.status!=='passed'||r.result?.engine!=='webdriver'||!r.id) process.exit(1)" "$RESULT_FILE"
+node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); if(r.status!=='passed'||r.engine!=='webdriver'||!r.id) process.exit(1)" "$RESULT_FILE"
 EVIDENCE_ID="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); process.stdout.write(r.id)" "$RESULT_FILE")"
 node ./bin/ferrum.mjs evidence verify "$EVIDENCE_ID" --artifacts "$ARTIFACTS_ROOT" > "$VERIFY_FILE"
 node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); if(r.status!=='passed'||!r.manifestDescriptor?.digest?.startsWith('sha256:')) process.exit(1)" "$VERIFY_FILE"
