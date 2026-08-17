@@ -36,7 +36,8 @@ export class StepEngine {
             action: step.action,
             deterministic: { ref: step.ref || null, selector: step.selector || null },
             fallback: output.fallback,
-            deterministicError: output.deterministicError || null
+            deterministicError: output.deterministicError || null,
+            deterministicProbeMs: output.deterministicProbeMs || null
           });
         }
         this.evidence.record('step-pass', { index, action: step.action, durationMs, output });
@@ -55,7 +56,7 @@ export class StepEngine {
     switch (step.action) {
       case 'open':
       case 'goto': {
-        const waitUntil = navigationWaitUntil(this.session.engine, step.waitUntil);
+        const waitUntie = navigationWaitUntil(this.session.engine, step.waitUntil);
         const response = await this.page.goto(step.url, { waitUntil, timeout: step.timeoutMs || this.timeoutMs });
         if (this.session.engine === 'lightpanda' && waitUntil === 'commit') {
           await this.page.waitForFunction(() => document.readyState !== 'loading' && document.documentElement != null, null, { timeout: step.readyTimeoutMs || step.timeoutMs || this.timeoutMs }).catch(async () => {
@@ -87,16 +88,16 @@ export class StepEngine {
           if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
           return { matched: expected };
         }
-        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-text' }, async locator => {
-          const text = await locator.innerText({ timeout: step.timeoutMs || this.timeoutMs });
+        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-text', timeoutMs: step.timeoutMs || this.timeoutMs }, async (locator, timeout) => {
+          const text = await locator.innerText({ timeout });
           if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
           return { matched: expected };
         });
-        return { ...resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+        return { ...resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError, deterministicProbeMs: resolved.deterministicProbeMs };
       }
       case 'assert-visible': {
-        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-visible' }, locator => locator.waitFor({ state: 'visible', timeout: step.timeoutMs || this.timeoutMs }));
-        return { selector: step.selector || null, ref: step.ref || null, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-visible', timeoutMs: step.timeoutMs || this.timeoutMs }, (locator, timeout) => locator.waitFor({ state: 'visible', timeout }));
+        return { selector: step.selector || null, ref: step.ref || null, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError, deterministicProbeMs: resolved.deterministicProbeMs };
       }
       case 'assert-url': {
         const value = this.page.url();
@@ -170,7 +171,7 @@ export class StepEngine {
         const count = events.length;
         if (step.min != null && count < Number(step.min)) throw new Error(`Locator fallback count ${count} is below required minimum ${step.min}`);
         if (step.max != null && count > Number(step.max)) throw new Error(`Locator fallback count ${count} exceeds allowed maximum ${step.max}`);
-        return { count, fallbacks: events.map(event => ({ index: event.index, action: event.action, fallback: event.fallback })) };
+        return { count, fallbacks: events.map(event => ({ index: event.index, action: event.action, fallback: event.fallback, deterministicProbeMs: event.deterministicProbeMs || null })) };
       }
       case 'assert-console-clean': {
         const bad = this.evidence.events.filter(event =>

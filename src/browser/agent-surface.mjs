@@ -1,4 +1,5 @@
 const REF_ATTR = 'data-ferrum-ref';
+const DEFAULT_FALLBACK_PROBE_MS = 1000;
 
 export async function snapshotPage(page, { interactiveOnly = false, max = 400 } = {}) {
   if (typeof page.ferrumSnapshot === 'function') return await page.ferrumSnapshot({ interactiveOnly, max });
@@ -75,26 +76,44 @@ function deterministicLocator(page, action) {
   return null;
 }
 
+function positiveTimeout(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+export function locatorTimeouts(action) {
+  const fullTimeoutMs = positiveTimeout(action.timeoutMs, 30000);
+  if (!action.fallback) return { deterministicTimeoutMs: fullTimeoutMs, fallbackTimeoutMs: fullTimeoutMs };
+  const requestedProbe = positiveTimeout(action.fallbackProbeMs, DEFAULT_FALLBACK_PROBE_MS);
+  return {
+    deterministicTimeoutMs: Math.min(fullTimeoutMs, requestedProbe),
+    fallbackTimeoutMs: fullTimeoutMs
+  };
+}
+
 export async function performWithLocatorFallback(page, action, operation) {
   const deterministic = deterministicLocator(page, action);
   if (!deterministic) throw new Error(`${action.action || 'locator action'} requires ref or selector before semantic fallback`);
+  const { deterministicTimeoutMs, fallbackTimeoutMs } = locatorTimeouts(action);
   try {
     return {
-      value: await operation(deterministic),
+      value: await operation(deterministic, deterministicTimeoutMs, 'deterministic'),
       locatorStrategy: 'deterministic',
       fallback: null,
-      deterministicError: null
+      deterministicError: null,
+      deterministicProbeMs: deterministicTimeoutMs
     };
   } catch (deterministicError) {
     if (!action.fallback) throw deterministicError;
     try {
       const semantic = semanticLocator(page, action.fallback);
-      const value = await operation(semantic);
+      const value = await operation(semantic, fallbackTimeoutMs, 'semantic-fallback');
       return {
         value,
         locatorStrategy: 'semantic-fallback',
         fallback: action.fallback,
-        deterministicError: deterministicError.message
+        deterministicError: deterministicError.message,
+        deterministicProbeMs: deterministicTimeoutMs
       };
     } catch (fallbackError) {
       const error = new Error(`Deterministic locator failed (${deterministicError.message}); semantic fallback also failed (${fallbackError.message})`);
@@ -107,12 +126,12 @@ export async function performWithLocatorFallback(page, action, operation) {
 export async function executeAgentAction(page, action) {
   switch (action.action) {
     case 'click': {
-      const resolved = await performWithLocatorFallback(page, action, target => target.click({ timeout: action.timeoutMs }));
-      return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+      const resolved = await performWithLocatorFallback(page, action, (target, timeout) => target.click({ timeout }));
+      return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError, deterministicProbeMs: resolved.deterministicProbeMs };
     }
     case 'fill': {
-      const resolved = await performWithLocatorFallback(page, action, target => target.fill(String(action.value ?? ''), { timeout: action.timeoutMs }));
-      return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+      const resolved = await performWithLocatorFallback(page, action, (target, timeout) => target.fill(String(action.value ?? ''), { timeout }));
+      return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError, deterministicProbeMs: resolved.deterministicProbeMs };
     }
     case 'press':
       await page.keyboard.press(String(action.key));
@@ -122,8 +141,8 @@ export async function executeAgentAction(page, action) {
       return { ok: true, url: page.url() };
     case 'wait': {
       if (action.selector || action.ref) {
-        const resolved = await performWithLocatorFallback(page, action, target => target.waitFor({ state: action.state || 'visible', timeout: action.timeoutMs }));
-        return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+        const resolved = await performWithLocatorFallback(page, action, (target, timeout) => target.waitFor({ state: action.state || 'visible', timeout }));
+        return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError, deterministicProbeMs: resolved.deterministicProbeMs };
       }
       await page.waitForTimeout(Number(action.ms || 0));
       return { ok: true };
@@ -131,8 +150,8 @@ export async function executeAgentAction(page, action) {
     case 'snapshot':
       return await snapshotPage(page, action);
     case 'text': {
-      const resolved = await performWithLocatorFallback(page, action, target => target.innerText({ timeout: action.timeoutMs }));
-      return { text: resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+      const resolved = await performWithLocatorFallback(page, action, (target, timeout) => target.innerText({ timeout }));
+      return { text: resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError, deterministicProbeMs: resolved.deterministicProbeMs };
     }
     default:
       throw new Error(`Unsupported agent action: ${action.action}`);

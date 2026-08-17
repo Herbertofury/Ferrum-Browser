@@ -7,17 +7,25 @@ export async function runWebTarget(spec, evidence, options = {}) {
   const engine = options.engine || spec.target.engine || 'chromium';
   const headless = options.headless ?? spec.target.headless ?? false;
   let session;
-  if (engine === 'lightpanda') session = await launchLightpandaSession({ executable: spec.target.executable, evidence });
-  else session = await launchChromiumSession({
-    profileDir: options.profileDir || spec.target.profileDir,
-    headless,
-    executablePath: options.browserExecutable || spec.target.executable,
-    channel: options.browserChannel || spec.target.channel,
-    browserName: options.browser || spec.target.browser,
-    browserArgs: spec.target.args || [],
-    evidence
-  });
-  const page = session.page || session.context.pages()[0] || await session.newPage();
+  let page;
+  if (engine === 'lightpanda') {
+    session = await launchLightpandaSession({ executable: spec.target.executable, evidence });
+    page = session.page;
+  } else {
+    session = await launchChromiumSession({
+      profileDir: options.profileDir || spec.target.profileDir,
+      headless,
+      executablePath: options.browserExecutable || spec.target.executable,
+      channel: options.browserChannel || spec.target.channel,
+      browserName: options.browser || spec.target.browser,
+      browserArgs: spec.target.args || [],
+      diagnoseInitialPages: false,
+      evidence
+    });
+    page = await session.newPage();
+    const closedStartupPages = await session.closeInitialPages({ except: page });
+    evidence.record('browser-workload-page', { browser: session.browserName, closedStartupPages, url: page.url() });
+  }
   try {
     const stepEngine = new StepEngine({ evidence, session, page, timeoutMs: spec.timeouts?.stepMs || 30000 });
     const result = await stepEngine.run(spec.steps);
