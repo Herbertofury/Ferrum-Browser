@@ -2,65 +2,66 @@
   "schemaVersion": 1,
   "projectId": "ferrum-browser",
   "version": "0.2.0",
-  "goal": "Operate Ferrum as the mandatory full-fidelity extension acceptance layer for GameSync and evolve it into a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, or target breadth.",
+  "goal": "Operate Ferrum as the mandatory full-fidelity extension acceptance layer for GameSync and evolve it into a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified canonical implementation on main",
-  "verifiedCodeCommit": "b94902e34db716ffc88395909108901cd4de415a",
-  "verifiedWorkflowRun": 31964792142,
-  "verifiedAt": "2026-08-16T18:33:00Z",
+  "verifiedCodeCommit": "536bbc23dfee068e26eda8b32574f06ce19a43f1",
+  "verifiedWorkflowRun": 31987413168,
+  "verifiedAt": "2026-08-17T02:16:15Z",
   "verified": {
     "unit": {
       "status": "passed",
-      "tests": 11,
-      "failed": 0,
       "syntaxCheck": "passed",
-      "mcpSurface": "passed"
+      "mcpSurface": "passed",
+      "newRegressionCoverage": [
+        "service-worker diagnostics",
+        "compact CLI evidence output",
+        "compact-by-default MCP output with full-output escape hatch",
+        "benchmark workload/machine/reliability metadata"
+      ]
     },
     "chromiumLinux": {
       "status": "passed",
       "webSmoke": "passed",
       "mv3ExtensionSmoke": "passed",
       "workbenchSmoke": "passed",
-      "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
-      "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
-      "restartProof": "passed",
-      "postRestartWorkerMessage": "passed",
-      "runtimeErrors": 0,
-      "workbenchBrowserErrors": 0,
-      "workbenchScreenshotBytes": 263421,
-      "artifactSha256": "9b7230a88f23b939f0719a1e5cfc6bba83b27ed60c6c827c34a4d641ea407a6f"
+      "electronRealAppSmoke": "passed",
+      "serviceWorkerDiagnosticsBeforeRestart": "passed",
+      "serviceWorkerDiagnosticsAfterRestart": "passed",
+      "restartProof": "passed"
     },
     "chromiumWindows": {
       "status": "passed",
       "webSmoke": "passed",
       "mv3ExtensionSmoke": "passed",
       "workbenchSmoke": "passed",
-      "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
-      "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
-      "restartProof": "passed",
-      "postRestartWorkerMessage": "passed",
-      "runtimeErrors": 0,
-      "workbenchBrowserErrors": 0,
-      "workbenchScreenshotBytes": 223267,
-      "artifactSha256": "d677c0519a0d262e85b6312544c3d9e8029cadaa0e7bff0b1fcb0fa913c27502"
+      "electronRealAppSmoke": "passed",
+      "serviceWorkerDiagnosticsBeforeRestart": "passed",
+      "serviceWorkerDiagnosticsAfterRestart": "passed",
+      "restartProof": "passed"
     },
     "lightpanda": {
       "status": "passed",
       "version": "0.3.7",
       "transport": "direct-cdp",
-      "releaseBinarySha256": "895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a",
-      "smokeActions": ["open", "snapshot", "click", "assert-text", "assert-console-clean"],
-      "runtimeErrors": 0,
-      "artifactSha256": "146fc1bd68ed559300909465bc6ed7964d9ba37843cde2f33114cb41a1e7d672"
+      "releaseBinarySha256": "895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a"
     },
-    "artifactRoundTrip": {
+    "agentInterfaces": {
       "status": "passed",
-      "providerDigestMatchedDownloadedBytes": true,
-      "visualInspection": [
-        "Linux Workbench screenshot visibly shows selected process spec, checked Headless control, populated Doctor output, and PASSED run.",
-        "Windows Workbench screenshot visibly shows selected process spec, checked Headless control, populated Doctor output, and PASSED run.",
-        "Linux post-restart MV3 popup screenshot visibly shows ok:felmepoiflfponlkemhjaadagpppepgf.",
-        "Windows post-restart MV3 popup screenshot visibly shows ok:felmepoiflfponlkemhjaadagpppepgf."
-      ]
+      "compactCli": "passed",
+      "compactMcpDefault": "passed",
+      "fullMcpOutputOptIn": "passed",
+      "exactEvidenceDirectoryReturned": true,
+      "fullEvidencePreservedOnDisk": true
+    },
+    "benchmarks": {
+      "status": "passed",
+      "medianAndP95": true,
+      "machineMetadata": true,
+      "workloadMetadata": true,
+      "stepBudget": true,
+      "successRate": true,
+      "timeoutAccounting": true,
+      "perSampleEvidenceDirectory": true
     }
   },
   "verifiedCapabilities": [
@@ -69,20 +70,25 @@
     "exact extension SHA-256 inventory and runtime identity",
     "popup to service-worker messaging",
     "service-worker discovery",
+    "service-worker console, worker-owned request/response/failure, interception, and lifecycle evidence",
+    "service-worker diagnostic assertions before and after restart",
     "full browser restart using the same persistent profile",
     "post-restart extension identity and messaging proof",
-    "screenshots, Playwright traces, console/page/network failure evidence",
+    "screenshots, Playwright traces, console/page/network/service-worker failure evidence",
     "Lightpanda 0.3.7 native direct-CDP fast web lane",
     "compact agent snapshots and actions",
+    "compact CLI result summaries without evidence loss",
     "MCP doctor, single-run, suite, and benchmark tools",
+    "MCP compact-by-default responses with explicit fullOutput opt-in",
     "bounded parallel test suites",
-    "repeated benchmark runner with median and p95 timing",
+    "repeated benchmark runner with median/p95, machine context, workload budget, reliability, and timeout accounting",
     "generic process/service runner",
+    "real Electron application runner qualified on Ubuntu and Windows",
+    "Electron main-process console, process streams, runtime identity, renderer diagnostics, IPC interaction, and screenshot evidence",
     "functional Workbench opened through real Chromium",
     "Workbench Doctor, spec input, Headless toggle, Run button, visible result, and browser diagnostics exercised end-to-end on Linux and Windows"
   ],
   "implementedButNotRuntimeQualifiedYet": [
-    "Electron target runner against a real Electron application",
     "Appium target runner against a real native/mobile device or emulator"
   ],
   "incidentsResolved": [
@@ -90,16 +96,36 @@
     "Lightpanda through Playwright timed out on Chromium lifecycle expectations. Ferrum now drives Lightpanda through its native CDP server directly.",
     "Parallel runs could collide on evidence directory IDs. Evidence IDs now include a random nonce.",
     "Benchmark warmup 0 was coerced to 1. Explicit zero warmup is now preserved.",
-    "Cross-platform checkout line endings produced different fixture hashes. Repository text checkout is normalized to LF and Linux/Windows extension SHA-256 now matches exactly.",
+    "Cross-platform checkout line endings produced different fixture hashes. Repository text checkout is normalized to LF and Linux/Windows extension SHA-256 matched exactly at the prior byte-verified checkpoint.",
     "Workbench ephemeral port mode originally reported port 0 instead of the bound port. The server now reports the actual assigned port.",
-    "A Chromium favicon request exposed missing static assets being returned as HTTP 500. Ferrum now returns a truthful 404 for missing assets and the Workbench uses an inline data favicon; the behavior is regression-tested."
+    "A Chromium favicon request exposed missing static assets being returned as HTTP 500. Ferrum now returns a truthful 404 for missing assets and the Workbench uses an inline data favicon; the behavior is regression-tested.",
+    "Extension worker observability previously stopped at discovery and messaging. Ferrum now records worker console/network/failure/interception evidence and asserts it across restart.",
+    "Successful CLI and MCP runs could flood agent context while making the evidence directory harder to discover. Ferrum now emits compact actionable summaries by default where requested, always preserves full disk evidence, and exposes the exact evidence directory.",
+    "Electron existed as an implementation-only target. It is now runtime-qualified against a real secure preload/renderer/main IPC application on Ubuntu and Windows.",
+    "Benchmark timing lacked enough context for trustworthy cross-host comparisons. Ferrum now records machine/runtime context, workload and step budgets, success rate, timeout count, and per-sample evidence directories."
   ],
+  "historicalVerifiedEvidence": {
+    "workflowRun": 31964792142,
+    "codeCommit": "b94902e34db716ffc88395909108901cd4de415a",
+    "unitTests": "11/11",
+    "extensionId": "felmepoiflfponlkemhjaadagpppepgf",
+    "extensionSha256": "57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb",
+    "providerArtifactSha256": {
+      "linux": "9b7230a88f23b939f0719a1e5cfc6bba83b27ed60c6c827c34a4d641ea407a6f",
+      "windows": "d677c0519a0d262e85b6312544c3d9e8029cadaa0e7bff0b1fcb0fa913c27502",
+      "lightpanda": "146fc1bd68ed559300909465bc6ed7964d9ba37843cde2f33114cb41a1e7d672"
+    },
+    "artifactRoundTrip": "provider digests matched downloaded bytes and Linux/Windows Workbench plus post-restart MV3 screenshots were visually inspected"
+  },
   "nextActions": [
     "Use Ferrum in every applicable GameSync extension verification and keep Opera GX as additional compatibility coverage.",
-    "Turn real GameSync workflows into reusable Ferrum workload packs as changed features are exercised.",
-    "Improve Ferrum whenever testing exposes a reusable speed, reliability, control, observability, setup, or target-coverage problem, then rerun the target workload.",
-    "Add richer extension service-worker CDP console/network inspection.",
-    "Qualify Electron and Appium lanes against real applications before claiming those lanes fully verified."
+    "Turn real GameSync workflows into reusable Ferrum production workload packs as changed features are exercised.",
+    "Expand the real browser compatibility matrix beyond Chromium to installed Chrome, Edge, Brave, and Opera GX where environments permit exact runtime qualification.",
+    "Add isolated parallel Spaces/profile cloning for authenticated concurrent workloads without shared-state collisions.",
+    "Build a first-class session replay and evidence viewer over retained traces, screenshots, diagnostics, and agent summaries.",
+    "Add semantic locator recovery as an additive fallback above deterministic selectors without hiding deterministic failures.",
+    "Qualify the Appium lane against a real native/mobile application, emulator, or device before claiming that lane fully verified.",
+    "Continue applying the Maximum Improvement Rule when real GameSync or agent workflows expose reusable Ferrum speed, reliability, observability, setup, orchestration, or target-coverage friction."
   ],
   "blockers": []
 }
