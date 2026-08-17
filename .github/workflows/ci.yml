@@ -40,6 +40,17 @@ jobs:
           grep -q 'ferrum_list_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_read_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_verify_evidence' /tmp/ferrum-mcp.jsonl
+      - name: Evidence integrity CLI and MCP smoke
+        shell: bash
+        run: |
+          rm -rf /tmp/ferrum-integrity
+          node ./bin/ferrum.mjs test ./examples/process-app.json --artifacts /tmp/ferrum-integrity --compact > /tmp/ferrum-integrity-run.json
+          EVIDENCE_ID="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('/tmp/ferrum-integrity-run.json','utf8')); process.stdout.write(r.id)")"
+          node ./bin/ferrum.mjs evidence verify "$EVIDENCE_ID" --artifacts /tmp/ferrum-integrity > /tmp/ferrum-integrity-verify.json
+          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('/tmp/ferrum-integrity-verify.json','utf8')); if(r.status!=='passed'||!r.manifestDescriptor?.digest?.startsWith('sha256:')) process.exit(1)"
+          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('/tmp/ferrum-integrity-run.json','utf8')); console.log(JSON.stringify({jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'ferrum_verify_evidence',arguments:{id:r.id,artifactsRoot:'/tmp/ferrum-integrity'}}}))" \
+            | node ./bin/ferrum.mjs mcp > /tmp/ferrum-integrity-mcp.jsonl
+          node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('/tmp/ferrum-integrity-mcp.jsonl','utf8').trim()); const v=JSON.parse(r.result.content[0].text); if(v.status!=='passed') process.exit(1)"
 
   chromium-smoke:
     strategy:
