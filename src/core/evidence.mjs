@@ -22,13 +22,14 @@ function summarizeEvents(events) {
 }
 
 export class EvidenceWriter {
-  constructor({ root, name, metadata = {} }) {
+  constructor({ root, name, metadata = {}, redactValues = [] }) {
     this.root = path.resolve(root || 'artifacts');
     this.name = safeName(name);
     this.id = `${timestampId()}-${this.name}-${crypto.randomBytes(4).toString('hex')}`;
     this.dir = path.join(this.root, this.id);
     this.events = [];
-    this.metadata = redactSensitive(metadata);
+    this.redactValues = [...new Set((redactValues || []).map(value => String(value)).filter(Boolean))];
+    this.metadata = redactSensitive(metadata, null, this.redactValues);
     this.startedAt = new Date().toISOString();
   }
 
@@ -40,7 +41,7 @@ export class EvidenceWriter {
   }
 
   record(type, data = {}) {
-    const event = { at: new Date().toISOString(), type, ...redactSensitive(data) };
+    const event = { at: new Date().toISOString(), type, ...redactSensitive(data, null, this.redactValues) };
     this.events.push(event);
     return event;
   }
@@ -48,14 +49,14 @@ export class EvidenceWriter {
   async writeJson(name, data) {
     const target = path.join(this.dir, name);
     await ensureDir(path.dirname(target));
-    await fs.writeFile(target, JSON.stringify(redactSensitive(data), null, 2) + '\n', 'utf8');
+    await fs.writeFile(target, JSON.stringify(redactSensitive(data, null, this.redactValues), null, 2) + '\n', 'utf8');
     return target;
   }
 
   async writeText(name, text) {
     const target = path.join(this.dir, name);
     await ensureDir(path.dirname(target));
-    await fs.writeFile(target, redactSensitive(String(text)), 'utf8');
+    await fs.writeFile(target, redactSensitive(String(text), null, this.redactValues), 'utf8');
     return target;
   }
 
@@ -80,7 +81,7 @@ export class EvidenceWriter {
       ...summary,
       summary: compact,
       events: this.events
-    });
+    }, null, this.redactValues);
     await this.writeJson('result.json', result);
     await this.writeJson('agent-summary.json', {
       schemaVersion: 1,
