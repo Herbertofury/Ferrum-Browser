@@ -9,7 +9,7 @@ import { collectDoctor } from '../core/doctor.mjs';
 import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult, compactPackResult } from '../core/agent-result.mjs';
 import { discoverBrowsers, runBrowserMatrix } from '../core/browser-matrix.mjs';
 import { createSpace, listSpaces } from '../core/spaces.mjs';
-import { listEvidence, readEvidence } from '../core/evidence-store.mjs';
+import { listEvidence, readEvidence, verifyEvidence } from '../core/evidence-store.mjs';
 import { bootstrapGithubWiki, probeGithubWiki } from '../integrations/github-wiki.mjs';
 
 const commonRunProperties = {
@@ -37,7 +37,8 @@ const tools = [
   { name: 'ferrum_github_wiki_probe', description: 'Probe whether a repository GitHub Wiki Git remote already exists, without mutating the repository.', inputSchema: { type: 'object', required: ['repository'], properties: { repository: { type: 'string', description: 'OWNER/REPO or github.com repository URL.' }, serverUrl: { type: 'string' } } } },
   { name: 'ferrum_github_wiki_bootstrap', description: 'Create the first GitHub Wiki page through a real authenticated Chromium session when the wiki Git remote does not exist. Uses a persistent Ferrum Space so GitHub login can be reused.', inputSchema: { type: 'object', required: ['repository'], properties: { repository: { type: 'string' }, serverUrl: { type: 'string' }, pageTitle: { type: 'string' }, body: { type: 'string' }, headless: { type: 'boolean' }, browser: { type: 'string', enum: ['chromium', 'chrome', 'edge', 'brave', 'opera-gx'] }, space: { type: 'string', description: 'Authenticated persistent Space. Defaults to github.' }, spacesRoot: { type: 'string' }, artifactsRoot: { type: 'string' }, authTimeoutMs: { type: 'integer', minimum: 1000 } } } },
   { name: 'ferrum_list_evidence', description: 'List all finalized Ferrum evidence bundles from disk, including runs retained across process restarts.', inputSchema: { type: 'object', properties: { artifactsRoot: { type: 'string' } } } },
-  { name: 'ferrum_read_evidence', description: 'Read one Ferrum evidence bundle and its complete retained file inventory.', inputSchema: { type: 'object', required: ['id'], properties: { id: { type: 'string' }, artifactsRoot: { type: 'string' }, fullOutput: { type: 'boolean' } } } }
+  { name: 'ferrum_read_evidence', description: 'Read one Ferrum evidence bundle and its complete retained file inventory, including content descriptors when available.', inputSchema: { type: 'object', required: ['id'], properties: { id: { type: 'string' }, artifactsRoot: { type: 'string' }, fullOutput: { type: 'boolean' } } } },
+  { name: 'ferrum_verify_evidence', description: 'Re-hash a finalized Ferrum evidence bundle and report missing, changed, or unexpected payload files against its durable manifest.', inputSchema: { type: 'object', required: ['id'], properties: { id: { type: 'string' }, artifactsRoot: { type: 'string' } } } }
 ];
 
 function send(message) {
@@ -140,8 +141,11 @@ export async function startMcpStdio() {
             id: evidence.id,
             dir: evidence.dir,
             result: { ...evidence.result, events: undefined },
-            files: evidence.files
+            files: evidence.files,
+            manifestDescriptor: evidence.manifestDescriptor
           };
+        } else if (name === 'ferrum_verify_evidence') {
+          value = await verifyEvidence(args.id, { root: args.artifactsRoot });
         } else {
           throw new Error(`Unknown tool: ${name}`);
         }
