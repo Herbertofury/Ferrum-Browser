@@ -38,6 +38,11 @@ function close(server) {
   return new Promise(resolve => server.close(() => resolve()));
 }
 
+async function evidenceDirectories(root) {
+  const entries = await fs.readdir(root, { withFileTypes: true }).catch(() => []);
+  return entries.filter(entry => entry.isDirectory()).map(entry => entry.name);
+}
+
 const server = http.createServer((request, response) => {
   if (request.url?.startsWith('/api')) {
     response.writeHead(200, {
@@ -77,6 +82,8 @@ try {
   tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-network-offline-'));
   const specPath = path.join(tempRoot, 'network-offline.json');
   await fs.mkdir(artifactsRoot, { recursive: true });
+  const before = new Set(await evidenceDirectories(artifactsRoot));
+
   await fs.writeFile(specPath, JSON.stringify({
     version: 1,
     name: 'ferrum-network-offline-smoke',
@@ -97,12 +104,13 @@ try {
 
   const run = await runFerrum(['test', specPath, '--headless', '--compact', '--artifacts', artifactsRoot]);
   assert.equal(run.code, 0, `Ferrum network smoke exited ${run.code ?? run.signal}: ${run.stderr || run.stdout}`);
-  const lines = run.stdout.trim().split(/\r?\n/).filter(Boolean);
-  assert.ok(lines.length, 'Ferrum network smoke produced no compact result');
-  const compact = JSON.parse(lines.at(-1));
-  assert.equal(compact.status, 'passed');
 
-  const result = JSON.parse(await fs.readFile(path.join(compact.evidenceDir, 'result.json'), 'utf8'));
+  const created = (await evidenceDirectories(artifactsRoot)).filter(name => !before.has(name));
+  assert.equal(created.length, 1, `Expected one new Ferrum evidence directory, found ${created.length}: ${created.join(', ')}`);
+  const evidenceDir = path.join(artifactsRoot, created[0]);
+  const result = JSON.parse(await fs.readFile(path.join(evidenceDir, 'result.json'), 'utf8'));
+  assert.equal(result.status, 'passed');
+
   const networkStates = result.events.filter(event => event.type === 'network-state').map(event => event.offline);
   assert.deepEqual(networkStates, [true, false]);
   assert.ok(result.events.some(event => event.type === 'requestfailed'), 'Offline probe did not produce real browser request-failure evidence');
@@ -114,7 +122,7 @@ try {
 
   console.log(JSON.stringify({
     status: 'passed',
-    evidenceDir: compact.evidenceDir,
+    evidenceDir,
     networkStates,
     requestFailures: result.events.filter(event => event.type === 'requestfailed').length
   }));
