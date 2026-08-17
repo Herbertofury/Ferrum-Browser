@@ -120,7 +120,11 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
         evidence.record('browser-startup-page', { browser: resolvedBrowserName, url: page.url() });
         detach.get(page)?.();
         detach.delete(page);
-        await page.close().catch(error => evidence.record('browser-teardown-warning', { browser: resolvedBrowserName, phase: 'startup-page-close', message: error.message }));
+        try {
+          await withBrowserOperationTimeout(page.close(), teardownTimeout, 'Browser startup page close');
+        } catch (error) {
+          evidence.record('browser-teardown-warning', { browser: resolvedBrowserName, phase: 'startup-page-close', message: error.message });
+        }
       }
       return pages.length;
     },
