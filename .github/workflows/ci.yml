@@ -35,6 +35,8 @@ jobs:
           grep -q 'ferrum_browser_matrix' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_run_pack' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_list_spaces' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_github_wiki_probe' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_github_wiki_bootstrap' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_list_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_read_evidence' /tmp/ferrum-mcp.jsonl
 
@@ -55,6 +57,11 @@ jobs:
       - if: runner.os != 'Linux'
         run: npx playwright install chromium
       - run: npm run smoke:web
+      - name: Ferrum GitHub Wiki first-page browser smoke
+        run: npm run smoke:github-wiki
+      - name: Ferrum live ProjectDump Wiki probe
+        if: runner.os == 'Linux'
+        run: node ./bin/ferrum.mjs github-wiki probe Herbertofury/ProjectDump
       - name: Ferrum isolated cloned Space smoke
         shell: bash
         run: |
