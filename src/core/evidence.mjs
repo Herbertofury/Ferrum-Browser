@@ -3,6 +3,22 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ensureDir, safeName, timestampId } from './paths.mjs';
 
+function summarizeEvents(events) {
+  const eventCounts = {};
+  const diagnosticErrors = [];
+  for (const event of events) {
+    eventCounts[event.type] = (eventCounts[event.type] || 0) + 1;
+    const isError =
+      event.type === 'pageerror' ||
+      event.type === 'requestfailed' ||
+      event.type === 'service-worker-requestfailed' ||
+      ((event.type === 'console' || event.type === 'service-worker-console') && ['error', 'assert'].includes(event.level)) ||
+      ((event.type === 'response-error' || event.type === 'service-worker-response') && Number(event.status) >= 500);
+    if (isError) diagnosticErrors.push(event);
+  }
+  return { eventCounts, diagnosticErrorCount: diagnosticErrors.length };
+}
+
 export class EvidenceWriter {
   constructor({ root, name, metadata = {} }) {
     this.root = path.resolve(root || 'artifacts');
@@ -50,17 +66,34 @@ export class EvidenceWriter {
 
   async finalize(summary = {}) {
     const endedAt = new Date().toISOString();
+    const compact = summarizeEvents(this.events);
     const result = {
       schemaVersion: 1,
       id: this.id,
       name: this.name,
       startedAt: this.startedAt,
       endedAt,
+      evidenceDir: this.dir,
       metadata: this.metadata,
       ...summary,
+      summary: compact,
       events: this.events
     };
     await this.writeJson('result.json', result);
+    await this.writeJson('agent-summary.json', {
+      schemaVersion: 1,
+      id: result.id,
+      name: result.name,
+      status: result.status,
+      startedAt: result.startedAt,
+      endedAt: result.endedAt,
+      evidenceDir: result.evidenceDir,
+      metadata: result.metadata,
+      engine: result.result?.engine || null,
+      timings: result.result?.timings || null,
+      ...compact,
+      failure: result.failure || null
+    });
     return result;
   }
 }

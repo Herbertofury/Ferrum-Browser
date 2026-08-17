@@ -51,6 +51,12 @@ Run a web-app test:
 npx ferrum test examples/self-test-web.json --headless
 ```
 
+For agent loops that need a small stdout payload, add `--compact`. Ferrum still writes the complete evidence bundle and full `result.json`, while stdout reports the run status, target/engine, timing summary, diagnostic counts, and exact `evidenceDir`:
+
+```bash
+npx ferrum test examples/self-test-web.json --headless --compact
+```
+
 Run independent workloads concurrently while keeping separate evidence bundles:
 
 ```bash
@@ -81,21 +87,26 @@ npx ferrum mcp
 
 When real GameSync testing exposes avoidable Ferrum slowness, missing diagnostics, fragile extension discovery, excessive agent round trips or an unsupported reusable workflow, that is treated as Ferrum work: fix Ferrum, regression-test it, then rerun GameSync instead of routing around the tester.
 
+## Extension worker diagnostics
+
+Chromium extension sessions collect service-worker console events, worker-owned requests/responses/failures, service-worker-intercepted page responses, worker lifecycle events, page diagnostics, screenshots, and traces in the same evidence model. Specs can snapshot or assert worker diagnostic counters before and after restart. Ferrum's own MV3 self-test forces the fixture worker to make a real request, requires worker console and network evidence, and repeats the proof after the persistent Chromium profile is restarted.
+
 ## Evidence
 
 Runs create unique `artifacts/<timestamp>-<name>-<nonce>/` folders with:
 
 - normalized `spec.json`
-- `result.json` with every timed step
+- `result.json` with every timed step and full event stream
+- `agent-summary.json` with compact status, timing, diagnostic counts, and the exact evidence directory
 - screenshots
 - Playwright trace files
-- console/page/network failure events
+- console/page/network/service-worker failure events
 - extension build SHA-256 inventory
 - resolved runtime extension ID and identity source
 - restart proof when requested
 - process/Appium output where applicable
 
-A failed run keeps its artifacts. Parallel runs never share an evidence directory.
+A failed run keeps its artifacts. Parallel runs never share an evidence directory. Compact CLI output changes only what is printed to stdout; it never reduces stored evidence, test steps, runtime fidelity, or target coverage.
 
 ## Self-test
 

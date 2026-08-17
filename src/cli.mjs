@@ -10,7 +10,7 @@ import { FERRUM_VERSION } from './version.mjs';
 const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port']);
 
 function usage() {
-  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--artifacts <dir>]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
+  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--compact]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
 }
 
 function argValue(args, name) {
@@ -37,6 +37,24 @@ function commonOptions(args) {
   };
 }
 
+function compactRun(result) {
+  return {
+    id: result.id,
+    name: result.name,
+    status: result.status,
+    evidenceDir: result.evidenceDir,
+    targetType: result.metadata?.targetType || null,
+    engine: result.result?.engine || null,
+    timings: result.result?.timings || null,
+    summary: result.summary || null,
+    failure: result.failure || null
+  };
+}
+
+function printResult(result, compact = false) {
+  console.log(JSON.stringify(compact ? compactRun(result) : result, null, 2));
+}
+
 export async function main(args) {
   const command = args[0] || 'help';
   if (command === 'help' || command === '--help' || command === '-h') {
@@ -50,13 +68,34 @@ export async function main(args) {
     if (!specPath) throw new Error('test requires a spec path');
     const spec = await loadSpec(specPath);
     const result = await runSpec(spec, commonOptions(args));
-    console.log(JSON.stringify(result, null, 2));
+    printResult(result, args.includes('--compact'));
     return;
   }
   if (command === 'suite') {
     const specPaths = positional(args);
     const result = await runSuite(specPaths, { ...commonOptions(args), workers: Number(argValue(args, '--workers') || 1) });
-    console.log(JSON.stringify(result, null, 2));
+    if (args.includes('--compact')) {
+      console.log(JSON.stringify({
+        status: result.status,
+        workers: result.workers,
+        total: result.total,
+        passed: result.passed,
+        failed: result.failed,
+        results: result.results.map(item => item.status === 'passed' ? {
+          specPath: item.specPath,
+          durationMs: item.durationMs,
+          ...compactRun(item.result)
+        } : {
+          specPath: item.specPath,
+          status: 'failed',
+          durationMs: item.durationMs,
+          evidenceDir: item.evidenceDir,
+          error: item.error
+        })
+      }, null, 2));
+    } else {
+      console.log(JSON.stringify(result, null, 2));
+    }
     if (result.failed) process.exitCode = 1;
     return;
   }
@@ -69,7 +108,19 @@ export async function main(args) {
       runs: Number(argValue(args, '--runs') || 5),
       warmup: Number(argValue(args, '--warmup') || 1)
     });
-    console.log(JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(args.includes('--compact') ? {
+      status: result.status,
+      specPath: result.specPath,
+      fastestMedianEngine: result.fastestMedianEngine,
+      comparisons: result.comparisons.map(item => ({
+        engine: item.engine,
+        status: item.status,
+        warmup: item.warmup,
+        runs: item.runs,
+        timings: item.timings,
+        failureCount: item.failures.length
+      }))
+    } : result, null, 2));
     if (result.status !== 'passed') process.exitCode = 1;
     return;
   }
