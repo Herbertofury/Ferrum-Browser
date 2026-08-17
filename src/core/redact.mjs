@@ -2,11 +2,13 @@ const REDACTED = '[REDACTED]';
 const TEMPLATE = /\$\{(?:VAR|ENV):[A-Za-z_][A-Za-z0-9_]*\}/;
 const URL_IN_TEXT = /\b(?:https?|wss?):\/\/[^\s"'<>]+/gi;
 const BEARER_IN_TEXT = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi;
+const SENSITIVE_VARIABLE_PART = /(?:^|_)(?:AUTH|AUTHORIZATION|BEARER|CLIENT_SECRET|CREDENTIAL|CREDENTIALS|PASSWORD|PASSWD|PAT|PRIVATE_KEY|SECRET|TOKEN|ACCESS_KEY|API_KEY|USERNAME|USER_NAME)(?:_|$)/i;
 
 const SENSITIVE_KEYS = new Set([
   'authorization',
   'proxyauthorization',
   'cookie',
+  'cookies',
   'setcookie',
   'password',
   'passwd',
@@ -26,6 +28,7 @@ const SENSITIVE_KEYS = new Set([
 const SENSITIVE_SUFFIXES = [
   'authorization',
   'password',
+  'username',
   'accesstoken',
   'refreshtoken',
   'accesskey',
@@ -41,6 +44,11 @@ function compactKey(value) {
 export function isSensitiveKey(key) {
   const compact = compactKey(key);
   return SENSITIVE_KEYS.has(compact) || SENSITIVE_SUFFIXES.some(suffix => compact.endsWith(suffix));
+}
+
+export function isSensitiveVariableName(name) {
+  const normalized = String(name || '').replace(/[-.]/g, '_');
+  return isSensitiveKey(normalized) || SENSITIVE_VARIABLE_PART.test(normalized);
 }
 
 function isTemplate(value) {
@@ -76,24 +84,29 @@ export function redactUrl(value) {
   return redactSingleUrl(value);
 }
 
-function redactString(value) {
+function redactString(value, redactValues = []) {
   if (isTemplate(value)) return value;
-  const wholeUrl = redactSingleUrl(value);
-  if (wholeUrl !== value) return wholeUrl;
-  return value
+  let safe = value;
+  for (const secret of redactValues) {
+    const text = String(secret || '');
+    if (text && safe.includes(text)) safe = safe.split(text).join(REDACTED);
+  }
+  const wholeUrl = redactSingleUrl(safe);
+  if (wholeUrl !== safe) return wholeUrl;
+  return safe
     .replace(URL_IN_TEXT, match => redactSingleUrl(match))
     .replace(BEARER_IN_TEXT, `Bearer ${REDACTED}`);
 }
 
-export function redactSensitive(value, key = null) {
+export function redactSensitive(value, key = null, redactValues = []) {
   if (key != null && isSensitiveKey(key)) {
     if (isTemplate(value)) return value;
     return REDACTED;
   }
-  if (typeof value === 'string') return redactString(value);
-  if (Array.isArray(value)) return value.map(item => redactSensitive(item));
+  if (typeof value === 'string') return redactString(value, redactValues);
+  if (Array.isArray(value)) return value.map(item => redactSensitive(item, null, redactValues));
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [childKey, redactSensitive(child, childKey)]));
+  return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [childKey, redactSensitive(child, childKey, redactValues)]));
 }
 
 function stripInternal(value) {
