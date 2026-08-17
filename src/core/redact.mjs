@@ -56,14 +56,19 @@ function redactSingleUrl(value) {
   }
   if (!['http:', 'https:', 'ws:', 'wss:'].includes(parsed.protocol)) return value;
 
+  let changed = false;
   if (parsed.username || parsed.password) {
     parsed.username = REDACTED;
     parsed.password = '';
+    changed = true;
   }
   for (const key of [...parsed.searchParams.keys()]) {
-    if (isSensitiveKey(key)) parsed.searchParams.set(key, REDACTED);
+    if (isSensitiveKey(key)) {
+      parsed.searchParams.set(key, REDACTED);
+      changed = true;
+    }
   }
-  return parsed.toString();
+  return changed ? parsed.toString() : value;
 }
 
 export function redactUrl(value) {
