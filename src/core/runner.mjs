@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { EvidenceWriter } from './evidence.mjs';
 import { FERRUM_VERSION } from '../version.mjs';
 import { prepareRunSpace } from './spaces.mjs';
+import { specForEvidence } from './redact.mjs';
 import { runWebTarget } from '../runners/web.mjs';
 import { runExtensionTarget } from '../runners/extension.mjs';
 import { runProcessTarget } from '../runners/process.mjs';
@@ -121,6 +122,7 @@ export async function runSpec(spec, options = {}) {
   const evidence = await new EvidenceWriter({
     root: options.artifactsRoot || spec.artifacts?.root || 'artifacts',
     name: spec.name,
+    redactValues: spec.__redactValues || [],
     metadata: {
       specFile: spec.__file || null,
       targetType: spec.target.type,
@@ -132,7 +134,7 @@ export async function runSpec(spec, options = {}) {
       space: spaceName ? { name: spaceName, mode: spaceMode } : null
     }
   }).init();
-  await evidence.writeJson('spec.json', stripInternal(spec));
+  await evidence.writeJson('spec.json', specForEvidence(spec));
   const runner = RUNNERS[spec.target.type];
   if (!runner) throw new Error(`No runner for target type ${spec.target.type}`);
   let preparedSpace = null;
@@ -166,10 +168,4 @@ export async function runSpec(spec, options = {}) {
     error.evidenceDir = evidence.dir;
     throw error;
   }
-}
-
-function stripInternal(value) {
-  if (Array.isArray(value)) return value.map(stripInternal);
-  if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).filter(([key]) => !key.startsWith('__')).map(([key, child]) => [key, stripInternal(child)]));
 }

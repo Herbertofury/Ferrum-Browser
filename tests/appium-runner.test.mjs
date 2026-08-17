@@ -17,14 +17,17 @@ function respond(res, value) {
 async function startFakeAppium({ sessionDelayMs = 0, emptyElementResponses = 0 } = {}) {
   const calls = [];
   let elementRequests = 0;
+  let sessionCapabilities = { platformName: 'Android', automationName: 'UiAutomator2' };
   const server = http.createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) body += chunk;
-    calls.push({ method: req.method, url: req.url, body: body ? JSON.parse(body) : null });
+    const parsedBody = body ? JSON.parse(body) : null;
+    calls.push({ method: req.method, url: req.url, body: parsedBody });
     if (req.method === 'GET' && req.url === '/status') return respond(res, { ready: true, build: { version: '3.6.0' } });
     if (req.method === 'POST' && req.url === '/session') {
       if (sessionDelayMs) await new Promise(resolve => setTimeout(resolve, sessionDelayMs));
-      return respond(res, { sessionId: 's1', capabilities: { platformName: 'Android', automationName: 'UiAutomator2' } });
+      sessionCapabilities = parsedBody?.capabilities?.alwaysMatch || sessionCapabilities;
+      return respond(res, { sessionId: 's1', capabilities: sessionCapabilities });
     }
     if (req.method === 'POST' && req.url === '/session/s1/elements') {
       elementRequests += 1;
@@ -37,7 +40,7 @@ async function startFakeAppium({ sessionDelayMs = 0, emptyElementResponses = 0 }
     if (req.method === 'GET' && req.url === '/session/s1/screenshot') return respond(res, Buffer.from('fake-png').toString('base64'));
     if (req.method === 'GET' && req.url === '/session/s1/source') return respond(res, '<hierarchy><node text="Settings"/></hierarchy>');
     if (req.method === 'POST' && req.url === '/session/s1/back') return respond(res, null);
-    if (req.method === 'GET' && req.url === '/session/s1') return respond(res, { capabilities: { platformName: 'Android' } });
+    if (req.method === 'GET' && req.url === '/session/s1') return respond(res, { capabilities: sessionCapabilities });
     if (req.method === 'DELETE' && req.url === '/session/s1') return respond(res, null);
     res.writeHead(404); res.end();
   });
@@ -92,6 +95,39 @@ test('Appium runner waits for server, drives a W3C session, retains evidence, an
     assert.ok(fake.calls.some(call => call.method === 'DELETE' && call.url === '/session/s1'));
     assert.equal(await fs.readFile(path.join(evidence.dir, 'screenshots', 'after-click.png'), 'utf8'), 'fake-png');
     assert.match(await fs.readFile(path.join(evidence.dir, 'appium', 'settings.xml'), 'utf8'), /Settings/);
+  } finally {
+    await cleanup(fake, evidence);
+  }
+});
+
+test('Appium runner redacts remote credential capabilities from outputs and session evidence', async () => {
+  const fake = await startFakeAppium();
+  const evidence = await fakeEvidence();
+  try {
+    const result = await runAppiumTarget({
+      target: {
+        server: fake.url,
+        capabilities: {
+          platformName: 'Android',
+          'bstack:options': {
+            userName: 'remote-private-user',
+            accessKey: 'remote-private-access-key',
+            projectName: 'Ferrum'
+          }
+        }
+      },
+      timeouts: { startupMs: 1000, stepMs: 500 },
+      steps: [{ action: 'assert-session' }]
+    }, evidence);
+
+    const persistedSession = await fs.readFile(path.join(evidence.dir, 'appium-session.json'), 'utf8');
+    const serialized = [JSON.stringify(result), JSON.stringify(evidence.events), persistedSession].join('\n');
+    assert.equal(serialized.includes('remote-private-user'), false);
+    assert.equal(serialized.includes('remote-private-access-key'), false);
+    assert.match(serialized, /\[REDACTED\]/);
+    assert.equal(result.session.capabilities.platformName, 'Android');
+    assert.equal(result.session.capabilities['bstack:options'].projectName, 'Ferrum');
+    assert.equal(result.outputs[0].output.capabilities['bstack:options'].accessKey, '[REDACTED]');
   } finally {
     await cleanup(fake, evidence);
   }

@@ -1,21 +1,24 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { resolveFrom } from './paths.mjs';
+import { isSensitiveVariableName } from './redact.mjs';
 
 const TARGET_TYPES = new Set(['web', 'extension', 'electron', 'process', 'appium']);
 const TEMPLATE = /\$\{(?:VAR|ENV):([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
-export function expandVariables(value, variables = {}, label = 'value') {
+export function expandVariables(value, variables = {}, label = 'value', onResolve = null) {
   if (typeof value === 'string') {
     return value.replace(TEMPLATE, (_match, name) => {
       const resolved = variables[name] ?? process.env[name];
       if (resolved == null || resolved === '') throw new Error(`${label}: required variable ${name} is not set`);
-      return String(resolved);
+      const text = String(resolved);
+      onResolve?.(name, text, label);
+      return text;
     });
   }
-  if (Array.isArray(value)) return value.map((item, index) => expandVariables(item, variables, `${label}[${index}]`));
+  if (Array.isArray(value)) return value.map((item, index) => expandVariables(item, variables, `${label}[${index}]`, onResolve));
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, expandVariables(child, variables, `${label}.${key}`)]));
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, expandVariables(child, variables, `${label}.${key}`, onResolve)]));
   }
   return value;
 }
@@ -23,12 +26,17 @@ export function expandVariables(value, variables = {}, label = 'value') {
 export async function loadSpec(specPath, options = {}) {
   const abs = path.resolve(specPath);
   const raw = JSON.parse(await fs.readFile(abs, 'utf8'));
-  const expanded = expandVariables(raw, options.variables || {}, abs);
+  const redactValues = new Set();
+  const expanded = expandVariables(raw, options.variables || {}, abs, (name, value) => {
+    if (isSensitiveVariableName(name)) redactValues.add(value);
+  });
   const baseDir = path.dirname(abs);
   validateSpec(expanded, abs);
   const spec = structuredClone(expanded);
   spec.__file = abs;
   spec.__baseDir = baseDir;
+  spec.__sourceSpec = structuredClone(raw);
+  spec.__redactValues = [...redactValues];
   if (spec.target?.path) spec.target.path = resolveFrom(baseDir, spec.target.path);
   if (spec.target?.cwd) spec.target.cwd = resolveFrom(baseDir, spec.target.cwd);
   if (spec.target?.executable) spec.target.executable = resolveFrom(baseDir, spec.target.executable);

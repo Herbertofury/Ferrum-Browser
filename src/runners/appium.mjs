@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { redactSensitive, redactUrl } from '../core/redact.mjs';
 import { summarizeDurations } from '../core/stats.mjs';
 
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
@@ -180,18 +181,20 @@ export async function runAppiumTarget(spec, evidence) {
   const aliases = new Map();
   const durations = [];
   const outputs = [];
-  const serverStatus = await client.waitUntilReady(startupMs);
-  evidence.record('appium-server-ready', { server: client.baseUrl, status: serverStatus?.value || serverStatus });
+  const serverStatusRaw = await client.waitUntilReady(startupMs);
+  const safeServer = redactUrl(client.baseUrl);
+  const serverStatus = redactSensitive(serverStatusRaw?.value || serverStatusRaw);
+  evidence.record('appium-server-ready', { server: safeServer, status: serverStatus });
   const created = await client.createSession(spec.target.capabilities || {}, { timeoutMs: startupMs });
-  const capabilities = created?.value?.capabilities || created?.capabilities || spec.target.capabilities || {};
+  const capabilities = redactSensitive(created?.value?.capabilities || created?.capabilities || spec.target.capabilities || {});
   evidence.record('appium-session-start', { sessionId: client.sessionId, capabilities, startupTimeoutMs: startupMs });
-  await evidence.writeJson('appium-session.json', { sessionId: client.sessionId, server: client.baseUrl, capabilities, serverStatus: serverStatus?.value || serverStatus, startupTimeoutMs: startupMs });
+  await evidence.writeJson('appium-session.json', { sessionId: client.sessionId, server: safeServer, capabilities, serverStatus, startupTimeoutMs: startupMs });
 
   try {
     for (let index = 0; index < spec.steps.length; index++) {
       const step = spec.steps[index];
       const started = performance.now();
-      evidence.record('step-start', { index, action: step.action, step });
+      evidence.record('step-start', { index, action: step.action, step: redactSensitive(step) });
       try {
         let output;
         switch (step.action) {
@@ -276,7 +279,7 @@ export async function runAppiumTarget(spec, evidence) {
             break;
           case 'assert-session': {
             const response = await client.request('GET', client.sessionPath());
-            output = { sessionId: client.sessionId, capabilities: response?.value?.capabilities || response?.value || null };
+            output = { sessionId: client.sessionId, capabilities: redactSensitive(response?.value?.capabilities || response?.value || null) };
             break;
           }
           default:
@@ -289,15 +292,15 @@ export async function runAppiumTarget(spec, evidence) {
       } catch (error) {
         const durationMs = performance.now() - started;
         durations.push(durationMs);
-        evidence.record('step-fail', { index, action: step.action, durationMs, message: error.message, stack: error.stack });
-        await captureSource(client, evidence, `failure-${index}`).catch(captureError => evidence.record('appium-capture-error', { kind: 'source', message: captureError.message }));
-        await captureScreenshot(client, evidence, `failure-${index}`).catch(captureError => evidence.record('appium-capture-error', { kind: 'screenshot', message: captureError.message }));
-        throw Object.assign(error, { ferrumStep: { index, step } });
+        evidence.record('step-fail', { index, action: step.action, durationMs, message: redactSensitive(error.message), stack: redactSensitive(error.stack) });
+        await captureSource(client, evidence, `failure-${index}`).catch(captureError => evidence.record('appium-capture-error', { kind: 'source', message: redactSensitive(captureError.message) }));
+        await captureScreenshot(client, evidence, `failure-${index}`).catch(captureError => evidence.record('appium-capture-error', { kind: 'screenshot', message: redactSensitive(captureError.message) }));
+        throw Object.assign(error, { ferrumStep: { index, step: redactSensitive(step) } });
       }
     }
-    return { engine: 'appium', session: { id: client.sessionId, server: client.baseUrl, capabilities }, outputs, timings: summarizeDurations(durations) };
+    return redactSensitive({ engine: 'appium', session: { id: client.sessionId, server: safeServer, capabilities }, outputs, timings: summarizeDurations(durations) });
   } finally {
     const sessionId = client.sessionId;
-    await client.deleteSession().then(() => evidence.record('appium-session-end', { sessionId })).catch(error => evidence.record('appium-session-cleanup-error', { sessionId, message: error.message }));
+    await client.deleteSession().then(() => evidence.record('appium-session-end', { sessionId })).catch(error => evidence.record('appium-session-cleanup-error', { sessionId, message: redactSensitive(error.message) }));
   }
 }
