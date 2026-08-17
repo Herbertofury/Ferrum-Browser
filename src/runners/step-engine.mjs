@@ -8,6 +8,27 @@ export function navigationWaitUntil(sessionEngine, requested) {
   return sessionEngine === 'lightpanda' ? 'commit' : 'domcontentloaded';
 }
 
+export async function waitForLocatorText(locator, expected, timeoutMs, { pollMs = 50 } = {}) {
+  const deadline = Date.now() + Math.max(1, Number(timeoutMs) || 1);
+  let lastText = '';
+  let lastError = null;
+  while (true) {
+    const remaining = Math.max(1, deadline - Date.now());
+    try {
+      lastText = await locator.innerText({ timeout: remaining });
+      lastError = null;
+      if (lastText.includes(expected)) return { matched: expected, text: lastText };
+    } catch (error) {
+      lastError = error;
+    }
+    const sleepMs = deadline - Date.now();
+    if (sleepMs <= 0) break;
+    await new Promise(resolve => setTimeout(resolve, Math.min(Math.max(1, Number(pollMs) || 1), sleepMs)));
+  }
+  if (lastError) throw lastError;
+  throw new Error(`Expected text not found within ${timeoutMs}ms: ${expected}; last text: ${JSON.stringify(lastText.slice(0, 300))}`);
+}
+
 export class StepEngine {
   constructor({ evidence, session, page, extensionId = null, extensionManifest = null, timeoutMs = 30000, onRestart = null }) {
     this.evidence = evidence;
@@ -83,14 +104,11 @@ export class StepEngine {
       case 'assert-text': {
         const expected = String(step.text);
         if (!step.selector && !step.ref) {
-          const text = await this.page.locator('body').innerText();
-          if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
-          return { matched: expected };
+          const locator = this.page.locator('body');
+          return await waitForLocatorText(locator, expected, step.timeoutMs || this.timeoutMs);
         }
-        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-text' }, async locator => {
-          const text = await locator.innerText({ timeout: step.timeoutMs || this.timeoutMs });
-          if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
-          return { matched: expected };
+        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-text' }, async (locator, timeout) => {
+          return await waitForLocatorText(locator, expected, timeout, { pollMs: step.pollMs || 50 });
         });
         return { ...resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
       }
