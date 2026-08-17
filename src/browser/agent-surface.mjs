@@ -43,32 +43,97 @@ export function locatorForRef(page, ref) {
   return page.locator(`[${REF_ATTR}="${ref}"]`);
 }
 
+export function semanticLocator(page, fallback) {
+  if (!fallback || typeof fallback !== 'object') throw new Error('Semantic fallback must be an object');
+  let locator;
+  if (fallback.role) {
+    const options = fallback.name == null ? {} : { name: String(fallback.name), exact: Boolean(fallback.exact) };
+    locator = page.getByRole(String(fallback.role), options);
+  } else if (fallback.label != null) {
+    locator = page.getByLabel(String(fallback.label), { exact: Boolean(fallback.exact) });
+  } else if (fallback.placeholder != null) {
+    locator = page.getByPlaceholder(String(fallback.placeholder), { exact: Boolean(fallback.exact) });
+  } else if (fallback.text != null) {
+    locator = page.getByText(String(fallback.text), { exact: Boolean(fallback.exact) });
+  } else if (fallback.title != null) {
+    locator = page.getByTitle(String(fallback.title), { exact: Boolean(fallback.exact) });
+  } else if (fallback.alt != null) {
+    locator = page.getByAltText(String(fallback.alt), { exact: Boolean(fallback.exact) });
+  } else if (fallback.testId != null) {
+    locator = page.getByTestId(String(fallback.testId));
+  } else {
+    throw new Error('Semantic fallback requires role/name, label, placeholder, text, title, alt, or testId');
+  }
+  if (fallback.nth != null) locator = locator.nth(Number(fallback.nth));
+  else if (fallback.first === true) locator = locator.first();
+  return locator;
+}
+
+function deterministicLocator(page, action) {
+  if (action.ref) return locatorForRef(page, action.ref);
+  if (action.selector) return page.locator(action.selector);
+  return null;
+}
+
+export async function performWithLocatorFallback(page, action, operation) {
+  const deterministic = deterministicLocator(page, action);
+  if (!deterministic) throw new Error(`${action.action || 'locator action'} requires ref or selector before semantic fallback`);
+  try {
+    return {
+      value: await operation(deterministic),
+      locatorStrategy: 'deterministic',
+      fallback: null,
+      deterministicError: null
+    };
+  } catch (deterministicError) {
+    if (!action.fallback) throw deterministicError;
+    try {
+      const semantic = semanticLocator(page, action.fallback);
+      const value = await operation(semantic);
+      return {
+        value,
+        locatorStrategy: 'semantic-fallback',
+        fallback: action.fallback,
+        deterministicError: deterministicError.message
+      };
+    } catch (fallbackError) {
+      const error = new Error(`Deterministic locator failed (${deterministicError.message}); semantic fallback also failed (${fallbackError.message})`);
+      error.cause = fallbackError;
+      throw error;
+    }
+  }
+}
+
 export async function executeAgentAction(page, action) {
-  const target = action.ref ? locatorForRef(page, action.ref) : action.selector ? page.locator(action.selector) : null;
   switch (action.action) {
-    case 'click':
-      if (!target) throw new Error('click requires ref or selector');
-      await target.click();
-      return { ok: true };
-    case 'fill':
-      if (!target) throw new Error('fill requires ref or selector');
-      await target.fill(String(action.value ?? ''));
-      return { ok: true };
+    case 'click': {
+      const resolved = await performWithLocatorFallback(page, action, target => target.click({ timeout: action.timeoutMs }));
+      return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+    }
+    case 'fill': {
+      const resolved = await performWithLocatorFallback(page, action, target => target.fill(String(action.value ?? ''), { timeout: action.timeoutMs }));
+      return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+    }
     case 'press':
       await page.keyboard.press(String(action.key));
       return { ok: true };
     case 'goto':
       await page.goto(String(action.url), { waitUntil: action.waitUntil || 'domcontentloaded' });
       return { ok: true, url: page.url() };
-    case 'wait':
-      if (action.selector) await page.locator(action.selector).waitFor({ state: action.state || 'visible', timeout: action.timeoutMs });
-      else await page.waitForTimeout(Number(action.ms || 0));
+    case 'wait': {
+      if (action.selector || action.ref) {
+        const resolved = await performWithLocatorFallback(page, action, target => target.waitFor({ state: action.state || 'visible', timeout: action.timeoutMs }));
+        return { ok: true, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+      }
+      await page.waitForTimeout(Number(action.ms || 0));
       return { ok: true };
+    }
     case 'snapshot':
       return await snapshotPage(page, action);
-    case 'text':
-      if (!target) throw new Error('text requires ref or selector');
-      return { text: await target.innerText() };
+    case 'text': {
+      const resolved = await performWithLocatorFallback(page, action, target => target.innerText({ timeout: action.timeoutMs }));
+      return { text: resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+    }
     default:
       throw new Error(`Unsupported agent action: ${action.action}`);
   }

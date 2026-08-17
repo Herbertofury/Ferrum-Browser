@@ -63,7 +63,7 @@ export async function runExtensionTarget(spec, evidence, options = {}) {
   await evidence.writeJson('extension-inventory.json', digest);
 
   const headless = options.headless ?? spec.target.headless ?? false;
-  const profileDir = spec.target.profileDir ? path.resolve(spec.target.profileDir) : path.join(evidence.dir, 'profile');
+  const profileDir = options.profileDir || (spec.target.profileDir ? path.resolve(spec.target.profileDir) : path.join(evidence.dir, 'profile'));
   let session;
   let extensionId;
   let page;
@@ -72,14 +72,16 @@ export async function runExtensionTarget(spec, evidence, options = {}) {
     const launched = await launchChromiumSession({
       profileDir,
       headless,
-      executablePath: spec.target.executable,
+      executablePath: options.browserExecutable || spec.target.executable,
+      channel: options.browserChannel || spec.target.channel,
+      browserName: options.browser || spec.target.browser,
       extensionPath,
       browserArgs: spec.target.args || [],
       evidence
     });
     const identity = await resolveExtensionId(launched.context, manifest, spec.timeouts?.startupMs || 20000);
     const id = identity.id;
-    evidence.record('extension-loaded', { extensionId: id, identitySource: identity.source, expectedIdFromManifestKey: identity.expectedId, profileDir, sha256: digest.sha256 });
+    evidence.record('extension-loaded', { extensionId: id, identitySource: identity.source, expectedIdFromManifestKey: identity.expectedId, profileDir, sha256: digest.sha256, browser: launched.browserName });
     const activePage = launched.context.pages().find(candidate => !candidate.url().startsWith('chrome-extension://')) || launched.context.pages()[0] || await launched.newPage();
     return { session: launched, extensionId: id, page: activePage };
   };
@@ -102,7 +104,7 @@ export async function runExtensionTarget(spec, evidence, options = {}) {
         session = next.session;
         extensionId = next.extensionId;
         page = next.page;
-        evidence.record('extension-restart-proof', { extensionId, sha256: digest.sha256, profileDir });
+        evidence.record('extension-restart-proof', { extensionId, sha256: digest.sha256, profileDir, browser: session.browserName });
         return next;
       }
     });
@@ -110,6 +112,7 @@ export async function runExtensionTarget(spec, evidence, options = {}) {
     await session.close(path.join(evidence.dir, `trace-${generation}.zip`));
     return {
       engine: 'chromium-extension',
+      browser: session.browserName || 'chromium',
       extension: { id: extensionId, name: manifest.name, version: manifest.version, sha256: digest.sha256, fileCount: digest.files.length },
       ...result
     };

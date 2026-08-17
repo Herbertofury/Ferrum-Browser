@@ -30,6 +30,8 @@ jobs:
             | node ./bin/ferrum.mjs mcp > /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_run_suite' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_benchmark' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_browser_matrix' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_list_spaces' /tmp/ferrum-mcp.jsonl
 
   chromium-smoke:
     strategy:
@@ -48,6 +50,23 @@ jobs:
       - if: runner.os != 'Linux'
         run: npx playwright install chromium
       - run: npm run smoke:web
+      - name: Ferrum isolated cloned Space smoke
+        shell: bash
+        run: |
+          node ./bin/ferrum.mjs spaces create ci-auth --spaces-root artifacts/ci-spaces
+          node ./bin/ferrum.mjs test ./examples/self-test-web.json --headless --space ci-auth --space-mode clone --spaces-root artifacts/ci-spaces --compact
+      - name: Install Brave and Opera GX for browser matrix
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          choco install brave -y --no-progress
+          choco install opera-gx -y --no-progress
+      - name: Ferrum browser matrix
+        if: runner.os == 'Linux'
+        run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers chromium,chrome --workers 2 --headless --require-all --compact
+      - name: Ferrum browser matrix
+        if: runner.os == 'Windows'
+        run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers chromium,chrome,edge,brave,opera-gx --workers 2 --headless --require-all --compact
       - run: npm run smoke:extension
       - run: npm run smoke:dashboard
       - name: Ferrum Electron real-app smoke

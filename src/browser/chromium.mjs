@@ -5,7 +5,7 @@ import { getPlaywright } from './playwright.mjs';
 import { attachPageDiagnostics, attachServiceWorkerDiagnostics } from './diagnostics.mjs';
 import { ensureDir } from '../core/paths.mjs';
 
-export async function launchChromiumSession({ profileDir, headless = false, executablePath, extensionPath, viewport, evidence, browserArgs = [] }) {
+export async function launchChromiumSession({ profileDir, headless = false, executablePath, channel, browserName, extensionPath, viewport, evidence, browserArgs = [] }) {
   const { chromium } = await getPlaywright();
   const resolvedProfile = profileDir || await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-profile-'));
   await ensureDir(resolvedProfile);
@@ -13,9 +13,19 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
   if (extensionPath) {
     args.push(`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`);
   }
+  const launchChannel = channel || (!executablePath && headless ? 'chromium' : undefined);
+  const resolvedBrowserName = browserName || launchChannel || (executablePath ? path.basename(executablePath) : 'chromium');
+  evidence.record('browser-launch', {
+    browser: resolvedBrowserName,
+    channel: launchChannel || null,
+    executablePath: executablePath || null,
+    profileDir: resolvedProfile,
+    headless: Boolean(headless),
+    extension: Boolean(extensionPath)
+  });
   const context = await chromium.launchPersistentContext(resolvedProfile, {
     headless,
-    channel: !executablePath && headless ? 'chromium' : undefined,
+    channel: launchChannel,
     executablePath: executablePath || undefined,
     viewport: viewport || { width: 1440, height: 1000 },
     args,
@@ -31,6 +41,8 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
   await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   return {
     engine: 'chromium',
+    browserName: resolvedBrowserName,
+    channel: launchChannel || null,
     context,
     profileDir: resolvedProfile,
     serviceWorkerDiagnostics,

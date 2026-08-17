@@ -5,7 +5,8 @@
   "steps": [
     { "action": "open", "url": "data:text/html,<title>Ferrum Self Test</title><button id='go'>Go</button><div id='out'>idle</div><script>go.onclick=()=>out.textContent='passed'</script>" },
     { "action": "snapshot", "name": "initial", "interactiveOnly": true },
-    { "action": "click", "selector": "#go" },
+    { "action": "click", "selector": "#missing-go", "fallback": { "role": "button", "name": "Go", "exact": true } },
+    { "action": "assert-locator-fallbacks", "min": 1, "max": 1 },
     { "action": "assert-text", "selector": "#out", "text": "passed" },
     { "action": "vitals", "name": "self-test" },
     { "action": "screenshot", "name": "passed" },

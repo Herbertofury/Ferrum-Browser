@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { collectPageVitals } from '../browser/diagnostics.mjs';
-import { executeAgentAction, snapshotPage } from '../browser/agent-surface.mjs';
+import { executeAgentAction, performWithLocatorFallback, snapshotPage } from '../browser/agent-surface.mjs';
 import { summarizeDurations } from '../core/stats.mjs';
 
 export function navigationWaitUntil(sessionEngine, requested) {
@@ -30,6 +30,15 @@ export class StepEngine {
         const output = await this.execute(step, index);
         const durationMs = performance.now() - started;
         this.durations.push(durationMs);
+        if (output?.locatorStrategy === 'semantic-fallback') {
+          this.evidence.record('locator-fallback', {
+            index,
+            action: step.action,
+            deterministic: { ref: step.ref || null, selector: step.selector || null },
+            fallback: output.fallback,
+            deterministicError: output.deterministicError || null
+          });
+        }
         this.evidence.record('step-pass', { index, action: step.action, durationMs, output });
         outputs.push({ index, action: step.action, ok: true, durationMs, output });
       } catch (error) {
@@ -56,9 +65,7 @@ export class StepEngine {
         return { url: this.page.url(), status: response?.status() ?? null, waitUntil };
       }
       case 'wait':
-        if (step.selector) await this.page.locator(step.selector).waitFor({ state: step.state || 'visible', timeout: step.timeoutMs || this.timeoutMs });
-        else await this.page.waitForTimeout(Number(step.ms || 0));
-        return { waited: true };
+        return await executeAgentAction(this.page, { ...step, timeoutMs: step.timeoutMs || this.timeoutMs });
       case 'click':
       case 'fill':
       case 'press':
@@ -74,15 +81,23 @@ export class StepEngine {
         return { file: path.relative(this.evidence.dir, file).replaceAll('\\', '/') };
       }
       case 'assert-text': {
-        const locator = step.selector ? this.page.locator(step.selector) : this.page.locator('body');
-        const text = await locator.innerText();
         const expected = String(step.text);
-        if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
-        return { matched: expected };
+        if (!step.selector && !step.ref) {
+          const text = await this.page.locator('body').innerText();
+          if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
+          return { matched: expected };
+        }
+        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-text' }, async locator => {
+          const text = await locator.innerText({ timeout: step.timeoutMs || this.timeoutMs });
+          if (!text.includes(expected)) throw new Error(`Expected text not found: ${expected}`);
+          return { matched: expected };
+        });
+        return { ...resolved.value, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
       }
-      case 'assert-visible':
-        await this.page.locator(step.selector).waitFor({ state: 'visible', timeout: step.timeoutMs || this.timeoutMs });
-        return { selector: step.selector };
+      case 'assert-visible': {
+        const resolved = await performWithLocatorFallback(this.page, { ...step, action: 'assert-visible' }, locator => locator.waitFor({ state: 'visible', timeout: step.timeoutMs || this.timeoutMs }));
+        return { selector: step.selector || null, ref: step.ref || null, locatorStrategy: resolved.locatorStrategy, fallback: resolved.fallback, deterministicError: resolved.deterministicError };
+      }
       case 'assert-url': {
         const value = this.page.url();
         if (step.equals && value !== step.equals) throw new Error(`URL mismatch: expected ${step.equals}, got ${value}`);
@@ -149,6 +164,13 @@ export class StepEngine {
           throw new Error(`Service-worker failedRequests=${diagnostics.failedRequests} exceeds allowed maximum ${step.maxFailedRequests}`);
         }
         return diagnostics;
+      }
+      case 'assert-locator-fallbacks': {
+        const events = this.evidence.events.filter(event => event.type === 'locator-fallback');
+        const count = events.length;
+        if (step.min != null && count < Number(step.min)) throw new Error(`Locator fallback count ${count} is below required minimum ${step.min}`);
+        if (step.max != null && count > Number(step.max)) throw new Error(`Locator fallback count ${count} exceeds allowed maximum ${step.max}`);
+        return { count, fallbacks: events.map(event => ({ index: event.index, action: event.action, fallback: event.fallback })) };
       }
       case 'assert-console-clean': {
         const bad = this.evidence.events.filter(event =>

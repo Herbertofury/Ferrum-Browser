@@ -9,8 +9,11 @@ export async function runWebTarget(spec, evidence, options = {}) {
   let session;
   if (engine === 'lightpanda') session = await launchLightpandaSession({ executable: spec.target.executable, evidence });
   else session = await launchChromiumSession({
+    profileDir: options.profileDir || spec.target.profileDir,
     headless,
-    executablePath: spec.target.executable,
+    executablePath: options.browserExecutable || spec.target.executable,
+    channel: options.browserChannel || spec.target.channel,
+    browserName: options.browser || spec.target.browser,
     browserArgs: spec.target.args || [],
     evidence
   });
@@ -20,7 +23,7 @@ export async function runWebTarget(spec, evidence, options = {}) {
     const result = await stepEngine.run(spec.steps);
     const trace = engine === 'chromium' ? path.join(evidence.dir, 'trace.zip') : null;
     await session.close(trace);
-    return { engine, ...result };
+    return { engine, browser: session.browserName || engine, ...result };
   } catch (error) {
     const trace = engine === 'chromium' ? path.join(evidence.dir, 'trace.zip') : null;
     await session.close(trace).catch(() => {});

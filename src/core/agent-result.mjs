@@ -5,6 +5,8 @@ export function compactRunResult(result) {
     status: result.status,
     evidenceDir: result.evidenceDir,
     targetType: result.metadata?.targetType || null,
+    browser: result.metadata?.browser || result.result?.browser || null,
+    space: result.result?.space || result.metadata?.space || null,
     engine: result.result?.engine || null,
     timings: result.result?.timings || null,
     summary: result.summary || null,
@@ -48,6 +50,30 @@ export function compactBenchmarkResult(result) {
       timings: item.timings,
       measurement: item.measurement,
       failureCount: item.failures.length
+    }))
+  };
+}
+
+export function compactBrowserMatrixResult(result) {
+  return {
+    status: result.status,
+    specPath: result.specPath,
+    workers: result.workers,
+    requireAll: result.requireAll,
+    total: result.total,
+    passed: result.passed,
+    failed: result.failed,
+    skipped: result.skipped,
+    results: result.results.map(item => ({
+      browser: item.browser,
+      status: item.status,
+      durationMs: item.durationMs ?? null,
+      evidenceId: item.evidenceId || null,
+      evidenceDir: item.evidenceDir || null,
+      reason: item.reason || null,
+      error: item.error || null,
+      executablePath: item.discovery?.executablePath || null,
+      channel: item.discovery?.channel || null
     }))
   };
 }
