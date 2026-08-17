@@ -32,6 +32,8 @@ jobs:
           grep -q 'ferrum_benchmark' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_browser_matrix' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_list_spaces' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_list_evidence' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_read_evidence' /tmp/ferrum-mcp.jsonl
 
   chromium-smoke:
     strategy:
@@ -75,12 +77,32 @@ jobs:
       - name: Ferrum Electron real-app smoke
         if: runner.os == 'Windows'
         run: npm run smoke:electron
+      - name: Ferrum desktop shell smoke
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:desktop
+      - name: Ferrum desktop shell smoke
+        if: runner.os == 'Windows'
+        run: npm run smoke:desktop
+      - name: Package Ferrum desktop shell
+        run: npm run package:desktop
+      - name: Fresh packaged Ferrum smoke
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:packaged-desktop
+      - name: Fresh packaged Ferrum smoke
+        if: runner.os == 'Windows'
+        run: npm run smoke:packaged-desktop
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ferrum-evidence-${{ runner.os }}
           path: artifacts/
           if-no-files-found: ignore
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: ferrum-desktop-${{ runner.os }}
+          path: dist/
+          if-no-files-found: error
 
   lightpanda-smoke:
     runs-on: ubuntu-latest

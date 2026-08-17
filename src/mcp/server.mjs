@@ -8,6 +8,7 @@ import { collectDoctor } from '../core/doctor.mjs';
 import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult } from '../core/agent-result.mjs';
 import { discoverBrowsers, runBrowserMatrix } from '../core/browser-matrix.mjs';
 import { createSpace, listSpaces } from '../core/spaces.mjs';
+import { listEvidence, readEvidence } from '../core/evidence-store.mjs';
 
 const commonRunProperties = {
   headless: { type: 'boolean' },
@@ -28,7 +29,9 @@ const tools = [
   { name: 'ferrum_browser_matrix', description: 'Run one web or extension spec across discovered Chromium-family browser targets without weakening the Chromium extension correctness lane.', inputSchema: { type: 'object', required: ['specPath'], properties: { specPath: { type: 'string' }, browsers: { type: 'string', description: 'Comma-separated browser names.' }, workers: { type: 'integer', minimum: 1 }, requireAll: { type: 'boolean' }, ...commonRunProperties } } },
   { name: 'ferrum_benchmark', description: 'Repeat an identical Ferrum workload and return compact median/p95 timing across one or more engines.', inputSchema: { type: 'object', required: ['specPath'], properties: { specPath: { type: 'string' }, engines: { type: 'string' }, runs: { type: 'integer', minimum: 1 }, warmup: { type: 'integer', minimum: 0 }, headless: { type: 'boolean' }, artifactsRoot: { type: 'string' }, space: commonRunProperties.space, spaceMode: commonRunProperties.spaceMode, spacesRoot: commonRunProperties.spacesRoot, keepSpaceClone: commonRunProperties.keepSpaceClone, fullOutput: commonRunProperties.fullOutput } } },
   { name: 'ferrum_list_spaces', description: 'List persistent Ferrum browser profile spaces and lock state.', inputSchema: { type: 'object', properties: { spacesRoot: { type: 'string' } } } },
-  { name: 'ferrum_create_space', description: 'Create a persistent Ferrum browser profile space, optionally cloned from another space.', inputSchema: { type: 'object', required: ['name'], properties: { name: { type: 'string' }, cloneFrom: { type: 'string' }, spacesRoot: { type: 'string' } } } }
+  { name: 'ferrum_create_space', description: 'Create a persistent Ferrum browser profile space, optionally cloned from another space.', inputSchema: { type: 'object', required: ['name'], properties: { name: { type: 'string' }, cloneFrom: { type: 'string' }, spacesRoot: { type: 'string' } } } },
+  { name: 'ferrum_list_evidence', description: 'List all finalized Ferrum evidence bundles from disk, including runs retained across process restarts.', inputSchema: { type: 'object', properties: { artifactsRoot: { type: 'string' } } } },
+  { name: 'ferrum_read_evidence', description: 'Read one Ferrum evidence bundle and its complete retained file inventory.', inputSchema: { type: 'object', required: ['id'], properties: { id: { type: 'string' }, artifactsRoot: { type: 'string' }, fullOutput: { type: 'boolean' } } } }
 ];
 
 function send(message) {
@@ -106,6 +109,16 @@ export async function startMcpStdio() {
           value = await listSpaces({ root: args.spacesRoot });
         } else if (name === 'ferrum_create_space') {
           value = await createSpace(args.name, { root: args.spacesRoot, cloneFrom: args.cloneFrom });
+        } else if (name === 'ferrum_list_evidence') {
+          value = await listEvidence({ root: args.artifactsRoot });
+        } else if (name === 'ferrum_read_evidence') {
+          const evidence = await readEvidence(args.id, { root: args.artifactsRoot });
+          value = args.fullOutput ? evidence : {
+            id: evidence.id,
+            dir: evidence.dir,
+            result: { ...evidence.result, events: undefined },
+            files: evidence.files
+          };
         } else {
           throw new Error(`Unknown tool: ${name}`);
         }

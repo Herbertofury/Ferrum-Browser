@@ -17,10 +17,10 @@
       <div>
         <span class="eyebrow">ONE HARNESS · MANY RUNTIMES</span>
         <h2>Extensions, web apps, Electron, processes and Appium targets.</h2>
-        <p>Full Chromium is the correctness lane. Lightpanda is the speed lane. Every run produces evidence instead of a success toast.</p>
+        <p>Full Chromium is the correctness lane. Lightpanda is the speed lane. Every run produces durable evidence that can be replayed here after restart.</p>
       </div>
       <div class="lane-grid">
-        <span>Chromium fidelity</span><span>Lightpanda fast path</span><span>MV3 restart proof</span><span>Agent MCP</span>
+        <span>Chromium fidelity</span><span>Browser matrix</span><span>Persistent Spaces</span><span>Evidence replay</span>
       </div>
     </section>
     <section class="run-card">
@@ -29,9 +29,14 @@
       <button id="run" class="primary">Run test</button>
       <div id="runStatus" class="status">Ready.</div>
     </section>
-    <section class="grid">
-      <article><h3>Runs</h3><div id="runs" class="list"></div></article>
+    <section class="grid three">
+      <article><h3>Live runs</h3><div id="runs" class="list"></div></article>
+      <article><h3>Evidence history</h3><div id="evidence" class="list"></div></article>
       <article><h3>Doctor</h3><pre id="doctorOut">Not run yet.</pre></article>
+    </section>
+    <section class="replay-card">
+      <div class="replay-head"><div><span class="eyebrow">DURABLE EVIDENCE</span><h3>Session replay</h3></div><span id="replayStatus" class="status">Select an evidence run.</span></div>
+      <div id="replay" class="replay-empty">Run metadata, the full step and diagnostics timeline, screenshots, traces, downloads, and retained files appear here.</div>
     </section>
   </main>
   <script type="module" src="/app.js"></script>

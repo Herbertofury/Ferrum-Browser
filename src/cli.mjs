@@ -6,6 +6,7 @@ import { collectDoctor } from './core/doctor.mjs';
 import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult } from './core/agent-result.mjs';
 import { discoverBrowsers, runBrowserMatrix } from './core/browser-matrix.mjs';
 import { createSpace, listSpaces } from './core/spaces.mjs';
+import { listEvidence, readEvidence } from './core/evidence-store.mjs';
 import { startDashboard } from './server/dashboard.mjs';
 import { startMcpStdio } from './mcp/server.mjs';
 import { FERRUM_VERSION } from './version.mjs';
@@ -13,7 +14,7 @@ import { FERRUM_VERSION } from './version.mjs';
 const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port', '--browser', '--browsers', '--space', '--space-mode', '--spaces-root']);
 
 function usage() {
-  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
+  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
 }
 
 function argValue(args, name) {
@@ -129,6 +130,21 @@ export async function main(args) {
       return;
     }
     throw new Error(`Unknown spaces action: ${action}`);
+  }
+  if (command === 'evidence') {
+    const action = args[1] || 'list';
+    const root = argValue(args, '--artifacts');
+    if (action === 'list') {
+      console.log(JSON.stringify(await listEvidence({ root }), null, 2));
+      return;
+    }
+    if (action === 'show') {
+      const id = args[2];
+      if (!id) throw new Error('evidence show requires an evidence id');
+      console.log(JSON.stringify(await readEvidence(id, { root }), null, 2));
+      return;
+    }
+    throw new Error(`Unknown evidence action: ${action}`);
   }
   if (command === 'dashboard') {
     const port = Number(argValue(args, '--port') || 8788);
