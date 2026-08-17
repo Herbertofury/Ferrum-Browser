@@ -1,15 +1,25 @@
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFile, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
 import { loadSpec } from './spec.mjs';
-import { runSpec } from './runner.mjs';
 
+const execFileAsync = promisify(execFile);
 const KNOWN = new Set(['chromium', 'chrome', 'edge', 'brave', 'opera-gx']);
+const WORKER_SCRIPT = fileURLToPath(new URL('../../scripts/browser-matrix-worker.mjs', import.meta.url));
 
 export function normalizeBrowserList(value) {
   const values = Array.isArray(value) ? value : String(value || 'chromium,chrome,edge,brave,opera-gx').split(',');
   const names = [...new Set(values.map(item => String(item).trim().toLowerCase()).filter(Boolean))];
   for (const name of names) if (!KNOWN.has(name)) throw new Error(`Unknown browser matrix target: ${name}`);
   return names;
+}
+
+export function normalizeBrowserWorkerTimeout(value, fallback = 90000) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function joiner(platform) {
@@ -77,6 +87,108 @@ export async function discoverBrowsers(value, { platform = process.platform, env
   return results;
 }
 
+function serializableRunOptions(options, profileDir) {
+  return {
+    headless: options.headless,
+    artifactsRoot: options.artifactsRoot,
+    variables: options.variables || {},
+    spacesRoot: options.spacesRoot,
+    space: options.space,
+    spaceMode: options.spaceMode,
+    keepSpaceClone: options.keepSpaceClone,
+    browserLaunchTimeoutMs: options.browserLaunchTimeoutMs,
+    profileDir
+  };
+}
+
+async function terminateProcessTree(child) {
+  if (!child?.pid || child.exitCode != null) return;
+  if (process.platform === 'win32') {
+    await execFileAsync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, timeout: 10000 }).catch(() => {});
+    return;
+  }
+  try { process.kill(-child.pid, 'SIGKILL'); } catch {
+    try { child.kill('SIGKILL'); } catch {}
+  }
+}
+
+function workerRequest(specPath, browser, options, profileDir) {
+  return {
+    specPath,
+    browser,
+    options: serializableRunOptions(options, profileDir)
+  };
+}
+
+async function runBrowserWorker(specPath, browser, options) {
+  const timeoutMs = normalizeBrowserWorkerTimeout(options.browserRunTimeoutMs);
+  const profileDir = options.space ? undefined : await fs.mkdtemp(path.join(os.tmpdir(), `ferrum-matrix-${browser.name}-`));
+  const request = workerRequest(specPath, browser, options, profileDir);
+  const encoded = Buffer.from(JSON.stringify(request)).toString('base64url');
+  const child = spawn(process.execPath, [WORKER_SCRIPT, encoded], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true,
+    detached: process.platform !== 'win32'
+  });
+
+  let stdout = '';
+  let stderr = '';
+  let settled = false;
+  let timer;
+
+  const result = await new Promise(resolve => {
+    const finish = async value => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      await terminateProcessTree(child);
+      resolve(value);
+    };
+
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', chunk => {
+      stdout += chunk;
+      const lines = stdout.split(/\r?\n/);
+      stdout = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed?.type === 'ferrum-browser-worker-result') void finish(parsed.result);
+        } catch {}
+      }
+    });
+    child.stderr.on('data', chunk => { stderr += chunk; });
+    child.on('error', error => void finish({ status: 'failed', error: `Browser worker failed to start: ${error.message}`, evidenceDir: null }));
+    child.on('exit', (code, signal) => {
+      if (settled) return;
+      const tail = stdout.trim();
+      if (tail) {
+        try {
+          const parsed = JSON.parse(tail);
+          if (parsed?.type === 'ferrum-browser-worker-result') return void finish(parsed.result);
+        } catch {}
+      }
+      void finish({
+        status: 'failed',
+        error: `Browser worker exited before reporting a result (code=${code}, signal=${signal || 'none'}${stderr.trim() ? `): ${stderr.trim().slice(-2000)}` : ')'}`,
+        evidenceDir: null
+      });
+    });
+    timer = setTimeout(() => void finish({
+      status: 'failed',
+      error: `Browser worker timed out after ${timeoutMs}ms`,
+      evidenceDir: null
+    }), timeoutMs);
+  });
+
+  if (profileDir) await fs.rm(profileDir, { recursive: true, force: true }).catch(() => {});
+  return result;
+}
+
 export async function runBrowserMatrix(specPath, options = {}) {
   const definitions = await discoverBrowsers(options.browsers, options.discovery || {});
   const workers = Math.max(1, Math.min(Number(options.workers || 1), definitions.length || 1));
@@ -105,33 +217,19 @@ export async function runBrowserMatrix(specPath, options = {}) {
         continue;
       }
       const started = performance.now();
-      try {
-        const result = await runSpec(spec, {
-          ...options,
-          spaceMode: options.space ? (options.spaceMode || 'clone') : options.spaceMode,
-          engine: 'chromium',
-          browser: browser.name,
-          browserChannel: browser.channel,
-          browserExecutable: browser.channel ? undefined : browser.executablePath
-        });
-        results[item.index] = {
-          browser: browser.name,
-          status: 'passed',
-          durationMs: performance.now() - started,
-          evidenceId: result.id,
-          evidenceDir: result.evidenceDir,
-          discovery: browser
-        };
-      } catch (error) {
-        results[item.index] = {
-          browser: browser.name,
-          status: 'failed',
-          durationMs: performance.now() - started,
-          error: error.message,
-          evidenceDir: error.evidenceDir || null,
-          discovery: browser
-        };
-      }
+      const childResult = await runBrowserWorker(specPath, browser, {
+        ...options,
+        spaceMode: options.space ? (options.spaceMode || 'clone') : options.spaceMode
+      });
+      results[item.index] = {
+        browser: browser.name,
+        status: childResult.status,
+        durationMs: performance.now() - started,
+        evidenceId: childResult.evidenceId || null,
+        evidenceDir: childResult.evidenceDir || null,
+        error: childResult.error || null,
+        discovery: browser
+      };
     }
   }
 

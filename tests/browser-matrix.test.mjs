@@ -1,10 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { browserCandidates, discoverBrowsers, normalizeBrowserList } from '../src/core/browser-matrix.mjs';
+import { browserCandidates, discoverBrowsers, normalizeBrowserList, normalizeBrowserWorkerTimeout } from '../src/core/browser-matrix.mjs';
 
 test('browser list is normalized and deduplicated', () => {
   assert.deepEqual(normalizeBrowserList('Chromium,chrome,CHROME,edge'), ['chromium', 'chrome', 'edge']);
   assert.throws(() => normalizeBrowserList('firefox'), /Unknown browser matrix target/);
+});
+
+test('browser worker timeout is bounded and configurable', () => {
+  assert.equal(normalizeBrowserWorkerTimeout(undefined), 90000);
+  assert.equal(normalizeBrowserWorkerTimeout(0), 90000);
+  assert.equal(normalizeBrowserWorkerTimeout('120000'), 120000);
 });
 
 test('windows candidates include browser-specific standard locations', () => {
