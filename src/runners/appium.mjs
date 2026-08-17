@@ -105,6 +105,12 @@ async function elementFor(client, step, aliases, timeoutMs) {
   return await client.find(String(step.using), String(step.value), { timeoutMs: step.timeoutMs || timeoutMs, index: step.index || 0 });
 }
 
+function findAllConstraintError(lastCount, min, max, budgetMs, attempts, lastError = null) {
+  const requirement = [min == null ? null : `minimum ${min}`, max == null ? null : `maximum ${max}`].filter(Boolean).join(' and ');
+  const requestDetail = lastError ? `; last request error: ${lastError.message}` : '';
+  return new Error(`Appium find-all count ${lastCount} did not satisfy required ${requirement} within ${budgetMs}ms after ${attempts} attempt${attempts === 1 ? '' : 's'}${requestDetail}`);
+}
+
 async function findAllWithinConstraints(client, step, timeoutMs) {
   if (!step.using || step.value == null) throw new Error('find-all requires using/value');
   const using = String(step.using);
@@ -122,8 +128,18 @@ async function findAllWithinConstraints(client, step, timeoutMs) {
   let attempts = 0;
   let lastCount = 0;
   while (true) {
-    const remainingMs = Math.max(1, deadline - Date.now());
-    const elements = await client.findAll(using, value, { timeoutMs: Math.min(client.timeoutMs, remainingMs) });
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) throw findAllConstraintError(lastCount, min, max, budgetMs, attempts);
+
+    let elements;
+    try {
+      elements = await client.findAll(using, value, { timeoutMs: Math.min(client.timeoutMs, Math.max(1, remainingMs)) });
+    } catch (error) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError' || Date.now() >= deadline) {
+        throw findAllConstraintError(lastCount, min, max, budgetMs, attempts, error);
+      }
+      throw error;
+    }
     attempts += 1;
     lastCount = elements.length;
     const minOk = min == null || lastCount >= min;
@@ -131,10 +147,7 @@ async function findAllWithinConstraints(client, step, timeoutMs) {
     if (minOk && maxOk) return { elements, count: lastCount, attempts };
 
     const waitMs = Math.min(250, Math.max(0, deadline - Date.now()));
-    if (waitMs <= 0) {
-      const requirement = [min == null ? null : `minimum ${min}`, max == null ? null : `maximum ${max}`].filter(Boolean).join(' and ');
-      throw new Error(`Appium find-all count ${lastCount} did not satisfy required ${requirement} within ${budgetMs}ms after ${attempts} attempt${attempts === 1 ? '' : 's'}`);
-    }
+    if (waitMs <= 0) throw findAllConstraintError(lastCount, min, max, budgetMs, attempts);
     await sleep(waitMs);
   }
 }
