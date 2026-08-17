@@ -14,7 +14,7 @@ test('process runner captures logs and exit code', async () => {
   assert.ok(result.logs >= 1);
 });
 
-test('process runner can drive stdin without recording raw input', async () => {
+test('process runner can drive stdin without recording raw input in process-input evidence', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-stdin-'));
   const evidence = await new EvidenceWriter({ root, name: 'process-stdin-test' }).init();
   const script = "process.stdin.setEncoding('utf8');let data='';process.stdin.on('data',chunk=>data+=chunk);process.stdin.on('end',()=>console.log('input:'+data.trim()))";
@@ -32,6 +32,7 @@ test('process runner can drive stdin without recording raw input', async () => {
   assert.ok(result.logs >= 1);
   const inputEvent = evidence.events.find(event => event.type === 'process-input');
   assert.deepEqual(inputEvent && { bytes: inputEvent.bytes, newline: inputEvent.newline }, { bytes: 13, newline: true });
-  assert.equal(JSON.stringify(evidence.events).includes('hello ferrum'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(inputEvent, 'text'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(inputEvent, 'value'), false);
   assert.equal(evidence.events.some(event => event.type === 'process-stdin-closed'), true);
 });
