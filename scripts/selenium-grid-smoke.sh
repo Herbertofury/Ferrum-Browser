@@ -8,7 +8,9 @@ VERIFY_FILE="${RUNNER_TEMP:-/tmp}/ferrum-webdriver-verify.json"
 ARTIFACTS_ROOT="artifacts/webdriver-grid"
 
 cleanup() {
-  docker logs "$NAME" > "${RUNNER_TEMP:-/tmp}/ferrum-webdriver-grid.log" 2>&1 || true
+  mkdir -p "$ARTIFACTS_ROOT/grid"
+  docker inspect "$NAME" > "$ARTIFACTS_ROOT/grid/container-inspect.json" 2>/dev/null || true
+  docker logs "$NAME" > "$ARTIFACTS_ROOT/grid/selenium.log" 2>&1 || true
   docker rm -f "$NAME" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
