@@ -118,7 +118,7 @@ The MCP surface includes doctor, single-run, suite, browser-matrix, benchmark, w
 
 Ferrum includes separate baseline production packs for both canonical GameSync repositories:
 
-- `packs/gamesync-current-extension.pack.json` builds the current standalone extension with its real `build:extension` script and verifies the resulting `dist` MV3 runtime.
+- `packs/gamesync-current-extension.pack.json` builds the current standalone extension with its canonical `build` script (`vite build`) and verifies the resulting `dist` MV3 runtime.
 - `packs/gamesync-next-extension.pack.json` builds the WXT V2 extension workspace and verifies `.output/chrome-mv3`.
 
 Both baseline specs prove service-worker discovery, popup loading, screenshots, clean diagnostics, browser restart, rediscovery, and post-restart UI loading. Per-change GameSync acceptance should extend the appropriate baseline with the exact sites, controls, content-script paths, persistence behavior, and background interactions changed by that work. A generic baseline is never a substitute for exercising a changed feature.

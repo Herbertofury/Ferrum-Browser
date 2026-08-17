@@ -29,6 +29,18 @@ test('loadSpec expands variables before resolving target paths', async () => {
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
+test('standalone GameSync production pack invokes the canonical build script', async () => {
+  const root = path.resolve('packs');
+  const fakeRepo = await tempDir();
+  try {
+    const pack = await loadWorkloadPack(path.join(root, 'gamesync-current-extension.pack.json'), { variables: { GAMESYNC_REPO: fakeRepo } });
+    assert.equal(pack.setup.length, 1);
+    assert.equal(pack.setup[0].command, 'npm');
+    assert.deepEqual(pack.setup[0].args, ['run', 'build']);
+    assert.equal(pack.setup[0].cwd, fakeRepo);
+  } finally { await fs.rm(fakeRepo, { recursive: true, force: true }); }
+});
+
 test('workload pack runs real setup and member specs with parent and child evidence', async () => {
   const root = await tempDir();
   try {

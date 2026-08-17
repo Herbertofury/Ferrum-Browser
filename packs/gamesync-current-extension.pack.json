@@ -6,7 +6,7 @@
   "setup": [
     {
       "command": "npm",
-      "args": ["run", "build:extension"],
+      "args": ["run", "build"],
       "cwd": "${VAR:GAMESYNC_REPO}",
       "timeoutMs": 600000
     }
