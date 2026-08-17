@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "name": "gamesync-current-extension-production",
+  "repository": "Herbertofury/Gamesync",
+  "requiredVariables": ["GAMESYNC_REPO"],
+  "setup": [
+    {
+      "command": "npm",
+      "args": ["run", "build:extension"],
+      "cwd": "${VAR:GAMESYNC_REPO}",
+      "timeoutMs": 600000
+    }
+  ],
+  "specs": ["specs/gamesync-current-extension.json"]
+}

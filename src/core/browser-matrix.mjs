@@ -95,7 +95,7 @@ export async function runBrowserMatrix(specPath, options = {}) {
         results[item.index] = { browser: browser.name, status: 'skipped', reason: 'browser-not-installed', discovery: browser };
         continue;
       }
-      const spec = await loadSpec(specPath);
+      const spec = await loadSpec(specPath, { variables: options.variables || {} });
       if (!['web', 'extension'].includes(spec.target.type)) {
         results[item.index] = { browser: browser.name, status: 'skipped', reason: `target-${spec.target.type}-does-not-use-browser-matrix`, discovery: browser };
         continue;

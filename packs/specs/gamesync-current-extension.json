@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "name": "gamesync-current-extension-baseline",
+  "target": {
+    "type": "extension",
+    "path": "${VAR:GAMESYNC_REPO}/dist",
+    "headless": true
+  },
+  "timeouts": { "startupMs": 30000, "stepMs": 20000 },
+  "steps": [
+    { "action": "assert-service-worker", "timeoutMs": 20000 },
+    { "action": "service-worker-diagnostics", "name": "before-ui" },
+    { "action": "extension-page" },
+    { "action": "wait", "selector": "body", "state": "visible", "timeoutMs": 15000 },
+    { "action": "assert-url", "includes": "chrome-extension://" },
+    { "action": "screenshot", "name": "gamesync-current-popup" },
+    { "action": "assert-console-clean" },
+    { "action": "restart" },
+    { "action": "assert-service-worker", "timeoutMs": 20000 },
+    { "action": "extension-page" },
+    { "action": "wait", "selector": "body", "state": "visible", "timeoutMs": 15000 },
+    { "action": "screenshot", "name": "gamesync-current-popup-restart" },
+    { "action": "assert-console-clean" }
+  ]
+}

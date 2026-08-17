@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "name": "gamesync-next-extension-production",
+  "repository": "Herbertofury/GameSync-Next",
+  "requiredVariables": ["GAMESYNC_NEXT_REPO"],
+  "setup": [
+    {
+      "command": "npm",
+      "args": ["--workspace", "apps/extension-v2", "run", "build"],
+      "cwd": "${VAR:GAMESYNC_NEXT_REPO}",
+      "timeoutMs": 600000
+    }
+  ],
+  "specs": ["specs/gamesync-next-extension.json"]
+}

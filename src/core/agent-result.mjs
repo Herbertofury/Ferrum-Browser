@@ -77,3 +77,18 @@ export function compactBrowserMatrixResult(result) {
     }))
   };
 }
+
+export function compactPackResult(result) {
+  return {
+    id: result.id,
+    name: result.name,
+    status: result.status,
+    evidenceDir: result.evidenceDir,
+    repository: result.result?.repository || result.metadata?.repository || null,
+    pack: result.result?.pack || null,
+    passed: result.result?.passed ?? null,
+    failed: result.result?.failed ?? null,
+    specs: result.result?.specs || [],
+    failure: result.failure || null
+  };
+}

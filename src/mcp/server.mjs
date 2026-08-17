@@ -4,8 +4,9 @@ import { loadSpec } from '../core/spec.mjs';
 import { runSpec } from '../core/runner.mjs';
 import { runSuite } from '../core/suite.mjs';
 import { benchmarkSpec } from '../core/benchmark.mjs';
+import { runWorkloadPack } from '../core/workload-pack.mjs';
 import { collectDoctor } from '../core/doctor.mjs';
-import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult } from '../core/agent-result.mjs';
+import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult, compactPackResult } from '../core/agent-result.mjs';
 import { discoverBrowsers, runBrowserMatrix } from '../core/browser-matrix.mjs';
 import { createSpace, listSpaces } from '../core/spaces.mjs';
 import { listEvidence, readEvidence } from '../core/evidence-store.mjs';
@@ -19,6 +20,7 @@ const commonRunProperties = {
   spaceMode: { type: 'string', enum: ['persistent', 'clone'], description: 'Use the named space directly with a lock, or clone it per run for safe parallel work.' },
   spacesRoot: { type: 'string' },
   keepSpaceClone: { type: 'boolean' },
+  variables: { type: 'object', additionalProperties: { type: 'string' }, description: 'Template variables available as ${VAR:NAME} in specs and workload packs.' },
   fullOutput: { type: 'boolean', description: 'Return the complete result payload instead of the compact agent summary. Full evidence is always written on disk.' }
 };
 
@@ -27,7 +29,8 @@ const tools = [
   { name: 'ferrum_run_spec', description: 'Run a Ferrum JSON test spec and return a compact evidence summary plus exact evidence directory.', inputSchema: { type: 'object', required: ['specPath'], properties: { specPath: { type: 'string' }, ...commonRunProperties } } },
   { name: 'ferrum_run_suite', description: 'Run multiple Ferrum specs with bounded parallel workers and return compact per-run evidence summaries.', inputSchema: { type: 'object', required: ['specPaths'], properties: { specPaths: { type: 'array', items: { type: 'string' }, minItems: 1 }, workers: { type: 'integer', minimum: 1 }, ...commonRunProperties } } },
   { name: 'ferrum_browser_matrix', description: 'Run one web or extension spec across discovered Chromium-family browser targets without weakening the Chromium extension correctness lane.', inputSchema: { type: 'object', required: ['specPath'], properties: { specPath: { type: 'string' }, browsers: { type: 'string', description: 'Comma-separated browser names.' }, workers: { type: 'integer', minimum: 1 }, requireAll: { type: 'boolean' }, ...commonRunProperties } } },
-  { name: 'ferrum_benchmark', description: 'Repeat an identical Ferrum workload and return compact median/p95 timing across one or more engines.', inputSchema: { type: 'object', required: ['specPath'], properties: { specPath: { type: 'string' }, engines: { type: 'string' }, runs: { type: 'integer', minimum: 1 }, warmup: { type: 'integer', minimum: 0 }, headless: { type: 'boolean' }, artifactsRoot: { type: 'string' }, space: commonRunProperties.space, spaceMode: commonRunProperties.spaceMode, spacesRoot: commonRunProperties.spacesRoot, keepSpaceClone: commonRunProperties.keepSpaceClone, fullOutput: commonRunProperties.fullOutput } } },
+  { name: 'ferrum_benchmark', description: 'Repeat an identical Ferrum workload and return compact median/p95 timing across one or more engines.', inputSchema: { type: 'object', required: ['specPath'], properties: { specPath: { type: 'string' }, engines: { type: 'string' }, runs: { type: 'integer', minimum: 1 }, warmup: { type: 'integer', minimum: 0 }, ...commonRunProperties } } },
+  { name: 'ferrum_run_pack', description: 'Run a reusable Ferrum workload pack including its real setup/build commands and all member specs, retaining parent and child evidence.', inputSchema: { type: 'object', required: ['packPath'], properties: { packPath: { type: 'string' }, ...commonRunProperties } } },
   { name: 'ferrum_list_spaces', description: 'List persistent Ferrum browser profile spaces and lock state.', inputSchema: { type: 'object', properties: { spacesRoot: { type: 'string' } } } },
   { name: 'ferrum_create_space', description: 'Create a persistent Ferrum browser profile space, optionally cloned from another space.', inputSchema: { type: 'object', required: ['name'], properties: { name: { type: 'string' }, cloneFrom: { type: 'string' }, spacesRoot: { type: 'string' } } } },
   { name: 'ferrum_list_evidence', description: 'List all finalized Ferrum evidence bundles from disk, including runs retained across process restarts.', inputSchema: { type: 'object', properties: { artifactsRoot: { type: 'string' } } } },
@@ -46,7 +49,8 @@ async function runOptions(args) {
     space: args.space,
     spaceMode: args.spaceMode,
     spacesRoot: args.spacesRoot,
-    keepSpaceClone: args.keepSpaceClone
+    keepSpaceClone: args.keepSpaceClone,
+    variables: args.variables || {}
   };
   if (!args.browser) return options;
   const [browser] = await discoverBrowsers(args.browser);
@@ -79,7 +83,8 @@ export async function startMcpStdio() {
         if (name === 'ferrum_doctor') {
           value = await collectDoctor();
         } else if (name === 'ferrum_run_spec') {
-          const result = await runSpec(await loadSpec(args.specPath), await runOptions(args));
+          const options = await runOptions(args);
+          const result = await runSpec(await loadSpec(args.specPath, { variables: options.variables }), options);
           value = args.fullOutput ? result : compactRunResult(result);
         } else if (name === 'ferrum_run_suite') {
           const result = await runSuite(args.specPaths, { ...(await runOptions(args)), workers: args.workers });
@@ -94,17 +99,15 @@ export async function startMcpStdio() {
           value = args.fullOutput ? result : compactBrowserMatrixResult(result);
         } else if (name === 'ferrum_benchmark') {
           const result = await benchmarkSpec(args.specPath, {
+            ...(await runOptions({ ...args, browser: undefined })),
             engines: args.engines,
             runs: args.runs,
-            warmup: args.warmup,
-            headless: args.headless,
-            artifactsRoot: args.artifactsRoot,
-            space: args.space,
-            spaceMode: args.spaceMode,
-            spacesRoot: args.spacesRoot,
-            keepSpaceClone: args.keepSpaceClone
+            warmup: args.warmup
           });
           value = args.fullOutput ? result : compactBenchmarkResult(result);
+        } else if (name === 'ferrum_run_pack') {
+          const result = await runWorkloadPack(args.packPath, await runOptions({ ...args, browser: undefined }));
+          value = args.fullOutput ? result : compactPackResult(result);
         } else if (name === 'ferrum_list_spaces') {
           value = await listSpaces({ root: args.spacesRoot });
         } else if (name === 'ferrum_create_space') {

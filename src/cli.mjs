@@ -2,8 +2,9 @@ import { loadSpec } from './core/spec.mjs';
 import { runSpec } from './core/runner.mjs';
 import { runSuite } from './core/suite.mjs';
 import { benchmarkSpec } from './core/benchmark.mjs';
+import { runWorkloadPack } from './core/workload-pack.mjs';
 import { collectDoctor } from './core/doctor.mjs';
-import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult } from './core/agent-result.mjs';
+import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult, compactPackResult } from './core/agent-result.mjs';
 import { discoverBrowsers, runBrowserMatrix } from './core/browser-matrix.mjs';
 import { createSpace, listSpaces } from './core/spaces.mjs';
 import { listEvidence, readEvidence } from './core/evidence-store.mjs';
@@ -11,15 +12,35 @@ import { startDashboard } from './server/dashboard.mjs';
 import { startMcpStdio } from './mcp/server.mjs';
 import { FERRUM_VERSION } from './version.mjs';
 
-const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port', '--browser', '--browsers', '--space', '--space-mode', '--spaces-root']);
+const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port', '--browser', '--browsers', '--space', '--space-mode', '--spaces-root', '--var']);
 
 function usage() {
-  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
+  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--var NAME=value] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--var NAME=value] [--compact]\n  ferrum pack <pack.json> [--var NAME=value] [--headless] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
 }
 
 function argValue(args, name) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : undefined;
+}
+
+function argValues(args, name) {
+  const values = [];
+  for (let index = 0; index < args.length; index++) {
+    if (args[index] === name && index + 1 < args.length) values.push(args[index + 1]);
+  }
+  return values;
+}
+
+function parseVariables(args) {
+  const variables = {};
+  for (const value of argValues(args, '--var')) {
+    const index = value.indexOf('=');
+    if (index <= 0) throw new Error(`--var must use NAME=value syntax: ${value}`);
+    const name = value.slice(0, index);
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(`Invalid variable name: ${name}`);
+    variables[name] = value.slice(index + 1);
+  }
+  return variables;
 }
 
 function positional(args, start = 1) {
@@ -41,7 +62,8 @@ function commonOptions(args) {
     space: argValue(args, '--space'),
     spaceMode: argValue(args, '--space-mode'),
     spacesRoot: argValue(args, '--spaces-root'),
-    keepSpaceClone: args.includes('--keep-space-clone')
+    keepSpaceClone: args.includes('--keep-space-clone'),
+    variables: parseVariables(args)
   };
 }
 
@@ -70,8 +92,9 @@ export async function main(args) {
   if (command === 'test') {
     const specPath = args[1];
     if (!specPath) throw new Error('test requires a spec path');
-    const spec = await loadSpec(specPath);
-    const result = await runSpec(spec, await resolveSingleBrowserOptions(args, commonOptions(args)));
+    const options = await resolveSingleBrowserOptions(args, commonOptions(args));
+    const spec = await loadSpec(specPath, { variables: options.variables });
+    const result = await runSpec(spec, options);
     console.log(JSON.stringify(args.includes('--compact') ? compactRunResult(result) : result, null, 2));
     return;
   }
@@ -107,6 +130,13 @@ export async function main(args) {
     });
     console.log(JSON.stringify(args.includes('--compact') ? compactBenchmarkResult(result) : result, null, 2));
     if (result.status !== 'passed') process.exitCode = 1;
+    return;
+  }
+  if (command === 'pack') {
+    const packPath = args[1];
+    if (!packPath) throw new Error('pack requires a workload pack path');
+    const result = await runWorkloadPack(packPath, commonOptions(args));
+    console.log(JSON.stringify(args.includes('--compact') ? compactPackResult(result) : result, null, 2));
     return;
   }
   if (command === 'spaces') {

@@ -31,6 +31,7 @@ jobs:
           grep -q 'ferrum_run_suite' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_benchmark' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_browser_matrix' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_run_pack' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_list_spaces' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_list_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_read_evidence' /tmp/ferrum-mcp.jsonl
@@ -70,6 +71,8 @@ jobs:
         if: runner.os == 'Windows'
         run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers chromium,chrome,edge,brave,opera-gx --workers 2 --headless --require-all --compact
       - run: npm run smoke:extension
+      - name: Ferrum workload-pack extension smoke
+        run: node ./bin/ferrum.mjs pack ./packs/ferrum-self-test.pack.json --headless --compact
       - run: npm run smoke:dashboard
       - name: Ferrum Electron real-app smoke
         if: runner.os == 'Linux'

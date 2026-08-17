@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "ferrum-pack-self-test",
+  "repository": "Herbertofury/Ferrum-Browser",
+  "setup": [
+    {
+      "command": "node",
+      "args": ["-e", "console.log('ferrum workload pack setup ok')"],
+      "cwd": "..",
+      "timeoutMs": 30000
+    }
+  ],
+  "specs": ["../examples/self-test-extension.json"]
+}

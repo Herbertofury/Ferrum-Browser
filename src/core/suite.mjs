@@ -15,7 +15,7 @@ export async function runSuite(specPaths, options = {}) {
       const item = queue[slot];
       const started = performance.now();
       try {
-        const spec = await loadSpec(item.specPath);
+        const spec = await loadSpec(item.specPath, { variables: options.variables || {} });
         const result = await runSpec(spec, options);
         results[item.index] = {
           specPath: item.specPath,

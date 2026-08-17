@@ -11,7 +11,8 @@ export async function benchmarkSpec(specPath, options = {}) {
   const runs = Math.max(1, Number(options.runs ?? 5));
   const warmup = Math.max(0, Number(options.warmup ?? 1));
   const engines = String(options.engines || options.engine || 'chromium').split(',').map(value => value.trim()).filter(Boolean);
-  const referenceSpec = await loadSpec(specPath);
+  const specOptions = { variables: options.variables || {} };
+  const referenceSpec = await loadSpec(specPath, specOptions);
   const stepsPerRun = referenceSpec.steps?.length || 0;
   const comparisons = [];
 
@@ -19,7 +20,7 @@ export async function benchmarkSpec(specPath, options = {}) {
     const samples = [];
     const failures = [];
     for (let index = 0; index < warmup + runs; index++) {
-      const spec = await loadSpec(specPath);
+      const spec = await loadSpec(specPath, specOptions);
       const started = performance.now();
       try {
         const result = await runSpec(spec, {

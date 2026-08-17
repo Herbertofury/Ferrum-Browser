@@ -1,24 +1,23 @@
 # Ferrum
 
-Ferrum is an **agent-native full application tester** built to make browser-extension and app verification fast enough to use continuously without giving up real runtime fidelity.
+Ferrum is an **agent-native full application tester** built to make extension, browser, desktop, process, and native/mobile verification fast enough for continuous use without sacrificing real runtime fidelity or evidence.
 
-The first-class workload is GameSync: Ferrum can load the exact unpacked Manifest V3 build into a persistent Chromium profile, hash the loaded bytes, resolve the real runtime extension ID, test popup/options/content-script/service-worker behavior, capture diagnostics and screenshots, restart the browser, prove the same build returns, and leave a complete evidence bundle.
+Its first-class workload is GameSync. Ferrum can build or accept the exact unpacked Manifest V3 artifact, hash the loaded bytes, resolve the runtime extension identity, exercise foreground and service-worker behavior, capture console/network/background evidence, restart the browser with the same persistent profile, and retain a complete replayable evidence bundle.
 
-Ferrum is broader than extensions. The same test-spec system supports web apps, Electron applications, arbitrary processes/services, and Appium-native/mobile sessions. Ferrum 0.2 also adds parallel suites and repeated benchmark runs so agents do not need to reimplement orchestration around the tester.
+## Verified architecture
 
-## Why this architecture
+Ferrum uses several complementary lanes instead of pretending one runtime covers everything:
 
-Ferrum combines the strongest ideas from current agent-browser work instead of rebuilding a web engine:
+- **Full Playwright Chromium** is the unpacked Manifest V3 correctness lane.
+- **Chrome, Edge, Brave, and Opera GX** are additive real-browser web compatibility lanes through browser-matrix orchestration.
+- **Lightpanda** is the independently pinned direct-CDP fast web lane.
+- **Electron** covers real desktop application flows and the packaged Ferrum Workbench itself.
+- **Appium + UiAutomator2** covers native/mobile flows through the same evidence model.
+- **Process/service targets** cover CLIs, daemons, local services, and build/test helpers.
 
-- **Lightpanda** is an actual optional ultra-fast headless/CDP execution lane, with its release binary independently verified in Ferrum CI.
-- **Vercel agent-browser** informs compact stable refs, batching and low-round-trip agent control.
-- **Ego Lite** informs isolated task-space thinking and code-composed actions.
-- **Lightpanda Agent Benchmarks** informs fixed-workload median/p95/timeout measurement instead of subjective speed claims.
-- **Browserless** informs session, queue, debug and evidence-infrastructure patterns.
-- **Browserbase Stagehand** is the reference for a future semantic recovery layer above deterministic primitives.
-- **Playwright Chromium** is the correctness lane for the browser and extension behaviors Lightpanda cannot replace.
+Ferrum also provides persistent authenticated **Spaces** with safe per-task cloning, deterministic selectors with recorded semantic recovery, bounded parallel suites, reproducible median/p95 benchmarks, durable replay, compact agent outputs, and MCP tools over the same core runner.
 
-See [docs/UPSTREAMS.md](docs/UPSTREAMS.md) for direct source links.
+See `docs/UPSTREAMS.md` for upstream references and `docs/ROADMAP.md` for the current convergence state.
 
 ## Install
 
@@ -29,84 +28,120 @@ npm install
 npx playwright install chromium
 ```
 
-Lightpanda is optional. Set `FERRUM_LIGHTPANDA` to a verified Lightpanda binary when you want the fast lane.
+Lightpanda, branded system browsers, Appium drivers, and Android tooling are optional unless you use those lanes.
 
-## Use
+## Core commands
 
-Inspect available runtimes:
+Inspect the environment:
 
 ```bash
 npx ferrum doctor
 ```
 
-Run the built-in real MV3 extension self-test:
+Run a real MV3 extension workload:
 
 ```bash
 npx ferrum test examples/self-test-extension.json --headless
 ```
 
-Run a web-app test:
-
-```bash
-npx ferrum test examples/self-test-web.json --headless
-```
-
-For agent loops that need a small stdout payload, add `--compact`. Ferrum still writes the complete evidence bundle and full `result.json`, while stdout reports the run status, target/engine, timing summary, diagnostic counts, and exact `evidenceDir`:
+Run a web workload with compact agent output while preserving full evidence on disk:
 
 ```bash
 npx ferrum test examples/self-test-web.json --headless --compact
 ```
 
-Run independent workloads concurrently while keeping separate evidence bundles:
+Run the same web workload across real discovered browsers:
+
+```bash
+npx ferrum matrix examples/self-test-web.json --browsers chromium,chrome,edge,brave,opera-gx --workers 2 --headless --compact
+```
+
+Create and clone a persistent authenticated Space:
+
+```bash
+npx ferrum spaces create bert-auth
+npx ferrum spaces clone bert-auth isolated-task
+```
+
+Use a Space directly or clone it safely for concurrent work:
+
+```bash
+npx ferrum test path/to/spec.json --space bert-auth --space-mode clone --headless
+```
+
+Run a reusable production workload pack, including its real setup/build commands:
+
+```bash
+npx ferrum pack packs/gamesync-current-extension.pack.json --var GAMESYNC_REPO=/path/to/Gamesync --headless --compact
+```
+
+GameSync V2 uses its own grounded WXT pack:
+
+```bash
+npx ferrum pack packs/gamesync-next-extension.pack.json --var GAMESYNC_NEXT_REPO=/path/to/GameSync-Next --headless --compact
+```
+
+Run multiple independent specs concurrently:
 
 ```bash
 npx ferrum suite examples/self-test-web.json examples/self-test-extension.json --workers 2 --headless
 ```
 
-Repeat an identical workload and report median/p95 timing. A web spec compatible with both engines can compare Chromium and Lightpanda directly:
+Benchmark an identical workload with machine, step-budget, success-rate, and timeout context:
 
 ```bash
 npx ferrum bench path/to/benchmark-spec.json --engines chromium,lightpanda --runs 7 --warmup 1 --headless
 ```
 
-Open the functional local workbench in Ferrum's controlled Chromium app window:
+Open the replay-capable Workbench:
 
 ```bash
 npx ferrum dashboard
 ```
 
-Expose Ferrum to an agent over MCP stdio. MCP includes doctor, single-run, suite and benchmark tools:
+Inspect retained evidence after the original process has exited or restarted:
+
+```bash
+npx ferrum evidence list
+npx ferrum evidence show <evidence-id>
+```
+
+Expose Ferrum to an agent over MCP stdio:
 
 ```bash
 npx ferrum mcp
 ```
 
-## GameSync
+The MCP surface includes doctor, single-run, suite, browser-matrix, benchmark, workload-pack, Space, and durable-evidence tools. Compact results are the default for high-volume run operations; full evidence remains on disk and full payloads can be requested explicitly.
 
-`examples/gamesync-extension.json` is a starting acceptance workload for the current standalone GameSync extension. Point `target.path` at the freshly built `dist` directory. A GameSync change is not fully verified merely because generic CI or an Opera smoke test passes. Ferrum must exercise the exact changed flow and restart/persistence path as an additional mandatory acceptance layer.
+## Production GameSync packs
 
-When real GameSync testing exposes avoidable Ferrum slowness, missing diagnostics, fragile extension discovery, excessive agent round trips or an unsupported reusable workflow, that is treated as Ferrum work: fix Ferrum, regression-test it, then rerun GameSync instead of routing around the tester.
+Ferrum includes separate baseline production packs for both canonical GameSync repositories:
 
-## Extension worker diagnostics
+- `packs/gamesync-current-extension.pack.json` builds the current standalone extension with its real `build:extension` script and verifies the resulting `dist` MV3 runtime.
+- `packs/gamesync-next-extension.pack.json` builds the WXT V2 extension workspace and verifies `.output/chrome-mv3`.
 
-Chromium extension sessions collect service-worker console events, worker-owned requests/responses/failures, service-worker-intercepted page responses, worker lifecycle events, page diagnostics, screenshots, and traces in the same evidence model. Specs can snapshot or assert worker diagnostic counters before and after restart. Ferrum's own MV3 self-test forces the fixture worker to make a real request, requires worker console and network evidence, and repeats the proof after the persistent Chromium profile is restarted.
+Both baseline specs prove service-worker discovery, popup loading, screenshots, clean diagnostics, browser restart, rediscovery, and post-restart UI loading. Per-change GameSync acceptance should extend the appropriate baseline with the exact sites, controls, content-script paths, persistence behavior, and background interactions changed by that work. A generic baseline is never a substitute for exercising a changed feature.
 
-## Evidence
+## Locator recovery
 
-Runs create unique `artifacts/<timestamp>-<name>-<nonce>/` folders with:
+Selectors and Ferrum refs remain primary. A step may define a semantic `fallback`, but Ferrum attempts it only after the deterministic locator fails. The deterministic probe is intentionally short when fallback is available, while the fallback retains the full step timeout. Every successful recovery records a `locator-fallback` evidence event so flaky or stale deterministic selectors remain visible rather than being silently hidden.
 
-- normalized `spec.json`
-- `result.json` with every timed step and full event stream
-- `agent-summary.json` with compact status, timing, diagnostic counts, and the exact evidence directory
-- screenshots
-- Playwright trace files
-- console/page/network/service-worker failure events
-- extension build SHA-256 inventory
-- resolved runtime extension ID and identity source
-- restart proof when requested
-- process/Appium output where applicable
+Explicit `first` or `nth` disambiguation is available when a deterministic selector legitimately matches several elements.
 
-A failed run keeps its artifacts. Parallel runs never share an evidence directory. Compact CLI output changes only what is printed to stdout; it never reduces stored evidence, test steps, runtime fidelity, or target coverage.
+## Evidence and replay
+
+Each finalized run creates a unique evidence directory containing the normalized spec, full `result.json`, compact `agent-summary.json`, timed event stream, screenshots, traces where applicable, runtime diagnostics, extension inventory/identity, Appium source/screenshots, and process output appropriate to that target.
+
+The Workbench reads finalized evidence from disk rather than relying on process memory. Its replay view shows the full retained event timeline, screenshots, and file inventory, and the same run remains replayable after the Workbench server restarts. Evidence paths are constrained to the selected run directory.
+
+## Desktop Workbench
+
+Ferrum includes a real Electron desktop shell around the same local Workbench and evidence APIs. CI packages native Linux and Windows desktop bundles, launches the freshly packaged executable, exercises Doctor, a real workload, persisted evidence history, replay, screenshots, and runtime diagnostics, then uploads the tested package.
+
+## Native/mobile
+
+Ferrum's Appium runner implements W3C session lifecycle, element lookup/actions, text/visibility assertions, screenshots, page-source capture, failure capture, and guaranteed session cleanup. CI qualifies the lane against Android's real system Settings application in an accelerated Android emulator using pinned Appium and UiAutomator2 versions.
 
 ## Self-test
 
@@ -114,7 +149,11 @@ A failed run keeps its artifacts. Parallel runs never share an evidence director
 npm test
 npm run smoke:web
 npm run smoke:extension
-npm run smoke:lightpanda
+npm run smoke:dashboard
+npm run smoke:electron
+npm run smoke:desktop
+npm run package:desktop
+npm run smoke:packaged-desktop
 ```
 
-The Chromium smoke commands require Playwright Chromium. The Lightpanda command requires `FERRUM_LIGHTPANDA` or a `lightpanda` executable on PATH. GitHub CI verifies Chromium on Linux and Windows and separately verifies the pinned current Lightpanda fast lane.
+GitHub CI additionally exercises the browser matrix, cloned Spaces, workload-pack orchestration, Lightpanda, and the real Android/Appium lane. A passing source build alone is not treated as a passing Ferrum release; the fresh packaged desktop and real runtime lanes must pass too.

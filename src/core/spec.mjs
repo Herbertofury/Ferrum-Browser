@@ -3,13 +3,30 @@ import path from 'node:path';
 import { resolveFrom } from './paths.mjs';
 
 const TARGET_TYPES = new Set(['web', 'extension', 'electron', 'process', 'appium']);
+const TEMPLATE = /\$\{(?:VAR|ENV):([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
-export async function loadSpec(specPath) {
+export function expandVariables(value, variables = {}, label = 'value') {
+  if (typeof value === 'string') {
+    return value.replace(TEMPLATE, (_match, name) => {
+      const resolved = variables[name] ?? process.env[name];
+      if (resolved == null || resolved === '') throw new Error(`${label}: required variable ${name} is not set`);
+      return String(resolved);
+    });
+  }
+  if (Array.isArray(value)) return value.map((item, index) => expandVariables(item, variables, `${label}[${index}]`));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, expandVariables(child, variables, `${label}.${key}`)]));
+  }
+  return value;
+}
+
+export async function loadSpec(specPath, options = {}) {
   const abs = path.resolve(specPath);
   const raw = JSON.parse(await fs.readFile(abs, 'utf8'));
+  const expanded = expandVariables(raw, options.variables || {}, abs);
   const baseDir = path.dirname(abs);
-  validateSpec(raw, abs);
-  const spec = structuredClone(raw);
+  validateSpec(expanded, abs);
+  const spec = structuredClone(expanded);
   spec.__file = abs;
   spec.__baseDir = baseDir;
   if (spec.target?.path) spec.target.path = resolveFrom(baseDir, spec.target.path);
