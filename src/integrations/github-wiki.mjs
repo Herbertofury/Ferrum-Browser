@@ -23,10 +23,16 @@ const SAVE_SELECTORS = [
   'input[type="submit"][value*="Save" i]'
 ];
 
-const CREATE_SELECTORS = [
+const FIRST_PAGE_SELECTORS = [
   'a[href$="/wiki/_new"]:has-text("Create the first page")',
-  'a[href$="/wiki/_new"]:has-text("New Page")',
-  'a[href$="/wiki/_new"]'
+  'a[href$="/wiki/_new"]:has-text("Create first page")'
+];
+
+const EXISTING_WIKI_SELECTORS = [
+  '#wiki-body',
+  '#wiki-content',
+  '#wiki-wrapper .markdown-body',
+  '.markdown-body'
 ];
 
 export function normalizeGithubRepository(value) {
@@ -54,16 +60,29 @@ export function buildGithubWikiUrls(repository, serverUrl = 'https://github.com'
   };
 }
 
-export async function probeGithubWiki(repository, { serverUrl, fetchImpl = globalThis.fetch, timeoutMs = 10000 } = {}) {
+function githubGitAuthHeader(token) {
+  if (!token) return null;
+  return `Basic ${Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64')}`;
+}
+
+export async function probeGithubWiki(repository, {
+  serverUrl,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = 10000,
+  token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
+} = {}) {
   if (typeof fetchImpl !== 'function') throw new Error('A fetch implementation is required');
   const urls = buildGithubWikiUrls(repository, serverUrl);
+  const headers = {
+    accept: 'application/x-git-upload-pack-advertisement',
+    'user-agent': 'Ferrum-GitHub-Wiki-Probe'
+  };
+  const authorization = githubGitAuthHeader(token);
+  if (authorization) headers.authorization = authorization;
   try {
     const response = await fetchImpl(urls.wikiGitInfoUrl, {
       method: 'GET',
-      headers: {
-        accept: 'application/x-git-upload-pack-advertisement',
-        'user-agent': 'Ferrum-GitHub-Wiki-Probe'
-      },
+      headers,
       redirect: 'follow',
       signal: AbortSignal.timeout(Math.max(1, Number(timeoutMs) || 10000))
     });
@@ -74,7 +93,8 @@ export async function probeGithubWiki(repository, { serverUrl, fetchImpl = globa
       status: response.status,
       exists: response.status === 200,
       missing: response.status === 404,
-      reachable: response.status > 0 && response.status < 500
+      reachable: response.status > 0 && response.status < 500,
+      authenticatedProbe: Boolean(token)
     };
   } catch (error) {
     return {
@@ -85,6 +105,7 @@ export async function probeGithubWiki(repository, { serverUrl, fetchImpl = globa
       exists: false,
       missing: false,
       reachable: false,
+      authenticatedProbe: Boolean(token),
       error: error.message
     };
   }
@@ -107,61 +128,76 @@ async function loginRequired(page) {
   return (await form.count()) > 0 && await form.isVisible().catch(() => false);
 }
 
-async function resolveEditor(page, urls, { headless, authTimeoutMs, evidence }) {
-  await page.goto(urls.newPageUrl, { waitUntil: 'domcontentloaded' });
-  evidence.record('github-wiki-bootstrap-navigate', { url: page.url() });
+async function completeLoginIfNeeded(page, { headless, authTimeoutMs, evidence }) {
+  if (!(await loginRequired(page))) return false;
+  evidence.record('github-wiki-bootstrap-auth-required', { url: page.url() });
+  if (headless) throw new Error('GitHub login is required. Run headed with a persistent Ferrum Space once, then reuse that Space for automated wiki bootstrap.');
+  const timeout = Math.max(1000, Number(authTimeoutMs) || 180000);
+  await page.waitForURL(current => {
+    try {
+      const path = new URL(current).pathname;
+      return path !== '/login' && !path.startsWith('/sessions/');
+    } catch {
+      return false;
+    }
+  }, { timeout });
+  evidence.record('github-wiki-bootstrap-auth-complete', { url: page.url() });
+  return true;
+}
 
-  if (await loginRequired(page)) {
-    evidence.record('github-wiki-bootstrap-auth-required', { url: page.url() });
-    if (headless) throw new Error('GitHub login is required. Run headed with a persistent Ferrum Space once, then reuse that Space for automated wiki bootstrap.');
-    const timeout = Math.max(1000, Number(authTimeoutMs) || 180000);
-    await page.waitForURL(current => {
-      try {
-        const path = new URL(current).pathname;
-        return path !== '/login' && !path.startsWith('/sessions/');
-      } catch {
-        return false;
-      }
-    }, { timeout });
-    await page.goto(urls.newPageUrl, { waitUntil: 'domcontentloaded' });
+async function resolveEditor(page, urls, { headless, authTimeoutMs, evidence, initialProbe, token }) {
+  // Inspect the wiki root before opening _new. This prevents an unauthenticated
+  // 404 on a private wiki from being mistaken for an empty wiki and creating an
+  // unwanted extra page after the browser session authenticates.
+  await page.goto(urls.wikiUrl, { waitUntil: 'domcontentloaded' });
+  evidence.record('github-wiki-bootstrap-root-preflight', { url: page.url() });
+  if (await completeLoginIfNeeded(page, { headless, authTimeoutMs, evidence })) {
+    await page.goto(urls.wikiUrl, { waitUntil: 'domcontentloaded' });
   }
 
-  let title = await firstVisible(page, TITLE_SELECTORS);
-  let body = await firstVisible(page, BODY_SELECTORS);
-  if (title && body) return { title, body };
+  const firstPage = await firstVisible(page, FIRST_PAGE_SELECTORS);
+  const existingWiki = await firstVisible(page, EXISTING_WIKI_SELECTORS);
+  if (existingWiki && !firstPage) {
+    evidence.record('github-wiki-bootstrap-existing-wiki', { url: page.url(), source: 'authenticated-browser-root' });
+    return null;
+  }
 
-  await page.goto(urls.wikiUrl, { waitUntil: 'domcontentloaded' });
-  const create = await firstVisible(page, CREATE_SELECTORS);
-  if (create) {
+  if (firstPage) {
+    evidence.record('github-wiki-bootstrap-empty-wiki', { url: page.url(), source: 'first-page-control' });
     await Promise.all([
       page.waitForLoadState('domcontentloaded').catch(() => {}),
-      create.click()
+      firstPage.click()
     ]);
-    if (await loginRequired(page)) {
-      if (headless) throw new Error('GitHub login is required to create the first wiki page.');
-      const timeout = Math.max(1000, Number(authTimeoutMs) || 180000);
-      await page.waitForURL(current => {
-        try { return new URL(current).pathname !== '/login'; } catch { return false; }
-      }, { timeout });
+    if (await completeLoginIfNeeded(page, { headless, authTimeoutMs, evidence })) {
       await page.goto(urls.newPageUrl, { waitUntil: 'domcontentloaded' });
     }
+  } else if (initialProbe?.missing && token) {
+    // A token-authenticated Git probe returned a real 404, so direct navigation
+    // to the first-page editor is safe even if the GitHub UI wording changes.
+    evidence.record('github-wiki-bootstrap-empty-wiki', { url: page.url(), source: 'authenticated-git-probe' });
+    await page.goto(urls.newPageUrl, { waitUntil: 'domcontentloaded' });
+    if (await completeLoginIfNeeded(page, { headless, authTimeoutMs, evidence })) {
+      await page.goto(urls.newPageUrl, { waitUntil: 'domcontentloaded' });
+    }
+  } else {
+    throw new Error('Ferrum could not safely determine that this wiki is empty. Use a GitHub token for the Git probe or an authenticated Space that exposes the Create the first page control.');
   }
 
-  title = await firstVisible(page, TITLE_SELECTORS);
-  body = await firstVisible(page, BODY_SELECTORS);
+  const title = await firstVisible(page, TITLE_SELECTORS);
+  const body = await firstVisible(page, BODY_SELECTORS);
   if (!title || !body) {
-    const probe = await probeGithubWiki(urls.repository, { serverUrl: urls.serverUrl });
+    const probe = await probeGithubWiki(urls.repository, { serverUrl: urls.serverUrl, token });
     if (probe.exists) return null;
     throw new Error(`GitHub wiki editor was not found at ${page.url()}. Confirm the Ferrum Space is authenticated and has wiki write access.`);
   }
   return { title, body };
 }
 
-async function waitForWikiGit(repository, { serverUrl, attempts = 10, intervalMs = 750 } = {}) {
-  let probe = await probeGithubWiki(repository, { serverUrl });
+async function waitForWikiGit(repository, { serverUrl, token, attempts = 10, intervalMs = 750 } = {}) {
+  let probe = await probeGithubWiki(repository, { serverUrl, token });
   for (let attempt = 1; !probe.exists && attempt < attempts; attempt++) {
     await delay(intervalMs);
-    probe = await probeGithubWiki(repository, { serverUrl });
+    probe = await probeGithubWiki(repository, { serverUrl, token });
   }
   return probe;
 }
@@ -177,10 +213,11 @@ export async function bootstrapGithubWiki(repository, {
   browserChannel,
   browserExecutable,
   artifactsRoot,
-  authTimeoutMs = 180000
+  authTimeoutMs = 180000,
+  token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN
 } = {}) {
   const urls = buildGithubWikiUrls(repository, serverUrl);
-  const initialProbe = await probeGithubWiki(urls.repository, { serverUrl: urls.serverUrl });
+  const initialProbe = await probeGithubWiki(urls.repository, { serverUrl: urls.serverUrl, token });
   if (initialProbe.exists) {
     return {
       status: 'already-initialized',
@@ -189,6 +226,7 @@ export async function bootstrapGithubWiki(repository, {
       wikiGitUrl: urls.wikiGitUrl,
       gitRemoteVerified: true,
       probeStatus: initialProbe.status,
+      authenticatedProbe: initialProbe.authenticatedProbe,
       evidenceDir: null
     };
   }
@@ -196,7 +234,13 @@ export async function bootstrapGithubWiki(repository, {
   const evidence = await new EvidenceWriter({
     root: artifactsRoot,
     name: `github-wiki-bootstrap-${urls.repository.replace('/', '-')}`,
-    metadata: { integration: 'github-wiki', repository: urls.repository, wikiUrl: urls.wikiUrl, space }
+    metadata: {
+      integration: 'github-wiki',
+      repository: urls.repository,
+      wikiUrl: urls.wikiUrl,
+      space,
+      authenticatedGitProbe: Boolean(token)
+    }
   }).init();
   const runSpace = await prepareRunSpace({ name: space, root: spacesRoot, mode: 'persistent', runId: evidence.id });
   let session;
@@ -213,16 +257,17 @@ export async function bootstrapGithubWiki(repository, {
     });
     const page = await session.newPage();
     await session.closeInitialPages({ except: page });
-    const editor = await resolveEditor(page, urls, { headless, authTimeoutMs, evidence });
+    const editor = await resolveEditor(page, urls, { headless, authTimeoutMs, evidence, initialProbe, token });
     if (!editor) {
-      const probe = await waitForWikiGit(urls.repository, { serverUrl: urls.serverUrl });
+      const probe = await waitForWikiGit(urls.repository, { serverUrl: urls.serverUrl, token });
       finalResult = await evidence.finalize({
         status: 'passed',
         action: 'already-initialized',
         repository: urls.repository,
         wikiUrl: urls.wikiUrl,
         gitRemoteVerified: probe.exists,
-        probeStatus: probe.status
+        probeStatus: probe.status,
+        authenticatedProbe: probe.authenticatedProbe
       });
       return { ...finalResult, evidenceDir: evidence.dir };
     }
@@ -248,8 +293,8 @@ export async function bootstrapGithubWiki(repository, {
     }
 
     await evidence.screenshot(page, 'after-save');
-    const probe = await waitForWikiGit(urls.repository, { serverUrl: urls.serverUrl });
-    evidence.record('github-wiki-bootstrap-saved', { finalUrl, gitProbeStatus: probe.status, gitRemoteVerified: probe.exists });
+    const probe = await waitForWikiGit(urls.repository, { serverUrl: urls.serverUrl, token });
+    evidence.record('github-wiki-bootstrap-saved', { finalUrl, gitProbeStatus: probe.status, gitRemoteVerified: probe.exists, authenticatedProbe: probe.authenticatedProbe });
     finalResult = await evidence.finalize({
       status: 'passed',
       action: 'created-first-page',
@@ -259,7 +304,8 @@ export async function bootstrapGithubWiki(repository, {
       pageUrl: finalUrl,
       wikiGitUrl: urls.wikiGitUrl,
       gitRemoteVerified: probe.exists,
-      probeStatus: probe.status
+      probeStatus: probe.status,
+      authenticatedProbe: probe.authenticatedProbe
     });
     return { ...finalResult, evidenceDir: evidence.dir };
   } catch (error) {
