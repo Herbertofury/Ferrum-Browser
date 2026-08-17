@@ -64,16 +64,6 @@ export async function runElectronTarget(spec, evidence) {
   });
   app.on('console', onMainConsole);
 
-  const identity = await app.evaluate(({ app }) => ({
-    appPath: app.getAppPath(),
-    appVersion: app.getVersion(),
-    electron: process.versions.electron,
-    chrome: process.versions.chrome,
-    node: process.versions.node
-  }));
-  evidence.record('electron-start', { executablePath: executablePath || null, args, pid: processHandle.pid, ...identity });
-  await evidence.writeJson('electron-runtime.json', identity);
-
   const windows = [];
   const pageDetachers = [];
   const register = page => {
@@ -84,10 +74,22 @@ export async function runElectronTarget(spec, evidence) {
   };
   app.windows().forEach(register);
   app.on('window', register);
-  const page = await app.firstWindow({ timeout: spec.timeouts?.startupMs || 30000 });
-  register(page);
 
+  let identity = null;
   try {
+    const page = await app.firstWindow({ timeout: spec.timeouts?.startupMs || 30000 });
+    register(page);
+
+    identity = await app.evaluate(({ app }) => ({
+      appPath: app.getAppPath(),
+      appVersion: app.getVersion(),
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      node: process.versions.node
+    }));
+    evidence.record('electron-start', { executablePath: executablePath || null, args, pid: processHandle.pid, ...identity });
+    await evidence.writeJson('electron-runtime.json', identity);
+
     const engine = new StepEngine({
       evidence,
       session: { engine: 'electron', context: page.context() },
