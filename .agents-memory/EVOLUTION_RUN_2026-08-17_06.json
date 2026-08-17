@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "evolution-run-delta",
+  "runLabel": "2026-08-17_06",
+  "checkedAt": "2026-08-17T23:00:29Z",
+  "watermark": {
+    "previousCheckpoint": ".agents-memory/EVOLUTION_RUN_2026-08-17_05.json",
+    "startingMain": "745442c5f85aaffff32ccc1093d63628a962b154",
+    "startingMainDelta": {
+      "change": "provider-neutral remote WebDriver target already landed since the prior durable checkpoint",
+      "proposalHead": "ab0f3cf5e07adcc57d2a34cd486a3b98ef8e1e22",
+      "proposalRun": 32076519315
+    }
+  },
+  "productDelta": {
+    "base": "745442c5f85aaffff32ccc1093d63628a962b154",
+    "proposalHead": "e239ca519612e2521fda18d7d58239ff200d13a5",
+    "proposalTree": "437d03312b5318edfab20239f05d2cc039feb4d7",
+    "proposalRun": 32078214320,
+    "proposalConclusion": "success",
+    "pullRequest": 14,
+    "finalProductCommit": "9abd0e65cabc2bf6d31baa130871b13e212e2495",
+    "finalProductTree": "437d03312b5318edfab20239f05d2cc039feb4d7",
+    "verificationRelationship": "merged squash commit has the exact same tree as the fully verified proposal head",
+    "change": "WebDriver assert-visible now retries displayed-state convergence only within the existing step deadline; locator assertions re-resolve each attempt, fixed aliases preserve identity, protocol errors remain visible, and success/timeout diagnostics include attempts and final state.",
+    "filesChanged": ["src/runners/webdriver.mjs", "tests/webdriver-visible-convergence.test.mjs", "examples/self-test-webdriver.json"],
+    "realRuntimeEvidence": {
+      "seleniumGrid": "passed",
+      "fixture": "real Chrome through pinned Selenium Grid; #late begins display:none and changes to display:block after 300ms",
+      "observedDelayedAssertion": {"action": "assert-visible", "attempts": 2, "durationMs": 247.293232, "displayed": true},
+      "artifactId": 9304201996,
+      "sizeBytes": 20017,
+      "sha256": "e93f2f5bc3500697d5314dc21bd4d54f23243bc36b5228e192fe2880edda2a83"
+    },
+    "ci": {"unitMcpInspectorEvidenceIntegrity": "success", "webdriverGrid": "success", "linux": "success", "windows": "success", "lightpanda": "success", "appiumAndroid": "success"},
+    "artifacts": {
+      "linuxDesktop": {"id": 9304204947, "sizeBytes": 131768822, "sha256": "008309fdd36902c3750e7d4ecabd029dde90ebc5617e1a9869a203d840579e17"},
+      "windowsDesktop": {"id": 9304272853, "sizeBytes": 151636869, "sha256": "bfe18df1f1b68c0df6b011c8f794b2df68bfb675d07f5fcb91079e849c4f30e5"},
+      "linuxEvidence": {"id": 9304200644, "sizeBytes": 2120598, "sha256": "75d2de5daa5927faf304e932918d3aed37e3976e4c122f04fe75d76ec4b45d79"},
+      "windowsEvidence": {"id": 9304267504, "sizeBytes": 1892463, "sha256": "8f330e70898aa8aa1847efc467db2ea6b7104a4f573df4d32c8ec1ac2a2bc381"},
+      "appiumEvidence": {"id": 9304228856, "sizeBytes": 124255, "sha256": "2a766740c7bfa9fe292de35490ab00226ef3f2d84491a54d895a2beb627e932a"},
+      "lightpandaEvidence": {"id": 9304179332, "sizeBytes": 3649, "sha256": "fcb85b6062d49faa95dcd7fe81a0a9d626ca9bffe124fcb27709aab352fc24c2"}
+    },
+    "statusPointer": {"advanced": false, "reason": "connector exposes proposal-triggered workflow lookup but not a dependable commit-filtered push-run listing; this checkpoint records the exact tested proposal tree and identical merged product tree instead of fabricating a merged-main workflow id"}
+  },
+  "ecosystemRotation": {
+    "category": "synchronization, actionability, semantic waits, WebDriver/WebDriver-BiDi reliability and agent-facing assertion ergonomics",
+    "seriousCandidateCount": 12,
+    "deepInspection": ["SeleniumHQ/selenium", "webdriverio/webdriverio", "microsoft/playwright", "puppeteer/puppeteer", "yashaka/selene"],
+    "primaryFinding": "current high-capability browser stacks converge on bounded condition/actionability polling rather than one-shot visible-state sampling; Ferrum had a concrete raw-WebDriver assert-visible gap"
+  },
+  "candidates": [
+    {
+      "project": "SeleniumHQ/selenium", "owner": "SeleniumHQ", "url": "https://github.com/SeleniumHQ/selenium", "checkedDate": "2026-08-17", "head": "7f32b68a30dc4b235857a3fe7cf8629b3f4e5ae4", "maintenanceFreshness": "active 2026-08-17", "purpose": "standards-based browser automation with explicit waits", "architecture": "WebDriver client/server plus Expected Conditions support", "relevantFerrumCapability": "raw WebDriver synchronization", "harvest": "bounded explicit-condition polling and visibility-of-located-element semantics", "integrationMode": "Ferrum-native algorithm transplant", "expectedBenefit": "fewer false failures when DOM presence precedes visible state", "requiredDependencies": "none beyond existing W3C client", "platformCoverage": "remote WebDriver browsers/grids", "compatibilityRisks": "keep one step deadline and propagate protocol errors", "upstreamIssues": "scoped open-issue search found no blocker", "benchmarkOrProductionEvidence": "official Selenium 4.46.0 waits plus Ferrum real Grid smoke", "smallestExperiment": "hidden element becomes visible after 300ms in real Grid smoke", "acceptanceTest": "assert-visible requires multiple polls and passes inside existing timeout", "decision": "ADOPT", "nextReviewTrigger": "before WebDriver click/fill actionability work"
+    },
+    {
+      "project": "webdriverio/webdriverio", "owner": "webdriverio", "url": "https://github.com/webdriverio/webdriverio", "checkedDate": "2026-08-17", "head": "cac60ec3afd7d8ad240eab239c2d735ea4ae69e7", "maintenanceFreshness": "active 2026-08-17", "purpose": "WebDriver/BiDi browser and app automation", "architecture": "command layer with retrying wait/assertion utilities", "relevantFerrumCapability": "displayed-state convergence", "harvest": "waitForDisplayed via waitUntil plus stale-context recovery patterns", "integrationMode": "algorithm transplant/differential benchmark", "expectedBenefit": "consistent dynamic-UI retry semantics", "requiredDependencies": "none for pattern", "platformCoverage": "web plus Appium ecosystems", "compatibilityRisks": "BiDi timeout behavior means classic W3C remains independently qualified", "upstreamIssues": "#13909 reports Firefox BiDi timeout behavior on large component workloads", "benchmarkOrProductionEvidence": "current waitForDisplayed source retries isDisplayed", "smallestExperiment": "same delayed element in Ferrum and WebdriverIO", "acceptanceTest": "same result and bounded timeout with no evidence loss", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "optional BiDi or broader actionability assertions"
+    },
+    {
+      "project": "microsoft/playwright", "owner": "microsoft", "url": "https://github.com/microsoft/playwright", "checkedDate": "2026-08-17", "head": "04fb72b4f0f77e50c88689d436980f68f4c40a98", "maintenanceFreshness": "active 2026-08-17", "purpose": "browser automation with locator actionability", "architecture": "protocol drivers plus locator/actionability layer", "relevantFerrumCapability": "retrying assertions/actionability", "harvest": "visible/stable/receives-events/enabled actionability and web-first assertions", "integrationMode": "reference/benchmark for Ferrum-native semantics", "expectedBenefit": "fewer sleeps and flaky one-shot checks", "requiredDependencies": "already present in browser lanes", "platformCoverage": "Chromium Firefox WebKit", "compatibilityRisks": "Playwright semantics must not be silently imposed on native/raw targets", "upstreamIssues": "scoped open-issue search found no visibility-retry blocker", "benchmarkOrProductionEvidence": "official actionability docs and Ferrum Playwright lane", "smallestExperiment": "compare delayed visibility across Playwright and raw WebDriver", "acceptanceTest": "equivalent success while preserving raw protocol evidence", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "before generic clickability/editability assertions"
+    },
+    {
+      "project": "puppeteer/puppeteer", "owner": "puppeteer", "url": "https://github.com/puppeteer/puppeteer", "checkedDate": "2026-08-17", "head": "819c9f29206037432833502e1b0bcfd799782641", "maintenanceFreshness": "active 2026-08-17", "purpose": "Chrome/Firefox browser automation", "architecture": "CDP/BiDi automation with Locator layer", "relevantFerrumCapability": "action precondition waits", "harvest": "Locator visibility/enabled/stable waits and pre-action events", "integrationMode": "benchmark/reference", "expectedBenefit": "better action diagnostics without arbitrary sleeps", "requiredDependencies": "none for technique extraction", "platformCoverage": "Chrome/Chromium and supported Firefox paths", "compatibilityRisks": "browser-specific semantics remain additive", "upstreamIssues": "scoped open-issue search found no locator-visibility blocker", "benchmarkOrProductionEvidence": "official current page-interactions documentation", "smallestExperiment": "compare attempt diagnostics against Ferrum visibility convergence", "acceptanceTest": "actionable signal with bounded timing", "decision": "WATCH", "nextReviewTrigger": "structured per-attempt actionability diagnostics"
+    },
+    {
+      "project": "yashaka/selene", "owner": "yashaka", "url": "https://github.com/yashaka/selene", "checkedDate": "2026-08-17", "head": "d0d74848f9a29035b241fd623c16dead7dc9dbf5", "maintenanceFreshness": "inspected head from 2026-05; maintained", "purpose": "Selenium wrapper with automatic retries", "architecture": "lazy elements plus condition/retry abstraction", "relevantFerrumCapability": "smart condition retries/error explanations", "harvest": "lazy re-resolution, retry and detailed condition errors", "integrationMode": "idea transplant", "expectedBenefit": "recover from DOM replacement without losing failure evidence", "requiredDependencies": "none", "platformCoverage": "Selenium-supported browsers", "compatibilityRisks": "do not turn every Ferrum command into an implicit wait", "upstreamIssues": "no blocker identified in scoped review", "benchmarkOrProductionEvidence": "README documents lazy elements, smart waits and detailed errors", "smallestExperiment": "replace a located node during visibility wait", "acceptanceTest": "locator re-resolves while fixed alias fails truthfully if stale", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "stale-element replacement regression coverage"
+    },
+    {
+      "project": "selenide/selenide", "owner": "selenide", "url": "https://github.com/selenide/selenide", "checkedDate": "2026-08-17", "head": "7a6f062162523e26ac4497ea0e1b3db159294815", "maintenanceFreshness": "active 2026-08-17", "purpose": "condition-oriented Selenium UI testing", "architecture": "high-level condition/action wrapper", "relevantFerrumCapability": "declarative conditions", "harvest": "concise condition waits and timeout reporting", "integrationMode": "research/reference", "expectedBenefit": "possible simpler agent-facing assertion vocabulary", "requiredDependencies": "none for research", "platformCoverage": "Selenium browsers", "compatibilityRisks": "Java-centric abstractions may not map across Ferrum targets", "upstreamIssues": "not deep-inspected after stronger sources converged", "benchmarkOrProductionEvidence": "long-lived active Selenium wrapper", "smallestExperiment": "compare assertion vocabulary on web/WebDriver tasks", "acceptanceTest": "fewer agent steps with full evidence", "decision": "WATCH", "nextReviewTrigger": "measured assertion-schema round-trip bottleneck"
+    },
+    {
+      "project": "electron-stagewright/electron-stagewright", "owner": "electron-stagewright", "url": "https://github.com/electron-stagewright/electron-stagewright", "checkedDate": "2026-08-17", "head": "dfde94185fc7af0e5b3e01409e2359ee0678f732", "maintenanceFreshness": "last inspected head 2026-07-30", "purpose": "agent-first Electron automation", "architecture": "semantic refs, compact accessibility snapshots and action/wait primitives", "relevantFerrumCapability": "Electron semantic state/composite waits", "harvest": "stable refs, delta snapshots, state envelopes and composite waits", "integrationMode": "Ferrum-native transplant", "expectedBenefit": "fewer agent calls/smaller state payloads", "requiredDependencies": "none for first prototype", "platformCoverage": "Electron apps", "compatibilityRisks": "preserve process isolation, packaged proof and raw evidence", "upstreamIssues": "no newer head since prior inspection", "benchmarkOrProductionEvidence": "architecture remains directly aligned with agent Electron verification", "smallestExperiment": "compact delta state on Ferrum Electron fixture", "acceptanceTest": "same proof with fewer bytes/tool calls", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "after current WebDriver work"
+    },
+    {
+      "project": "browserbase/stagehand", "owner": "browserbase", "url": "https://github.com/browserbase/stagehand", "checkedDate": "2026-08-17", "head": "7bc20797d46838c6167b69732983b177f196acfd", "maintenanceFreshness": "active 2026-08-17", "purpose": "agent browser automation and compact facades", "architecture": "deterministic facade tools plus optional AI discovery", "relevantFerrumCapability": "agent tool-surface compression", "harvest": "small facade, persistent MCP session and agent integration patterns", "integrationMode": "architecture transplant/benchmark", "expectedBenefit": "lower schema burden and fewer round trips", "requiredDependencies": "none for interface experiment", "platformCoverage": "browser-agent workflows", "compatibilityRisks": "AI discovery cannot replace deterministic validation", "upstreamIssues": "no new blocker identified for facade research", "benchmarkOrProductionEvidence": "current v4 integration docs describe deterministic facade tools", "smallestExperiment": "essential MCP profile versus full Ferrum surface", "acceptanceTest": "equal success/evidence with lower schema burden", "decision": "WATCH", "nextReviewTrigger": "after enough tool-call metrics exist"
+    },
+    {
+      "project": "browser-use/browser-use", "owner": "browser-use", "url": "https://github.com/browser-use/browser-use", "checkedDate": "2026-08-17", "head": "3c989dc0adc594d592be62272d70e28caaa5553b", "maintenanceFreshness": "active 2026-08-17", "purpose": "browser agents and persistent harnesses", "architecture": "agent loop over reusable browser/session abstractions", "relevantFerrumCapability": "persistent session setup and agent benchmarking", "harvest": "persistent lifecycle and per-task performance reasoning", "integrationMode": "benchmark/reference or optional adapter", "expectedBenefit": "lower repeated setup latency", "requiredDependencies": "none for concepts", "platformCoverage": "browser-agent workflows", "compatibilityRisks": "model-driven execution cannot replace deterministic Ferrum proof", "upstreamIssues": "current project notes missing per-task evidence for a model-default choice", "benchmarkOrProductionEvidence": "active development and Browser Harness integration", "smallestExperiment": "attach/reuse/restart versus Ferrum Space", "acceptanceTest": "lower setup/tool calls without stale-session regression", "decision": "WATCH", "nextReviewTrigger": "persistent-session setup hotspot"
+    },
+    {
+      "project": "ChromeDevTools/chrome-devtools-mcp", "owner": "ChromeDevTools", "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp", "checkedDate": "2026-08-17", "head": "fadbf41d96db84cea12e379592bc13b005c053b4", "maintenanceFreshness": "active 2026-08-17", "purpose": "agent-facing DevTools diagnostics", "architecture": "CDP-backed diagnostic tools over MCP/CLI", "relevantFerrumCapability": "failure, memory and performance evidence", "harvest": "queryable heap-snapshot filtering plus compact diagnostics", "integrationMode": "diagnostic parity/reference", "expectedBenefit": "higher-value root-cause evidence in fewer calls", "requiredDependencies": "existing Chromium/CDP capability", "platformCoverage": "Chromium family", "compatibilityRisks": "must remain additive to cross-browser evidence", "upstreamIssues": "no blocking issue inspected for new heap query", "benchmarkOrProductionEvidence": "current head adds query_heapsnapshot_objects", "smallestExperiment": "memory-leak fixture versus Ferrum evidence", "acceptanceTest": "new root-cause signal with bounded overhead", "decision": "WATCH", "nextReviewTrigger": "crash/memory/performance rotation"
+    },
+    {
+      "project": "appium/appium", "owner": "appium", "url": "https://github.com/appium/appium", "checkedDate": "2026-08-17", "head": "f06226b7bb2fb7ee2f3a61833f4a1d7777d4ef21", "maintenanceFreshness": "active 2026-08-17", "purpose": "driver/plugin application automation", "architecture": "W3C server with drivers/plugins and extension middleware", "relevantFerrumCapability": "generic adapter contracts/mobile waits", "harvest": "driver/plugin boundary and global extension middleware concept", "integrationMode": "continue adapter plus selective architecture transplant", "expectedBenefit": "modular targets without one-off coupling", "requiredDependencies": "existing qualified Appium Android lane", "platformCoverage": "Android iOS and ecosystem drivers", "compatibilityRisks": "preserve qualified Android W3C lane", "upstreamIssues": "no blocker identified for current Android path", "benchmarkOrProductionEvidence": "real Android Settings smoke passed on proposal head", "smallestExperiment": "preserve as control this run", "acceptanceTest": "Android remains green after shared changes", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "second Appium driver/shared middleware"
+    },
+    {
+      "project": "w3c/webdriver-bidi", "owner": "w3c", "url": "https://github.com/w3c/webdriver-bidi", "checkedDate": "2026-08-17", "head": "a8d59e73b41ba76c58b5906f015f708a68cf4703", "maintenanceFreshness": "last inspected head 2026-08-05", "purpose": "standard bidirectional browser protocol", "architecture": "command/event protocol beside classic WebDriver", "relevantFerrumCapability": "cross-browser event streams/synchronization diagnostics", "harvest": "lifecycle/network/log events for differential observability", "integrationMode": "optional adapter/benchmark", "expectedBenefit": "less Chromium-specific diagnostics", "requiredDependencies": "drivers with BiDi support", "platformCoverage": "varies by browser/driver", "compatibilityRisks": "implementation maturity varies; classic WebDriver stays control path", "upstreamIssues": "WebdriverIO #13909 provides cross-ecosystem BiDi timeout evidence", "benchmarkOrProductionEvidence": "active standard with Selenium/WebdriverIO integration", "smallestExperiment": "subscribe to supported events without changing commands", "acceptanceTest": "event parity with no classic-WebDriver/CDP reliability loss", "decision": "BENCHMARK", "nextReviewTrigger": "browser-matrix BiDi support or observability rotation"
+    }
+  ],
+  "challengePass": {
+    "question": "what further actionability change would materially improve Ferrum without speculative framework emulation?",
+    "result": "NO SECOND PROVEN CODE CHANGE",
+    "reason": "click/fill enabled/stable/receives-events convergence is promising, but there is no reproduced current Ferrum failure proving which generic semantics should be imposed across raw WebDriver providers; a larger layer now could hide provider errors.",
+    "nextExperiment": "controlled remote-WebDriver fixture where an element exists before becoming enabled/clickable, compared with classic WebDriver, Playwright and Puppeteer"
+  },
+  "nextResearchCursor": [
+    "network fault injection/interception and offline/latency testing across Playwright, CDP, classic WebDriver and WebDriver BiDi",
+    "browser/service-worker/process crash injection and deterministic recovery evidence",
+    "fresh-runtime deterministic replay and build/runtime identity under fault recovery",
+    "cross-browser classic WebDriver versus BiDi differential observability",
+    "macOS/iOS real target adapters when a qualifying runner is available"
+  ],
+  "guardrails": [
+    "No reduced target coverage, skipped runtime proof, quality/fidelity loss, diagnostic loss, caps, stale caching or weaker tests.",
+    "Retry logic consumes only the existing step deadline and never silently extends budgets.",
+    "Locator recovery and fixed-alias identity remain distinct so stale fixed elements fail truthfully.",
+    "No broader actionability behavior will be generalized without a real reproducer and comparative evidence."
+  ],
+  "publication": {
+    "githubPath": ".agents-memory/EVOLUTION_RUN_2026-08-17_06.json",
+    "googleDriveFolderId": "1go4wFbItSyUc65MrjVepB9WeD3SdykPB",
+    "googleDriveCheckpointDocId": "1moxoAGgRBJMQwiOBWP4NiyxMB9fTnDCwwMmAMYPl3s8"
+  }
+}
