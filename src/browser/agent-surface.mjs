@@ -71,9 +71,11 @@ export function semanticLocator(page, fallback) {
 }
 
 function deterministicLocator(page, action) {
-  if (action.ref) return locatorForRef(page, action.ref);
-  if (action.selector) return page.locator(action.selector);
-  return null;
+  let locator = action.ref ? locatorForRef(page, action.ref) : action.selector ? page.locator(action.selector) : null;
+  if (!locator) return null;
+  if (action.nth != null) locator = locator.nth(Number(action.nth));
+  else if (action.first === true) locator = locator.first();
+  return locator;
 }
 
 function positiveTimeout(value, fallback) {
