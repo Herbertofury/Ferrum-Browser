@@ -39,6 +39,7 @@ jobs:
           grep -q 'ferrum_github_wiki_bootstrap' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_list_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_read_evidence' /tmp/ferrum-mcp.jsonl
+          grep -q 'ferrum_verify_evidence' /tmp/ferrum-mcp.jsonl
 
   chromium-smoke:
     strategy:
