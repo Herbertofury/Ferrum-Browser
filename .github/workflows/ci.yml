@@ -136,3 +136,61 @@ jobs:
           name: ferrum-evidence-Lightpanda
           path: artifacts/
           if-no-files-found: ignore
+
+  appium-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Install pinned Appium Android stack
+        shell: bash
+        run: |
+          npm install --global appium@3.6.0 --no-audit --no-fund
+          appium driver install uiautomator2@8.4.0
+          appium --version
+          appium driver list --installed
+      - name: Enable KVM
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Ferrum real Android Settings smoke
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            mkdir -p artifacts/appium
+            adb devices -l | tee artifacts/appium/adb-devices.txt
+            appium --log artifacts/appium/appium-server.log --log-level info &
+            APPIUM_PID=$!
+            trap 'kill "$APPIUM_PID" 2>/dev/null || true' EXIT
+            READY=0
+            for i in $(seq 1 90); do
+              if curl --fail --silent http://127.0.0.1:4723/status > artifacts/appium/status.json; then READY=1; break; fi
+              sleep 1
+            done
+            if [ "$READY" != 1 ]; then
+              cat artifacts/appium/appium-server.log
+              exit 1
+            fi
+            node ./bin/ferrum.mjs test ./examples/self-test-appium-android.json --artifacts artifacts/appium/ferrum --compact
+            adb shell dumpsys package com.android.settings > artifacts/appium/settings-package.txt
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-Appium-Android
+          path: artifacts/appium/
+          if-no-files-found: error

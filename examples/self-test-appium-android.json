@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "name": "ferrum-self-test-appium-android",
+  "target": {
+    "type": "appium",
+    "server": "http://127.0.0.1:4723",
+    "capabilities": {
+      "platformName": "Android",
+      "appium:automationName": "UiAutomator2",
+      "appium:deviceName": "Android Emulator",
+      "appium:appPackage": "com.android.settings",
+      "appium:appActivity": ".Settings",
+      "appium:noReset": true,
+      "appium:newCommandTimeout": 120
+    }
+  },
+  "timeouts": { "startupMs": 60000, "stepMs": 20000 },
+  "steps": [
+    { "action": "assert-session" },
+    { "action": "find-all", "using": "xpath", "value": "//*[@resource-id='android:id/title']", "min": 1 },
+    { "action": "find", "using": "xpath", "value": "//*[@resource-id='android:id/title']", "index": 0, "as": "first-setting" },
+    { "action": "assert-visible", "element": "first-setting" },
+    { "action": "get-text", "element": "first-setting" },
+    { "action": "screenshot", "name": "settings-home" },
+    { "action": "click", "element": "first-setting" },
+    { "action": "wait", "ms": 700 },
+    { "action": "source", "name": "settings-detail" },
+    { "action": "screenshot", "name": "settings-detail" },
+    { "action": "back" },
+    { "action": "wait", "using": "xpath", "value": "//*[@resource-id='android:id/title']", "timeoutMs": 10000 },
+    { "action": "screenshot", "name": "settings-returned" }
+  ]
+}
