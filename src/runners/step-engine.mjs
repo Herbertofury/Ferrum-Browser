@@ -92,6 +92,16 @@ export class StepEngine {
       case 'press':
       case 'text':
         return await executeAgentAction(this.page, { ...step, timeoutMs: step.timeoutMs || this.timeoutMs });
+      case 'network-offline': {
+        const setOffline = this.session?.context?.setOffline;
+        if (typeof setOffline !== 'function') {
+          throw new Error(`network-offline is unavailable for target engine ${this.session?.engine || 'unknown'}`);
+        }
+        const offline = step.enabled == null ? true : Boolean(step.enabled);
+        await setOffline.call(this.session.context, offline);
+        this.evidence.record('network-state', { engine: this.session.engine || null, offline });
+        return { offline };
+      }
       case 'snapshot': {
         const snapshot = await snapshotPage(this.page, { interactiveOnly: step.interactiveOnly ?? false, max: step.max || 400 });
         if (step.name) await this.evidence.writeJson(`snapshots/${step.name}.json`, snapshot);
