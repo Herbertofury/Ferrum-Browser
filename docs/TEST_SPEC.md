@@ -44,7 +44,7 @@ Extension-only steps include `extension-page`, `assert-service-worker`, `service
 
 ## Process and CLI targets
 
-Process steps include `assert-log`, `write-stdin`, `close-stdin`, `wait`, and `wait-exit`. `write-stdin` sends `text` (or `value`) exactly as supplied and appends `\n` only when `newline: true`. `close-stdin` sends EOF by closing the pipe. Ferrum records only the number of input bytes and whether a newline was appended; raw stdin content is deliberately excluded from evidence so secrets or interactive credentials are not copied into artifacts.
+Process steps include `assert-log`, `write-stdin`, `close-stdin`, `wait`, and `wait-exit`. `write-stdin` sends `text` (or `value`) exactly as supplied and appends `\n` only when `newline: true`. `close-stdin` sends EOF by closing the pipe. Ferrum's `process-input` evidence event records only the number of bytes written and whether a newline was appended; it does not copy the raw stdin payload into that event. A target process can still echo its own input to stdout or stderr, and those streams remain part of the normal captured process log, so callers should avoid echoing sensitive values when retained logs are not appropriate.
 
 Pipe-based stdin is intended for ordinary interactive CLI programs and service processes. Full terminal/TTY semantics such as curses applications, terminal resizing, control-sequence rendering, and programs that require a pseudoterminal remain a separate capability rather than being simulated by this path.
 
