@@ -4,9 +4,14 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "71faada1cd13214fc4444fc11034c891f80c2708",
-  "verifiedWorkflowRun": 32050699041,
-  "verifiedAt": "2026-08-17T17:35:29Z",
+  "verifiedCodeCommit": "fc5d584a5af8ba3f45d0d77354dc0c05c8e762f6",
+  "verifiedWorkflowRun": 32065415813,
+  "verifiedAt": "2026-08-17T20:27:14Z",
+  "verifiedToolchain": {
+    "playwright": "1.62.1",
+    "electron": "43.4.0",
+    "electronPackager": "20.3.0"
+  },
   "verified": {
     "unit": {
       "status": "passed",
@@ -20,10 +25,14 @@
         "browser discovery and matrix worker timeouts",
         "browser launch and teardown time bounds",
         "durable evidence replay and path confinement",
+        "cryptographic evidence manifests, verification and tamper detection",
         "production workload-pack setup and variable expansion",
+        "bounded asynchronous assert-text convergence with last-observed-text failure diagnostics",
+        "interactive process stdin write and close lifecycle",
         "Appium W3C lifecycle and startup-timeout separation",
         "Electron shutdown and worker-process isolation",
-        "GitHub Wiki Git-remote probing, authenticated probe handling, first-page browser bootstrap and private false-404 safety"
+        "GitHub Wiki Git-remote probing, authenticated probe handling, first-page browser bootstrap and private false-404 safety",
+        "STATUS monotonic consistency against the newest verified evolution checkpoint"
       ]
     },
     "linux": {
@@ -82,6 +91,15 @@
       "compactResults": true,
       "fullEvidencePreservedOnDisk": true
     },
+    "evidenceIntegrity": {
+      "status": "passed",
+      "manifest": "evidence-manifest.json",
+      "algorithm": "sha256",
+      "cliVerification": "passed",
+      "mcpVerification": "passed",
+      "tamperDetection": "passed",
+      "legacyBundles": "reported as unverifiable rather than false success"
+    },
     "githubWikiAutomation": {
       "status": "passed",
       "cli": ["github-wiki probe", "github-wiki bootstrap"],
@@ -96,35 +114,39 @@
       "evidence": ["before-save screenshot", "after-save screenshot", "Git remote availability probe"]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32050699041,
-      "codeCommit": "71faada1cd13214fc4444fc11034c891f80c2708",
+      "workflowRun": 32065415813,
+      "codeCommit": "fc5d584a5af8ba3f45d0d77354dc0c05c8e762f6",
       "linuxDesktop": {
-        "artifactId": 9294605778,
-        "sizeBytes": 131039685,
-        "providerSha256": "c0559bd7e699ffc7d9eba854dc20dfd1061dd53a8028181bb8ee72f6a83b3f4d",
+        "artifactId": 9299732959,
+        "sizeBytes": 131754338,
+        "providerSha256": "be6b0cc56d2d450ebd4cf3100eb305fbc8f05c9a11889064d5bba76384787a58",
         "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9294675134,
-        "sizeBytes": 151532578,
-        "providerSha256": "df3275c6a58791f32e199abcf379d13d6f6d59d7e7e82643c9a1055c32c08a8f",
+        "artifactId": 9299847338,
+        "sizeBytes": 151621774,
+        "providerSha256": "31c10d24d1fb0e87615e725549ced6c8b12dd3990a2f1f6a1446d5522a3c34f5",
         "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9294600764,
-        "providerSha256": "f60c010b067aefc17fca8c6a6d19276a07090d87ebcafe3b8664bb6a334fb0d4"
+        "artifactId": 9299727459,
+        "sizeBytes": 2126728,
+        "providerSha256": "8c4babbf6ab78d0e10c55469449bba104b7c6cf79c2ec1d03f1e133f09f7c842"
       },
       "windowsEvidence": {
-        "artifactId": 9294669636,
-        "providerSha256": "276acb6be5a6e41e9afdad6d6581b8b8fb104093d2d1d8a661107cf1df840bd8"
+        "artifactId": 9299841203,
+        "sizeBytes": 2183234,
+        "providerSha256": "43af697a973d5b025eb42cc1367e36f30e70b8b3f835a363749c02943633d2f7"
       },
       "appiumEvidence": {
-        "artifactId": 9294628955,
-        "providerSha256": "a344fd5c7372a52c5ecdb6f502741d3f56d44cd1df3f9239cdc0efea6cddb61a"
+        "artifactId": 9299783644,
+        "sizeBytes": 124986,
+        "providerSha256": "ccd86bd1731c3c798326df3a3e898891e3370a64bc456a8457bf7324b79f9486"
       },
       "lightpandaEvidence": {
-        "artifactId": 9294573169,
-        "providerSha256": "9760ea72a2a234b0fe2d1107347a35c64d871faced2766fee96bf54b24cbef0e"
+        "artifactId": 9299693103,
+        "sizeBytes": 3636,
+        "providerSha256": "56a4ff1c22f79dd115c94dc5d557238ed35a84ae5970525cffee92bffdc59204"
       },
       "independentArtifactRedownloadHash": "not repeated for this checkpoint; provider digests and fresh packaged runtime smokes passed"
     },
@@ -190,12 +212,14 @@
     "persistent authenticated Spaces with safe cloned isolation and locking",
     "deterministic selectors with explicit semantic fallback evidence",
     "explicit first/nth deterministic locator disambiguation",
+    "bounded asynchronous text assertions that wait for expected state and preserve final observed text on failure",
     "durable disk-backed evidence replay after Workbench restart",
-    "CLI and MCP durable evidence inspection",
+    "CLI and MCP durable evidence inspection and SHA-256 integrity verification",
+    "content-addressed evidence manifests with missing/changed/unexpected payload detection",
     "bounded suites and reproducible median/p95 benchmarks",
     "production workload-pack orchestration with setup/build evidence and explicit variables",
     "grounded production packs for Herbertofury/Gamesync and Herbertofury/GameSync-Next",
-    "generic process/service runner",
+    "generic process/service runner with interactive stdin write and close controls",
     "real Electron application runner with worker-process containment",
     "replay-capable Electron Workbench on Linux and Windows",
     "native Linux and Windows Ferrum desktop packaging with fresh packaged-executable acceptance",
@@ -214,7 +238,10 @@
     "Workbench desktop shutdown could deadlock on its own HTTP connection; server shutdown now closes idle/all connections and Electron shutdown is bounded.",
     "Electron runtime handles could survive a completed run; Electron targets now execute inside killable worker processes.",
     "Windows Workbench identity capture could race asynchronous dashboard startup; Ferrum now waits for the first real Electron window before querying main-process identity.",
-    "An unauthenticated private GitHub Wiki Git probe can return 404 for an existing wiki; Ferrum now uses available GitHub tokens and authenticated browser-root preflight so false 404s never automatically open or submit the first-page editor."
+    "An unauthenticated private GitHub Wiki Git probe can return 404 for an existing wiki; Ferrum now uses available GitHub tokens and authenticated browser-root preflight so false 404s never automatically open or submit the first-page editor.",
+    "Process targets could launch interactive CLIs but could not drive stdin; Ferrum now supports bounded write-stdin and close-stdin process steps while preserving normal lifecycle evidence.",
+    "Evidence bundles lacked a cryptographic payload inventory; finalized bundles now write SHA-256 manifests and CLI/MCP verification detects tampering without dropping raw evidence.",
+    "MV3 popup text assertions could sample asynchronous content too early; assert-text now retries within one bounded deadline and reports the final observed text on failure."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in the final Windows evidence because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
@@ -236,6 +263,7 @@
     "Use this verified Ferrum checkpoint as the mandatory acceptance layer for applicable GameSync changes.",
     "Use the verified GitHub Wiki bootstrap when a new repository needs its first wiki page before source-controlled wiki Git synchronization can begin.",
     "Extend the grounded GameSync workload packs with change-specific real workflows when a GameSync feature changes; never substitute the generic baseline for affected-feature verification.",
+    "Whenever a newer evolution ledger records a higher verified main workflow, advance STATUS in the same durable checkpoint; tests/status-checkpoint.test.mjs prevents STATUS from lagging or moving backward.",
     "Preserve all current browser, desktop, replay, Spaces, Appium, GitHub Wiki, diagnostics, evidence and packaging gates when improving Ferrum further."
   ],
   "blockers": []
