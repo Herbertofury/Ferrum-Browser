@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "evolution-and-ecosystem-ledger",
+  "checkedAt": "2026-08-17T18:10:07Z",
+  "verifiedProduct": {
+    "commit": "f571a9b3cffc3c23da4df72fb90173d56d92f160",
+    "workflowRun": 32053256263,
+    "workflowConclusion": "success",
+    "jobs": {
+      "unit": "success",
+      "linux": "success",
+      "windows": "success",
+      "lightpanda": "success",
+      "appiumAndroid": "success"
+    },
+    "toolchainChange": {
+      "electron": {
+        "from": "43.2.0",
+        "to": "43.4.0"
+      },
+      "electronPackager": {
+        "from": "20.0.4",
+        "to": "20.3.0"
+      },
+      "playwright": "1.62.1"
+    },
+    "artifacts": {
+      "linuxDesktop": {
+        "id": 9295493170,
+        "sizeBytes": 131751006,
+        "sha256": "53570913d1226ca71b0eba3304b96095bae35ce235754fa6077a58f843919958"
+      },
+      "windowsDesktop": {
+        "id": 9295569297,
+        "sizeBytes": 151618553,
+        "sha256": "08db010a97bd5a21d74cf9217210b76682548f286875c349aced8d810577524b"
+      },
+      "linuxEvidence": {
+        "id": 9295488196,
+        "sizeBytes": 2103257,
+        "sha256": "022c8d720f4017c2a3cf842dbc20a9bbe3269059423f67a1b49d71ae3a9f28c8"
+      },
+      "windowsEvidence": {
+        "id": 9295562998,
+        "sizeBytes": 2154742,
+        "sha256": "563594fa3a73c7e1a38b289ebdc77caa338e00ab01a6c241b88b0e8e5ae8e6e5"
+      },
+      "appiumEvidence": {
+        "id": 9295512989,
+        "sizeBytes": 120508,
+        "sha256": "017e79224bc36cf030cda0e1cffd4a6005fea2a44d81e1b28412b02502e7f28b"
+      },
+      "lightpandaEvidence": {
+        "id": 9295474691,
+        "sizeBytes": 2977,
+        "sha256": "8f9c42f0dabf1d7cfe5934638ebd355df940260cab80c0c3dda4d901761a491a"
+      }
+    }
+  },
+  "ecosystemRotation": "agent-browser-control, diagnostics, desktop/mobile adapters, computer-use benchmarks",
+  "candidates": [
+    {
+      "project": "open-gsd/gsd-browser",
+      "url": "https://github.com/open-gsd/gsd-browser",
+      "head": "b0f99c6ce57584cfa58d2f9f0030d191729d3424",
+      "status": "EXPERIMENT",
+      "relevantCapability": "persistent low-latency agent browser backend",
+      "harvest": "persistent Rust daemon, named sessions, versioned refs, atomic batch flows, live MCP resources, action cache, unified trace/HAR/visual/debug evidence, structured next-action envelopes",
+      "integrationMode": "temporary protocol/subprocess adapter first; transplant proven patterns rather than replace Playwright blindly",
+      "expectedBenefit": "fewer startup and agent round trips with stronger deterministic recovery and evidence",
+      "risk": "young project and overlapping browser-control surface could add maintenance complexity",
+      "smallestExperiment": "run the same Ferrum web and MV3 workload through an isolated gsd-browser-backed adapter",
+      "acceptance": "same or higher success/evidence completeness with lower median/p95 elapsed time or fewer tool calls and zero regression in restart/runtime identity"
+    },
+    {
+      "project": "browser-use/browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "head": "41108b8676d4bdb58b26ab3b079c0b7b0f8f3926",
+      "status": "EXPERIMENT",
+      "relevantCapability": "persistent real-browser CDP control",
+      "harvest": "single reusable CDP websocket and agent-authored reusable helpers",
+      "integrationMode": "technique transplant or optional adapter",
+      "expectedBenefit": "less repeated setup for authenticated persistent browser sessions",
+      "risk": "lifecycle/recovery behavior must beat Ferrum's bounded process model",
+      "smallestExperiment": "compare attach/reuse/restart workload against a Ferrum Space",
+      "acceptance": "lower setup latency without stale-session, cleanup, or evidence regressions"
+    },
+    {
+      "project": "electron-stagewright/electron-stagewright",
+      "url": "https://github.com/electron-stagewright/electron-stagewright",
+      "head": "dfde94185fc7af0e5b3e01409e2359ee0678f732",
+      "status": "TRANSPLANT-IDEA",
+      "relevantCapability": "agent-first Electron interaction",
+      "harvest": "stable semantic refs, compact/delta accessibility snapshots, one-call state envelopes, composite waits, retrying assertions, recently-changed markers, structured recovery hints and elapsed/token metadata",
+      "integrationMode": "Ferrum-native implementation over existing Electron runner",
+      "expectedBenefit": "fewer agent calls and less snapshot/token processing while preserving raw diagnostics",
+      "risk": "must not weaken current packaged-app and process-isolation proof",
+      "smallestExperiment": "prototype compact delta state response for existing self-test Electron fixture",
+      "acceptance": "same assertion coverage and raw evidence with materially fewer response bytes/tool calls"
+    },
+    {
+      "project": "ChromeDevTools/chrome-devtools-mcp",
+      "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "head": "1c92ba091ce059533f009dafac5a92f452cfddf5",
+      "status": "TRANSPLANT-IDEA",
+      "relevantCapability": "browser diagnostics and performance evidence",
+      "harvest": "current DevTools-backed memory/performance/storage diagnostics and CLI/MCP ergonomics",
+      "integrationMode": "diagnostic parity/adapters around CDP; avoid duplicating whole server",
+      "expectedBenefit": "higher-value failure evidence in fewer agent calls",
+      "risk": "Chromium-specific diagnostics must remain additive to cross-browser paths",
+      "smallestExperiment": "compare one failure bundle against Ferrum console/network/evidence output",
+      "acceptance": "new actionable diagnostic signal with bounded overhead and preserved raw evidence"
+    },
+    {
+      "project": "browserbase/stagehand",
+      "url": "https://github.com/browserbase/stagehand",
+      "head": "0af36da900cf669b6d18a0a144ee119789f8f7de",
+      "status": "TRANSPLANT-IDEA",
+      "relevantCapability": "agent facade and deterministic reuse",
+      "harvest": "small facade tool surfaces, Codex/agent harness integration patterns, AI discovery followed by repeatable deterministic actions",
+      "integrationMode": "architecture transplant and benchmark",
+      "expectedBenefit": "smaller agent surface and fewer reasoning/tool round trips",
+      "risk": "AI fallback must never replace deterministic known-good actions or hide failures",
+      "smallestExperiment": "benchmark a compact Ferrum essential profile against full MCP manifest",
+      "acceptance": "equal task success/evidence with materially smaller schema/token burden"
+    },
+    {
+      "project": "mobile-dev-inc/Maestro",
+      "url": "https://github.com/mobile-dev-inc/Maestro",
+      "head": "20de0415e698d917ff412d6465017513baaf0d95",
+      "status": "TRANSPLANT-IDEA",
+      "relevantCapability": "mobile declarative flows and smart waiting",
+      "harvest": "interpreted flow model, automatic waits, resilience patterns, explicit classification of app-content versus infrastructure failures",
+      "integrationMode": "additive flow adapter/ideas beside Appium",
+      "expectedBenefit": "faster authoring and clearer failure classification for mobile smoke workflows",
+      "risk": "must not replace Ferrum's qualified real Appium/W3C evidence lane",
+      "smallestExperiment": "express Android Settings smoke as a parallel declarative flow",
+      "acceptance": "same real-device outcome and evidence with lower authoring/maintenance cost and no Appium coverage loss"
+    },
+    {
+      "project": "ServiceNow/BrowserGym",
+      "url": "https://github.com/ServiceNow/BrowserGym",
+      "head": "9e779f087de9a65668b6974d11f9ce9816026e96",
+      "status": "BENCHMARK",
+      "relevantCapability": "realistic web-agent task benchmarking",
+      "harvest": "task/environment methodology and temporal-version benchmark concepts",
+      "integrationMode": "benchmark/workload adaptation",
+      "expectedBenefit": "measure Ferrum on multi-step agent work instead of microbenchmarks only",
+      "risk": "external environments can be expensive/flaky and must not contaminate deterministic regression gates",
+      "smallestExperiment": "port a small self-contained task pattern into Ferrum's benchmark pack",
+      "acceptance": "repeatable scoring of success, tool calls, elapsed time, recovery and evidence completeness"
+    },
+    {
+      "project": "xlang-ai/OSWorld-V2",
+      "url": "https://github.com/xlang-ai/OSWorld-V2",
+      "head": "8b6b59660b59832a42a345db8f86fa9f98c37573",
+      "status": "BENCHMARK",
+      "relevantCapability": "general desktop/computer-use verification",
+      "harvest": "long-horizon desktop task and trajectory methodology",
+      "integrationMode": "benchmark methodology/task adaptation",
+      "expectedBenefit": "objective validation as Ferrum expands beyond browsers",
+      "risk": "full benchmark infrastructure is too heavy for every CI run",
+      "smallestExperiment": "adapt a tiny release-pinned desktop task subset into Ferrum's general-app benchmark",
+      "acceptance": "reproducible desktop success/recovery metrics without weakening normal CI"
+    },
+    {
+      "project": "xlang-ai/OpenCUA",
+      "url": "https://github.com/xlang-ai/OpenCUA",
+      "head": "dfc91ba89f700d10f26ec50362d308571482ab8b",
+      "status": "WATCH",
+      "relevantCapability": "computer-use agent grounding and evaluation",
+      "harvest": "grounding/evaluator ideas for native GUI fallback",
+      "integrationMode": "research/benchmark reference",
+      "expectedBenefit": "better native-app fallback coverage where structured APIs are unavailable",
+      "risk": "visual computer-use paths are less deterministic than semantic/native protocols",
+      "smallestExperiment": "compare one visual fallback action against a structured adapter action",
+      "acceptance": "fallback adds capability without becoming the default when a deterministic path exists"
+    },
+    {
+      "project": "simular-ai/Agent-S",
+      "url": "https://github.com/simular-ai/Agent-S",
+      "head": "bffdb59c60cbbb38c3a190b2e91da12039e4063c",
+      "status": "WATCH",
+      "relevantCapability": "cross-platform GUI agent workflows",
+      "harvest": "GUI grounding and workflow decomposition patterns",
+      "integrationMode": "idea/benchmark reference",
+      "expectedBenefit": "broader native desktop task coverage",
+      "risk": "model-driven GUI execution can be slower and nondeterministic",
+      "smallestExperiment": "evaluate action decomposition on a deterministic native fixture",
+      "acceptance": "measurable recovery/capability gain with deterministic evidence and bounded cost"
+    },
+    {
+      "project": "W3C WebDriver BiDi",
+      "url": "https://www.w3.org/TR/webdriver-bidi/",
+      "version": "Working Draft 2026",
+      "status": "WATCH",
+      "relevantCapability": "cross-browser bidirectional protocol events",
+      "harvest": "standardized event streaming for browser/network/log lifecycle where supported",
+      "integrationMode": "protocol adapter beside CDP/Playwright",
+      "expectedBenefit": "less Chromium-specific diagnostics and better standards-based cross-browser observability",
+      "risk": "implementation coverage varies by browser and feature",
+      "smallestExperiment": "probe supported BiDi events on Ferrum's browser matrix without changing default control path",
+      "acceptance": "useful cross-browser event parity with no loss of CDP diagnostics or matrix compatibility"
+    },
+    {
+      "project": "Tauri WebDriver / WebdriverIO Tauri service",
+      "url": "https://v2.tauri.app/develop/tests/webdriver/",
+      "version": "current Tauri v2 testing guidance checked 2026-08-17",
+      "status": "EXPERIMENT",
+      "relevantCapability": "real Tauri application testing",
+      "harvest": "WebdriverIO Tauri service, embedded WebDriver, IPC mocking, frontend/backend logs and multiremote",
+      "integrationMode": "new Ferrum target adapter",
+      "expectedBenefit": "first-class Tauri coverage rather than treating all desktop apps as Electron",
+      "risk": "new target must share Ferrum lifecycle/evidence contracts and prove all supported host platforms individually",
+      "smallestExperiment": "build a minimal Tauri fixture and run launch/interact/restart/log/evidence flow",
+      "acceptance": "real packaged Tauri app passes launch, interaction, restart/persistence and evidence capture on a supported host"
+    }
+  ],
+  "nextExperiments": [
+    "Benchmark an isolated gsd-browser adapter against Ferrum's existing web+MV3 path using identical work, recording success, median/p95 elapsed time, agent/tool calls, restart proof and evidence completeness.",
+    "Prototype Electron compact delta snapshots plus one-call state envelopes inspired by Electron Stagewright, preserving full raw evidence.",
+    "Add tool-call/round-trip and evidence-completeness accounting to Ferrum benchmark reports before evaluating larger agent-control substitutions.",
+    "Prototype a real Tauri target adapter using current Tauri/WebdriverIO guidance after the browser-backend experiment, without changing existing Electron/Desktop paths."
+  ],
+  "guardrails": [
+    "No reduced target coverage, skipped runtime proof, quality/fidelity loss, diagnostic loss, caps, viewport-only shortcuts, stale caching, or weaker tests.",
+    "New adapters remain additive until real-runtime parity and measurable improvement are proven.",
+    "Synthetic benchmarks supplement but never replace Ferrum's real Linux, Windows, browser matrix, MV3 restart, packaged desktop, Lightpanda and Android/Appium gates."
+  ],
+  "publication": {
+    "githubPath": ".agents-memory/EVOLUTION_CHECKPOINT.json",
+    "googleDriveFolder": "Ferrum Browser",
+    "verification": "remote content is re-read after publication; SHA-256 and byte count are reported outside this payload"
+  }
+}
