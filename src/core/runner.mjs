@@ -10,6 +10,7 @@ import { runExtensionTarget } from '../runners/extension.mjs';
 import { runProcessTarget } from '../runners/process.mjs';
 import { runElectronTarget } from '../runners/electron.mjs';
 import { runAppiumTarget } from '../runners/appium.mjs';
+import { runWebDriverTarget } from '../runners/webdriver.mjs';
 
 const execFileAsync = promisify(execFile);
 const ELECTRON_WORKER = fileURLToPath(new URL('../../scripts/electron-run-worker.mjs', import.meta.url));
@@ -19,7 +20,8 @@ const RUNNERS = {
   extension: runExtensionTarget,
   process: runProcessTarget,
   electron: runElectronTarget,
-  appium: runAppiumTarget
+  appium: runAppiumTarget,
+  webdriver: runWebDriverTarget
 };
 
 export function normalizeElectronRunTimeout(value, fallback = 120000) {

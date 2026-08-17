@@ -3,7 +3,7 @@ import path from 'node:path';
 import { resolveFrom } from './paths.mjs';
 import { isSensitiveVariableName } from './redact.mjs';
 
-const TARGET_TYPES = new Set(['web', 'extension', 'electron', 'process', 'appium']);
+const TARGET_TYPES = new Set(['web', 'extension', 'electron', 'process', 'appium', 'webdriver']);
 const TEMPLATE = /\$\{(?:VAR|ENV):([A-Za-z_][A-Za-z0-9_]*)\}/g;
 
 export function expandVariables(value, variables = {}, label = 'value', onResolve = null) {
