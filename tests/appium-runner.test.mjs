@@ -14,8 +14,9 @@ function respond(res, value) {
   res.end(body);
 }
 
-async function startFakeAppium({ sessionDelayMs = 0 } = {}) {
+async function startFakeAppium({ sessionDelayMs = 0, emptyElementResponses = 0 } = {}) {
   const calls = [];
+  let elementRequests = 0;
   const server = http.createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) body += chunk;
@@ -25,7 +26,11 @@ async function startFakeAppium({ sessionDelayMs = 0 } = {}) {
       if (sessionDelayMs) await new Promise(resolve => setTimeout(resolve, sessionDelayMs));
       return respond(res, { sessionId: 's1', capabilities: { platformName: 'Android', automationName: 'UiAutomator2' } });
     }
-    if (req.method === 'POST' && req.url === '/session/s1/elements') return respond(res, [{ [ELEMENT]: 'e1' }]);
+    if (req.method === 'POST' && req.url === '/session/s1/elements') {
+      elementRequests += 1;
+      if (elementRequests <= emptyElementResponses) return respond(res, []);
+      return respond(res, [{ [ELEMENT]: 'e1' }]);
+    }
     if (req.method === 'POST' && req.url === '/session/s1/element/e1/click') return respond(res, null);
     if (req.method === 'GET' && req.url === '/session/s1/element/e1/text') return respond(res, 'Network & internet');
     if (req.method === 'GET' && req.url === '/session/s1/element/e1/displayed') return respond(res, true);
@@ -80,12 +85,51 @@ test('Appium runner waits for server, drives a W3C session, retains evidence, an
     }, evidence);
     assert.equal(result.engine, 'appium');
     assert.equal(result.outputs.length, 9);
+    assert.equal(result.outputs[0].output.attempts, 1);
     assert.equal(result.session.capabilities.platformName, 'Android');
     assert.ok(evidence.events.some(event => event.type === 'appium-server-ready'));
     assert.ok(evidence.events.some(event => event.type === 'screenshot'));
     assert.ok(fake.calls.some(call => call.method === 'DELETE' && call.url === '/session/s1'));
     assert.equal(await fs.readFile(path.join(evidence.dir, 'screenshots', 'after-click.png'), 'utf8'), 'fake-png');
     assert.match(await fs.readFile(path.join(evidence.dir, 'appium', 'settings.xml'), 'utf8'), /Settings/);
+  } finally {
+    await cleanup(fake, evidence);
+  }
+});
+
+test('Appium constrained find-all retries transient empty UI state until the minimum is reached', async () => {
+  const fake = await startFakeAppium({ emptyElementResponses: 2 });
+  const evidence = await fakeEvidence();
+  try {
+    const result = await runAppiumTarget({
+      target: { server: fake.url, capabilities: { platformName: 'Android', 'appium:automationName': 'UiAutomator2' } },
+      timeouts: { startupMs: 1000, stepMs: 1500 },
+      steps: [{ action: 'find-all', using: 'xpath', value: '//*[@resource-id="android:id/title"]', min: 1 }]
+    }, evidence);
+    assert.equal(result.outputs[0].output.count, 1);
+    assert.equal(result.outputs[0].output.attempts, 3);
+    assert.equal(fake.calls.filter(call => call.method === 'POST' && call.url === '/session/s1/elements').length, 3);
+  } finally {
+    await cleanup(fake, evidence);
+  }
+});
+
+test('Appium constrained find-all fails with the last observed count after its bounded deadline', async () => {
+  const fake = await startFakeAppium({ emptyElementResponses: 100 });
+  const evidence = await fakeEvidence();
+  try {
+    const started = performance.now();
+    await assert.rejects(
+      () => runAppiumTarget({
+        target: { server: fake.url, capabilities: { platformName: 'Android', 'appium:automationName': 'UiAutomator2' } },
+        timeouts: { startupMs: 1000, stepMs: 120 },
+        steps: [{ action: 'find-all', using: 'xpath', value: '//*[@resource-id="android:id/title"]', min: 1 }]
+      }, evidence),
+      /Appium find-all count 0 did not satisfy required minimum 1 within 120ms/
+    );
+    assert.ok(performance.now() - started < 1000, 'find-all timeout should remain bounded');
+    assert.ok(evidence.events.some(event => event.type === 'step-fail' && /count 0/.test(event.message)));
+    assert.ok(fake.calls.some(call => call.method === 'DELETE' && call.url === '/session/s1'));
   } finally {
     await cleanup(fake, evidence);
   }
