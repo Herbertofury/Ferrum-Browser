@@ -8,7 +8,7 @@ import { collectDoctor } from './core/doctor.mjs';
 import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBrowserMatrixResult, compactPackResult } from './core/agent-result.mjs';
 import { discoverBrowsers, runBrowserMatrix } from './core/browser-matrix.mjs';
 import { createSpace, listSpaces } from './core/spaces.mjs';
-import { listEvidence, readEvidence } from './core/evidence-store.mjs';
+import { listEvidence, readEvidence, verifyEvidence } from './core/evidence-store.mjs';
 import { bootstrapGithubWiki, probeGithubWiki } from './integrations/github-wiki.mjs';
 import { startDashboard } from './server/dashboard.mjs';
 import { startMcpStdio } from './mcp/server.mjs';
@@ -17,7 +17,7 @@ import { FERRUM_VERSION } from './version.mjs';
 const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port', '--browser', '--browsers', '--space', '--space-mode', '--spaces-root', '--var', '--github-server', '--page-title', '--body', '--body-file', '--auth-timeout']);
 
 function usage() {
-  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--var NAME=value] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--var NAME=value] [--compact]\n  ferrum pack <pack.json> [--var NAME=value] [--headless] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum github-wiki probe <owner/repo> [--github-server https://github.com]\n  ferrum github-wiki bootstrap <owner/repo> [--space github] [--browser <name>] [--headless] [--page-title Home] [--body <text>|--body-file <path>] [--auth-timeout 180000] [--artifacts <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
+  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--var NAME=value] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--var NAME=value] [--compact]\n  ferrum pack <pack.json> [--var NAME=value] [--headless] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum github-wiki probe <owner/repo> [--github-server https://github.com]\n  ferrum github-wiki bootstrap <owner/repo> [--space github] [--browser <name>] [--headless] [--page-title Home] [--body <text>|--body-file <path>] [--auth-timeout 180000] [--artifacts <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum evidence verify <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
 }
 
 function argValue(args, name) {
@@ -205,6 +205,14 @@ export async function main(args) {
       const id = args[2];
       if (!id) throw new Error('evidence show requires an evidence id');
       console.log(JSON.stringify(await readEvidence(id, { root }), null, 2));
+      return;
+    }
+    if (action === 'verify') {
+      const id = args[2];
+      if (!id) throw new Error('evidence verify requires an evidence id');
+      const result = await verifyEvidence(id, { root });
+      console.log(JSON.stringify(result, null, 2));
+      if (result.status === 'failed') process.exitCode = 1;
       return;
     }
     throw new Error(`Unknown evidence action: ${action}`);
