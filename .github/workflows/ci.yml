@@ -40,6 +40,8 @@ jobs:
           grep -q 'ferrum_list_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_read_evidence' /tmp/ferrum-mcp.jsonl
           grep -q 'ferrum_verify_evidence' /tmp/ferrum-mcp.jsonl
+      - name: Independent MCP Inspector compatibility smoke
+        run: npm run smoke:mcp-inspector
       - name: Evidence integrity CLI and MCP smoke
         shell: bash
         run: |
