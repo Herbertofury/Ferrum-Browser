@@ -10,6 +10,7 @@ Ferrum uses several complementary lanes instead of pretending one runtime covers
 
 - **Full Playwright Chromium** is the unpacked Manifest V3 correctness lane.
 - **Chrome, Edge, Brave, and Opera GX** are additive real-browser web compatibility lanes through browser-matrix orchestration.
+- **Remote WebDriver** covers provider-neutral W3C browser endpoints such as a self-hosted Selenium Grid without replacing the Playwright/CDP correctness lanes.
 - **Lightpanda** is the independently pinned direct-CDP fast web lane.
 - **Electron** covers real desktop application flows and the packaged Ferrum Workbench itself.
 - **Appium + UiAutomator2** covers native/mobile flows through the same evidence model.
@@ -28,7 +29,7 @@ npm install
 npx playwright install chromium
 ```
 
-Lightpanda, branded system browsers, Appium drivers, and Android tooling are optional unless you use those lanes.
+Lightpanda, branded system browsers, Selenium/WebDriver endpoints, Appium drivers, and Android tooling are optional unless you use those lanes.
 
 ## Core commands
 
@@ -55,6 +56,14 @@ Run the same web workload across real discovered browsers:
 ```bash
 npx ferrum matrix examples/self-test-web.json --browsers chromium,chrome,edge,brave,opera-gx --workers 2 --headless --compact
 ```
+
+Run a provider-neutral remote W3C WebDriver workload against Selenium Grid or another compatible endpoint:
+
+```bash
+FERRUM_WEBDRIVER_URL=http://127.0.0.1:4444 npx ferrum test examples/self-test-webdriver.json --compact
+```
+
+The `webdriver` target accepts an exact `target.server`, optional request `target.headers`, and W3C `target.capabilities`. Credentials embedded in the endpoint URL are converted to a Basic Authorization header before requests and removed from the stored server URL; Ferrum's normal secret-redaction boundary still applies to specs, capabilities, outputs, failures, and evidence.
 
 Create and clone a persistent authenticated Space:
 
@@ -131,7 +140,7 @@ Explicit `first` or `nth` disambiguation is available when a deterministic selec
 
 ## Evidence and replay
 
-Each finalized run creates a unique evidence directory containing the normalized spec, full `result.json`, compact `agent-summary.json`, timed event stream, screenshots, traces where applicable, runtime diagnostics, extension inventory/identity, Appium source/screenshots, and process output appropriate to that target.
+Each finalized run creates a unique evidence directory containing the normalized spec, full `result.json`, compact `agent-summary.json`, timed event stream, screenshots, traces where applicable, runtime diagnostics, extension inventory/identity, WebDriver session/server metadata and source/screenshots, Appium source/screenshots, and process output appropriate to that target.
 
 The Workbench reads finalized evidence from disk rather than relying on process memory. Its replay view shows the full retained event timeline, screenshots, and file inventory, and the same run remains replayable after the Workbench server restarts. Evidence paths are constrained to the selected run directory.
 
@@ -143,12 +152,17 @@ Ferrum includes a real Electron desktop shell around the same local Workbench an
 
 Ferrum's Appium runner implements W3C session lifecycle, element lookup/actions, text/visibility assertions, screenshots, page-source capture, failure capture, and guaranteed session cleanup. CI qualifies the lane against Android's real system Settings application in an accelerated Android emulator using pinned Appium and UiAutomator2 versions.
 
+## Remote WebDriver
+
+Ferrum's WebDriver runner implements the provider-neutral W3C session lifecycle directly over HTTP. It supports bounded server/session startup, element lookup and constrained collection convergence, fill/click, text and visibility assertions, browser navigation, synchronous script execution, screenshot/source capture, failure capture, and guaranteed session cleanup. The dedicated CI lane launches the pinned stable Selenium standalone Chrome container, drives the same runner through the remote Grid endpoint, verifies the resulting SHA-256 evidence manifest, and retains Selenium container inspection/log diagnostics.
+
 ## Self-test
 
 ```bash
 npm test
 npm run smoke:web
 npm run smoke:extension
+npm run smoke:webdriver
 npm run smoke:dashboard
 npm run smoke:electron
 npm run smoke:desktop
@@ -156,4 +170,4 @@ npm run package:desktop
 npm run smoke:packaged-desktop
 ```
 
-GitHub CI additionally exercises the browser matrix, cloned Spaces, workload-pack orchestration, Lightpanda, and the real Android/Appium lane. A passing source build alone is not treated as a passing Ferrum release; the fresh packaged desktop and real runtime lanes must pass too.
+GitHub CI additionally exercises the browser matrix, cloned Spaces, workload-pack orchestration, remote Selenium Grid/WebDriver, Lightpanda, and the real Android/Appium lane. A passing source build alone is not treated as a passing Ferrum release; the fresh packaged desktop and real runtime lanes must pass too.
