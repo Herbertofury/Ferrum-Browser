@@ -356,8 +356,8 @@ export async function runWebDriverTarget(spec, evidence) {
             output = await captureSource(client, evidence, step.name || `source-${index}`);
             break;
           case 'assert-session': {
-            const response = await client.request('GET', client.sessionPath(), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
-            output = { sessionId: client.sessionId, capabilities: redactSensitive(response?.value?.capabilities || response?.value || null) };
+            const response = await client.request('GET', client.sessionPath('/url'), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
+            output = { sessionId: client.sessionId, url: String(response?.value ?? '') };
             break;
           }
           default:
