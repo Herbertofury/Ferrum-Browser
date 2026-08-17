@@ -15,7 +15,7 @@
   "steps": [
     {
       "action": "navigate",
-      "url": "data:text/html;base64,PCFkb2N0eXBlIGh0bWw+PHRpdGxlPkZlcnJ1bSBXZWJEcml2ZXI8L3RpdGxlPjxpbnB1dCBpZD0ibmFtZSI+PGJ1dHRvbiBpZD0iZ28iIG9uY2xpY2s9ImRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvdXQnKS50ZXh0Q29udGVudD0naGVsbG8gJytkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbmFtZScpLnZhbHVlIj5HbzwvYnV0dG9uPjxkaXYgaWQ9Im91dCI+aWRsZTwvZGl2Pg=="
+      "url": "data:text/html;base64,PCFkb2N0eXBlIGh0bWw+PHRpdGxlPkZlcnJ1bSBXZWJEcml2ZXI8L3RpdGxlPjxpbnB1dCBpZD0ibmFtZSI+PGJ1dHRvbiBpZD0iZ28iIG9uY2xpY2s9ImRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvdXQnKS50ZXh0Q29udGVudD0naGVsbG8gJytkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbmFtZScpLnZhbHVlIj5HbzwvYnV0dG9uPjxkaXYgaWQ9Im91dCI+aWRsZTwvZGl2PjxkaXYgaWQ9ImxhdGUiIHN0eWxlPSJkaXNwbGF5Om5vbmUiPnJlYWR5PC9kaXY+PHNjcmlwdD5zZXRUaW1lb3V0KCgpPT5kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbGF0ZScpLnN0eWxlLmRpc3BsYXk9J2Jsb2NrJywzMDApPC9zY3JpcHQ+"
     },
     {
       "action": "find",
@@ -50,6 +50,11 @@
       "value": "button",
       "min": 1,
       "max": 1
+    },
+    {
+      "action": "assert-visible",
+      "using": "css selector",
+      "value": "#late"
     },
     {
       "action": "assert-visible",
