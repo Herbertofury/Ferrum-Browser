@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import { loadSpec } from './core/spec.mjs';
 import { runSpec } from './core/runner.mjs';
 import { runSuite } from './core/suite.mjs';
@@ -8,14 +9,15 @@ import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBr
 import { discoverBrowsers, runBrowserMatrix } from './core/browser-matrix.mjs';
 import { createSpace, listSpaces } from './core/spaces.mjs';
 import { listEvidence, readEvidence } from './core/evidence-store.mjs';
+import { bootstrapGithubWiki, probeGithubWiki } from './integrations/github-wiki.mjs';
 import { startDashboard } from './server/dashboard.mjs';
 import { startMcpStdio } from './mcp/server.mjs';
 import { FERRUM_VERSION } from './version.mjs';
 
-const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port', '--browser', '--browsers', '--space', '--space-mode', '--spaces-root', '--var']);
+const VALUE_FLAGS = new Set(['--engine', '--engines', '--artifacts', '--workers', '--runs', '--warmup', '--port', '--browser', '--browsers', '--space', '--space-mode', '--spaces-root', '--var', '--github-server', '--page-title', '--body', '--body-file', '--auth-timeout']);
 
 function usage() {
-  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--var NAME=value] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--var NAME=value] [--compact]\n  ferrum pack <pack.json> [--var NAME=value] [--headless] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
+  return `Ferrum ${FERRUM_VERSION}\n\nUsage:\n  ferrum doctor\n  ferrum test <spec.json> [--headless] [--engine chromium|lightpanda] [--browser chromium|chrome|edge|brave|opera-gx] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--artifacts <dir>] [--compact]\n  ferrum suite <spec.json>... [--workers 4] [--headless] [--engine chromium|lightpanda] [--browser <name>] [--space <name>] [--space-mode persistent|clone] [--var NAME=value] [--compact]\n  ferrum matrix <spec.json> [--browsers chromium,chrome,edge,brave,opera-gx] [--workers 2] [--headless] [--require-all] [--var NAME=value] [--compact]\n  ferrum bench <spec.json> [--engines chromium,lightpanda] [--runs 5] [--warmup 1] [--headless] [--var NAME=value] [--compact]\n  ferrum pack <pack.json> [--var NAME=value] [--headless] [--space <name>] [--space-mode persistent|clone] [--artifacts <dir>] [--compact]\n  ferrum spaces list [--spaces-root <dir>]\n  ferrum spaces create <name> [--spaces-root <dir>]\n  ferrum spaces clone <source> <name> [--spaces-root <dir>]\n  ferrum github-wiki probe <owner/repo> [--github-server https://github.com]\n  ferrum github-wiki bootstrap <owner/repo> [--space github] [--browser <name>] [--headless] [--page-title Home] [--body <text>|--body-file <path>] [--auth-timeout 180000] [--artifacts <dir>]\n  ferrum evidence list [--artifacts <dir>]\n  ferrum evidence show <id> [--artifacts <dir>]\n  ferrum dashboard [--port 8788] [--no-open]\n  ferrum mcp\n`;
 }
 
 function argValue(args, name) {
@@ -160,6 +162,37 @@ export async function main(args) {
       return;
     }
     throw new Error(`Unknown spaces action: ${action}`);
+  }
+  if (command === 'github-wiki') {
+    const action = args[1] || 'probe';
+    const repository = args[2];
+    if (!repository) throw new Error(`github-wiki ${action} requires OWNER/REPO`);
+    const serverUrl = argValue(args, '--github-server') || 'https://github.com';
+    if (action === 'probe') {
+      console.log(JSON.stringify(await probeGithubWiki(repository, { serverUrl }), null, 2));
+      return;
+    }
+    if (action === 'bootstrap') {
+      const bodyFile = argValue(args, '--body-file');
+      const body = bodyFile ? await fs.readFile(bodyFile, 'utf8') : argValue(args, '--body');
+      const options = await resolveSingleBrowserOptions(args, commonOptions(args));
+      const result = await bootstrapGithubWiki(repository, {
+        serverUrl,
+        pageTitle: argValue(args, '--page-title') || 'Home',
+        body,
+        space: options.space || 'github',
+        spacesRoot: options.spacesRoot,
+        headless: options.headless ?? false,
+        browserName: options.browser,
+        browserChannel: options.browserChannel,
+        browserExecutable: options.browserExecutable,
+        artifactsRoot: options.artifactsRoot,
+        authTimeoutMs: Number(argValue(args, '--auth-timeout') || 180000)
+      });
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+    throw new Error(`Unknown github-wiki action: ${action}`);
   }
   if (command === 'evidence') {
     const action = args[1] || 'list';
