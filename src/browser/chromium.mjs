@@ -10,11 +10,27 @@ export function normalizeBrowserLaunchTimeout(value, fallback = 30000) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-export async function launchChromiumSession({ profileDir, headless = false, executablePath, channel, browserName, extensionPath, viewport, evidence, browserArgs = [], diagnoseInitialPages = true, launchTimeoutMs = 30000 }) {
+export async function withBrowserOperationTimeout(promise, timeoutMs, label) {
+  const resolvedTimeout = normalizeBrowserLaunchTimeout(timeoutMs, 10000);
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve(promise),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${resolvedTimeout}ms`)), resolvedTimeout);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function launchChromiumSession({ profileDir, headless = false, executablePath, channel, browserName, extensionPath, viewport, evidence, browserArgs = [], diagnoseInitialPages = true, launchTimeoutMs = 30000, teardownTimeoutMs = 10000 }) {
   const { chromium } = await getPlaywright();
   const resolvedProfile = profileDir || await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-profile-'));
   await ensureDir(resolvedProfile);
   const launchTimeout = normalizeBrowserLaunchTimeout(launchTimeoutMs);
+  const teardownTimeout = normalizeBrowserLaunchTimeout(teardownTimeoutMs, 10000);
   const args = [
     '--no-first-run',
     '--no-default-browser-check',
@@ -34,7 +50,8 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
     headless: Boolean(headless),
     extension: Boolean(extensionPath),
     diagnoseInitialPages: Boolean(diagnoseInitialPages),
-    launchTimeoutMs: launchTimeout
+    launchTimeoutMs: launchTimeout,
+    teardownTimeoutMs: teardownTimeout
   });
   const context = await chromium.launchPersistentContext(resolvedProfile, {
     headless,
@@ -53,6 +70,38 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
   context.on('page', register);
   const serviceWorkerDiagnostics = attachServiceWorkerDiagnostics(context, evidence);
   await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+
+  async function stopTracing(tracePath) {
+    try {
+      const operation = tracePath ? context.tracing.stop({ path: tracePath }) : context.tracing.stop();
+      await withBrowserOperationTimeout(operation, teardownTimeout, 'Browser trace stop');
+      return true;
+    } catch (error) {
+      evidence.record('browser-teardown-warning', { browser: resolvedBrowserName, phase: 'trace-stop', message: error.message });
+      return false;
+    }
+  }
+
+  async function closeContext() {
+    try {
+      await withBrowserOperationTimeout(context.close(), teardownTimeout, 'Browser context close');
+      return true;
+    } catch (error) {
+      evidence.record('browser-teardown-warning', { browser: resolvedBrowserName, phase: 'context-close', message: error.message });
+      const browser = context.browser?.();
+      if (browser?.isConnected?.()) {
+        try {
+          await withBrowserOperationTimeout(browser.close({ reason: 'Ferrum browser context teardown timeout' }), teardownTimeout, 'Browser force close');
+          evidence.record('browser-force-close', { browser: resolvedBrowserName, reason: 'context-close-timeout' });
+          return true;
+        } catch (forceError) {
+          evidence.record('browser-teardown-warning', { browser: resolvedBrowserName, phase: 'browser-force-close', message: forceError.message });
+        }
+      }
+      return false;
+    }
+  }
+
   return {
     engine: 'chromium',
     browserName: resolvedBrowserName,
@@ -66,21 +115,21 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
       return page;
     },
     async closeInitialPages({ except } = {}) {
-      const pages = context.pages().filter(page => page !== except && !detach.has(page));
+      const pages = context.pages().filter(page => page !== except);
       for (const page of pages) {
         evidence.record('browser-startup-page', { browser: resolvedBrowserName, url: page.url() });
-        await page.close().catch(() => {});
+        detach.get(page)?.();
+        detach.delete(page);
+        await page.close().catch(error => evidence.record('browser-teardown-warning', { browser: resolvedBrowserName, phase: 'startup-page-close', message: error.message }));
       }
       return pages.length;
     },
     async close(tracePath) {
-      try {
-        if (tracePath) await context.tracing.stop({ path: tracePath });
-        else await context.tracing.stop();
-      } catch {}
+      await stopTracing(tracePath);
       serviceWorkerDiagnostics.detach();
       for (const fn of detach.values()) fn();
-      await context.close();
+      detach.clear();
+      await closeContext();
     }
   };
 }
