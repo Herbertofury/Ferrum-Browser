@@ -1,4 +1,3 @@
-const path = require('node:path');
 const { app, BrowserWindow } = require('electron');
 
 let server = null;
@@ -9,8 +8,27 @@ async function closeServer() {
   closing = true;
   const current = server;
   server = null;
-  await new Promise(resolve => current.close(() => resolve()));
-  closing = false;
+  try {
+    await new Promise(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(() => {
+        current.closeAllConnections?.();
+        finish();
+      }, 5000);
+      timer.unref?.();
+      current.close(() => finish());
+      current.closeIdleConnections?.();
+      current.closeAllConnections?.();
+    });
+  } finally {
+    closing = false;
+  }
 }
 
 async function createWindow() {

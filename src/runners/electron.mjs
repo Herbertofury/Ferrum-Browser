@@ -1,12 +1,46 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { getPlaywright } from '../browser/playwright.mjs';
 import { attachPageDiagnostics } from '../browser/diagnostics.mjs';
 import { StepEngine } from './step-engine.mjs';
+
+const execFileAsync = promisify(execFile);
 
 function attachProcessStream(stream, evidence, type) {
   if (!stream?.on) return () => {};
   const onData = chunk => evidence.record(type, { text: String(chunk) });
   stream.on('data', onData);
   return () => stream.off?.('data', onData);
+}
+
+export async function withElectronOperationTimeout(promise, timeoutMs, label) {
+  const resolved = Number(timeoutMs);
+  const bounded = Number.isFinite(resolved) && resolved > 0 ? resolved : 10000;
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve(promise),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${bounded}ms`)), bounded);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function forceKillElectron(processHandle, evidence) {
+  if (!processHandle?.pid) return;
+  try {
+    if (process.platform === 'win32') {
+      await execFileAsync('taskkill', ['/PID', String(processHandle.pid), '/T', '/F'], { windowsHide: true, timeout: 10000 });
+    } else {
+      processHandle.kill?.('SIGKILL');
+    }
+    evidence.record('electron-force-close', { pid: processHandle.pid });
+  } catch (error) {
+    evidence.record('electron-shutdown-warning', { phase: 'force-close', pid: processHandle.pid, message: error.message });
+  }
 }
 
 export async function runElectronTarget(spec, evidence) {
@@ -67,6 +101,12 @@ export async function runElectronTarget(spec, evidence) {
     detachStdout();
     detachStderr();
     for (const detach of pageDetachers) detach();
-    await app.close().catch(() => {});
+    const shutdownMs = spec.timeouts?.shutdownMs || 10000;
+    try {
+      await withElectronOperationTimeout(app.close(), shutdownMs, 'Electron app close');
+    } catch (error) {
+      evidence.record('electron-shutdown-warning', { phase: 'app-close', pid: processHandle.pid, message: error.message });
+      await forceKillElectron(processHandle, evidence);
+    }
   }
 }
