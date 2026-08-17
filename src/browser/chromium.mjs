@@ -5,10 +5,16 @@ import { getPlaywright } from './playwright.mjs';
 import { attachPageDiagnostics, attachServiceWorkerDiagnostics } from './diagnostics.mjs';
 import { ensureDir } from '../core/paths.mjs';
 
-export async function launchChromiumSession({ profileDir, headless = false, executablePath, channel, browserName, extensionPath, viewport, evidence, browserArgs = [], diagnoseInitialPages = true }) {
+export function normalizeBrowserLaunchTimeout(value, fallback = 30000) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+export async function launchChromiumSession({ profileDir, headless = false, executablePath, channel, browserName, extensionPath, viewport, evidence, browserArgs = [], diagnoseInitialPages = true, launchTimeoutMs = 30000 }) {
   const { chromium } = await getPlaywright();
   const resolvedProfile = profileDir || await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-profile-'));
   await ensureDir(resolvedProfile);
+  const launchTimeout = normalizeBrowserLaunchTimeout(launchTimeoutMs);
   const args = [
     '--no-first-run',
     '--no-default-browser-check',
@@ -27,7 +33,8 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
     profileDir: resolvedProfile,
     headless: Boolean(headless),
     extension: Boolean(extensionPath),
-    diagnoseInitialPages: Boolean(diagnoseInitialPages)
+    diagnoseInitialPages: Boolean(diagnoseInitialPages),
+    launchTimeoutMs: launchTimeout
   });
   const context = await chromium.launchPersistentContext(resolvedProfile, {
     headless,
@@ -35,7 +42,8 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
     executablePath: executablePath || undefined,
     viewport: viewport || { width: 1440, height: 1000 },
     args,
-    acceptDownloads: true
+    acceptDownloads: true,
+    timeout: launchTimeout
   });
   const detach = new Map();
   const register = page => {

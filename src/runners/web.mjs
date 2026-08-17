@@ -20,6 +20,7 @@ export async function runWebTarget(spec, evidence, options = {}) {
       browserName: options.browser || spec.target.browser,
       browserArgs: spec.target.args || [],
       diagnoseInitialPages: false,
+      launchTimeoutMs: options.browserLaunchTimeoutMs ?? spec.target.launchTimeoutMs ?? spec.timeouts?.startupMs ?? 30000,
       evidence
     });
     page = await session.newPage();
