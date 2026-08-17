@@ -29,6 +29,7 @@ export async function loadSpec(specPath, options = {}) {
   const spec = structuredClone(expanded);
   spec.__file = abs;
   spec.__baseDir = baseDir;
+  spec.__sourceSpec = structuredClone(raw);
   if (spec.target?.path) spec.target.path = resolveFrom(baseDir, spec.target.path);
   if (spec.target?.cwd) spec.target.cwd = resolveFrom(baseDir, spec.target.cwd);
   if (spec.target?.executable) spec.target.executable = resolveFrom(baseDir, spec.target.executable);
