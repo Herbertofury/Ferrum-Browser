@@ -10,6 +10,8 @@ const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-github-wiki-smoke-'
 let initialized = false;
 let savedTitle = null;
 let savedBody = null;
+let privateNewPageVisits = 0;
+let privateSavePosts = 0;
 
 function html(body) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>Wiki fixture</title></head><body>${body}</body></html>`;
@@ -17,6 +19,36 @@ function html(body) {
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, 'http://127.0.0.1');
+
+  if (url.pathname === '/fixture/private-wiki.wiki.git/info/refs') {
+    response.writeHead(404, { 'content-type': 'text/plain' });
+    response.end('hidden');
+    return;
+  }
+  if (request.method === 'GET' && url.pathname === '/fixture/private-wiki/wiki') {
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    response.end(html('<h1>Existing private wiki</h1><div class="markdown-body">Existing content</div>'));
+    return;
+  }
+  if (request.method === 'GET' && url.pathname === '/fixture/private-wiki/wiki/_new') {
+    privateNewPageVisits++;
+    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    response.end(html(`
+      <form method="post" action="/fixture/private-wiki/wiki">
+        <input id="gollum-editor-page-title" name="wiki[name]">
+        <textarea id="gollum-editor-body" name="wiki[body]"></textarea>
+        <button type="submit">Save Page</button>
+      </form>
+    `));
+    return;
+  }
+  if (request.method === 'POST' && url.pathname === '/fixture/private-wiki/wiki') {
+    privateSavePosts++;
+    response.writeHead(500, { 'content-type': 'text/plain' });
+    response.end('Ferrum must not submit here');
+    return;
+  }
+
   if (url.pathname === '/fixture/wiki-test.wiki.git/info/refs') {
     if (!initialized) {
       response.writeHead(404, { 'content-type': 'text/plain' });
@@ -84,7 +116,8 @@ try {
     spacesRoot: path.join(root, 'spaces'),
     artifactsRoot: path.join(root, 'artifacts'),
     headless: true,
-    authTimeoutMs: 1000
+    authTimeoutMs: 1000,
+    token: null
   });
 
   assert.equal(created.status, 'passed');
@@ -99,16 +132,33 @@ try {
     serverUrl,
     headless: true,
     spacesRoot: path.join(root, 'spaces'),
-    artifactsRoot: path.join(root, 'artifacts')
+    artifactsRoot: path.join(root, 'artifacts'),
+    token: null
   });
   assert.equal(second.status, 'already-initialized');
   assert.equal(second.gitRemoteVerified, true);
+
+  const privateSafe = await bootstrapGithubWiki('fixture/private-wiki', {
+    serverUrl,
+    space: 'private-safe',
+    spacesRoot: path.join(root, 'spaces'),
+    artifactsRoot: path.join(root, 'artifacts'),
+    headless: true,
+    authTimeoutMs: 1000,
+    token: null
+  });
+  assert.equal(privateSafe.status, 'passed');
+  assert.equal(privateSafe.action, 'already-initialized');
+  assert.equal(privateSafe.gitRemoteVerified, false);
+  assert.equal(privateNewPageVisits, 0);
+  assert.equal(privateSavePosts, 0);
 
   console.log(JSON.stringify({
     status: 'passed',
     createdAction: created.action,
     secondAction: second.status,
     gitRemoteVerified: created.gitRemoteVerified,
+    privateFalse404Safe: privateNewPageVisits === 0 && privateSavePosts === 0,
     evidenceDir: created.evidenceDir
   }, null, 2));
 } finally {
