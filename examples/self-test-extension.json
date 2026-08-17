@@ -33,6 +33,18 @@
       "action": "assert-service-worker"
     },
     {
+      "action": "assert-service-worker-diagnostics",
+      "minWorkers": 1,
+      "minConsole": 1,
+      "minRequests": 1,
+      "minResponses": 1,
+      "maxFailedRequests": 0
+    },
+    {
+      "action": "service-worker-diagnostics",
+      "name": "before-restart"
+    },
+    {
       "action": "screenshot",
       "name": "popup-before-restart"
     },
@@ -54,6 +66,18 @@
       "action": "assert-text",
       "selector": "#out",
       "text": "ok:"
+    },
+    {
+      "action": "assert-service-worker-diagnostics",
+      "minWorkers": 1,
+      "minConsole": 1,
+      "minRequests": 1,
+      "minResponses": 1,
+      "maxFailedRequests": 0
+    },
+    {
+      "action": "service-worker-diagnostics",
+      "name": "after-restart"
     },
     {
       "action": "screenshot",

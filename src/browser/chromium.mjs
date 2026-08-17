@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { getPlaywright } from './playwright.mjs';
-import { attachPageDiagnostics } from './diagnostics.mjs';
+import { attachPageDiagnostics, attachServiceWorkerDiagnostics } from './diagnostics.mjs';
 import { ensureDir } from '../core/paths.mjs';
 
 export async function launchChromiumSession({ profileDir, headless = false, executablePath, extensionPath, viewport, evidence, browserArgs = [] }) {
@@ -27,12 +27,13 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
   };
   context.pages().forEach(register);
   context.on('page', register);
-  context.on('serviceworker', worker => evidence.record('service-worker', { url: worker.url() }));
+  const serviceWorkerDiagnostics = attachServiceWorkerDiagnostics(context, evidence);
   await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   return {
     engine: 'chromium',
     context,
     profileDir: resolvedProfile,
+    serviceWorkerDiagnostics,
     async newPage() {
       const page = await context.newPage();
       register(page);
@@ -43,6 +44,7 @@ export async function launchChromiumSession({ profileDir, headless = false, exec
         if (tracePath) await context.tracing.stop({ path: tracePath });
         else await context.tracing.stop();
       } catch {}
+      serviceWorkerDiagnostics.detach();
       for (const fn of detach.values()) fn();
       await context.close();
     }

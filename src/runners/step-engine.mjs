@@ -124,8 +124,40 @@ export class StepEngine {
         }
         return { workers: urls };
       }
+      case 'service-worker-diagnostics': {
+        const diagnostics = this.session.serviceWorkerDiagnostics?.snapshot?.();
+        if (!diagnostics) throw new Error('Service-worker diagnostics are unavailable for this target');
+        if (step.name) await this.evidence.writeJson(`diagnostics/${step.name}.json`, diagnostics);
+        return diagnostics;
+      }
+      case 'assert-service-worker-diagnostics': {
+        const diagnostics = this.session.serviceWorkerDiagnostics?.snapshot?.();
+        if (!diagnostics) throw new Error('Service-worker diagnostics are unavailable for this target');
+        const checks = [
+          ['workers', step.minWorkers],
+          ['console', step.minConsole],
+          ['requests', step.minRequests],
+          ['responses', step.minResponses],
+          ['interceptedResponses', step.minInterceptedResponses]
+        ];
+        for (const [field, minimum] of checks) {
+          if (minimum != null && diagnostics[field] < Number(minimum)) {
+            throw new Error(`Service-worker diagnostics ${field}=${diagnostics[field]} is below required minimum ${minimum}`);
+          }
+        }
+        if (step.maxFailedRequests != null && diagnostics.failedRequests > Number(step.maxFailedRequests)) {
+          throw new Error(`Service-worker failedRequests=${diagnostics.failedRequests} exceeds allowed maximum ${step.maxFailedRequests}`);
+        }
+        return diagnostics;
+      }
       case 'assert-console-clean': {
-        const bad = this.evidence.events.filter(event => event.type === 'pageerror' || event.type === 'requestfailed' || (event.type === 'console' && ['error', 'assert'].includes(event.level)));
+        const bad = this.evidence.events.filter(event =>
+          event.type === 'pageerror' ||
+          event.type === 'requestfailed' ||
+          event.type === 'service-worker-requestfailed' ||
+          ((event.type === 'console' || event.type === 'service-worker-console') && ['error', 'assert'].includes(event.level)) ||
+          ((event.type === 'response-error' || event.type === 'service-worker-response') && Number(event.status) >= 500)
+        );
         if (bad.length) throw new Error(`Runtime diagnostics contain ${bad.length} error event(s)`);
         return { errors: 0 };
       }
