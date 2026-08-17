@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "name": "ferrum-self-test-electron",
+  "target": {
+    "type": "electron",
+    "args": ["tests/fixtures/electron/main.cjs"]
+  },
+  "timeouts": {
+    "startupMs": 30000,
+    "stepMs": 15000
+  },
+  "steps": [
+    {
+      "action": "assert-text",
+      "text": "Ferrum Electron Fixture"
+    },
+    {
+      "action": "click",
+      "selector": "#ping"
+    },
+    {
+      "action": "assert-text",
+      "selector": "#out",
+      "text": "ok:"
+    },
+    {
+      "action": "screenshot",
+      "name": "electron-main-window"
+    },
+    {
+      "action": "assert-console-clean"
+    }
+  ]
+}

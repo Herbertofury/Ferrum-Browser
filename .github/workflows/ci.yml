@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --no-audit --no-fund
+      - run: npm install --omit=dev --no-audit --no-fund
       - run: npm test
       - name: Syntax check all modules
         run: find src scripts -name '*.mjs' -print0 | xargs -0 -n1 node --check
@@ -50,6 +50,12 @@ jobs:
       - run: npm run smoke:web
       - run: npm run smoke:extension
       - run: npm run smoke:dashboard
+      - name: Ferrum Electron real-app smoke
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run smoke:electron
+      - name: Ferrum Electron real-app smoke
+        if: runner.os == 'Windows'
+        run: npm run smoke:electron
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -68,7 +74,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --no-audit --no-fund
+      - run: npm install --omit=dev --no-audit --no-fund
       - name: Install verified Lightpanda release
         shell: bash
         run: |

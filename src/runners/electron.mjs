@@ -1,7 +1,13 @@
-import path from 'node:path';
 import { getPlaywright } from '../browser/playwright.mjs';
 import { attachPageDiagnostics } from '../browser/diagnostics.mjs';
 import { StepEngine } from './step-engine.mjs';
+
+function attachProcessStream(stream, evidence, type) {
+  if (!stream?.on) return () => {};
+  const onData = chunk => evidence.record(type, { text: String(chunk) });
+  stream.on('data', onData);
+  return () => stream.off?.('data', onData);
+}
 
 export async function runElectronTarget(spec, evidence) {
   const { _electron: electron } = await getPlaywright();
@@ -11,26 +17,56 @@ export async function runElectronTarget(spec, evidence) {
     args,
     cwd: spec.target.cwd || undefined,
     executablePath,
-    env: { ...process.env, ...(spec.target.env || {}) }
+    env: { ...process.env, ...(spec.target.env || {}) },
+    artifactsDir: evidence.dir
   });
-  evidence.record('electron-start', { executablePath: executablePath || null, args });
+  const processHandle = app.process();
+  const detachStdout = attachProcessStream(processHandle.stdout, evidence, 'electron-process-stdout');
+  const detachStderr = attachProcessStream(processHandle.stderr, evidence, 'electron-process-stderr');
+  const onMainConsole = message => evidence.record('electron-main-console', {
+    level: message.type(),
+    text: message.text(),
+    location: message.location()
+  });
+  app.on('console', onMainConsole);
+
+  const identity = await app.evaluate(({ app }) => ({
+    appPath: app.getAppPath(),
+    appVersion: app.getVersion(),
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    node: process.versions.node
+  }));
+  evidence.record('electron-start', { executablePath: executablePath || null, args, pid: processHandle.pid, ...identity });
+  await evidence.writeJson('electron-runtime.json', identity);
+
   const windows = [];
+  const pageDetachers = [];
   const register = page => {
-    if (!windows.includes(page)) {
-      windows.push(page);
-      attachPageDiagnostics(page, evidence, `electron:${windows.length}`);
-    }
+    if (windows.includes(page)) return;
+    windows.push(page);
+    pageDetachers.push(attachPageDiagnostics(page, evidence, `electron:${windows.length}`));
+    evidence.record('electron-window', { index: windows.length - 1, url: page.url() });
   };
   app.windows().forEach(register);
   app.on('window', register);
-  const page = await app.firstWindow();
+  const page = await app.firstWindow({ timeout: spec.timeouts?.startupMs || 30000 });
+  register(page);
+
   try {
-    const engine = new StepEngine({ evidence, session: { context: page.context() }, page, timeoutMs: spec.timeouts?.stepMs || 30000 });
+    const engine = new StepEngine({
+      evidence,
+      session: { engine: 'electron', context: page.context() },
+      page,
+      timeoutMs: spec.timeouts?.stepMs || 30000
+    });
     const result = await engine.run(spec.steps);
-    await app.close();
-    return { windows: windows.length, ...result };
-  } catch (error) {
+    return { engine: 'electron', runtime: identity, windows: windows.length, ...result };
+  } finally {
+    app.off?.('console', onMainConsole);
+    detachStdout();
+    detachStderr();
+    for (const detach of pageDetachers) detach();
     await app.close().catch(() => {});
-    throw error;
   }
 }
