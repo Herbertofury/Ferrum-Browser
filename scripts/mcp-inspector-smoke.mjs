@@ -67,7 +67,7 @@ const toolList = Array.isArray(toolsResult?.tools) ? toolsResult.tools : [];
 const toolNames = new Set(toolList.map(tool => tool?.name).filter(Boolean));
 for (const expected of [
   'ferrum_doctor',
-  'ferrum_run',
+  'ferrum_run_spec',
   'ferrum_run_suite',
   'ferrum_browser_matrix',
   'ferrum_run_pack',
