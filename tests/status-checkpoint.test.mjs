@@ -11,9 +11,47 @@ async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
 }
 
-function verifiedWorkflowRun(entry) {
-  return Number(entry?.verifiedProduct?.mainWorkflowRun ?? entry?.verifiedProduct?.workflowRun ?? 0);
+function normalizeVerifiedCheckpoint(entry) {
+  const verifiedProduct = entry?.verifiedProduct;
+  const verifiedWorkflowRun = Number(verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? 0);
+  if (verifiedProduct?.commit && Number.isSafeInteger(verifiedWorkflowRun) && verifiedWorkflowRun > 0) {
+    return {
+      commit: verifiedProduct.commit,
+      workflowRun: verifiedWorkflowRun,
+      checkedAt: entry?.checkedAt ?? null,
+    };
+  }
+
+  const improvement = entry?.improvement;
+  const improvementWorkflowRun = Number(improvement?.mainRun ?? 0);
+  if (improvement?.product && Number.isSafeInteger(improvementWorkflowRun) && improvementWorkflowRun > 0) {
+    return {
+      commit: improvement.product,
+      workflowRun: improvementWorkflowRun,
+      checkedAt: entry?.checkedAt ?? null,
+    };
+  }
+
+  return null;
 }
+
+test('checkpoint normalization recognizes verifiedProduct and improvement evolution schemas', () => {
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-17T20:27:14Z',
+      verifiedProduct: { commit: 'verified-product', mainWorkflowRun: 42 },
+    }),
+    { commit: 'verified-product', workflowRun: 42, checkedAt: '2026-08-17T20:27:14Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-17T21:32:30Z',
+      improvement: { product: 'improvement-product', mainRun: 43 },
+    }),
+    { commit: 'improvement-product', workflowRun: 43, checkedAt: '2026-08-17T21:32:30Z' },
+  );
+});
 
 test('STATUS points at the newest verified Ferrum product checkpoint', async () => {
   const status = await readJson(path.join(memoryDir, 'STATUS.json'));
@@ -23,10 +61,9 @@ test('STATUS points at the newest verified Ferrum product checkpoint', async () 
   const checkpoints = [];
   for (const name of files) {
     const entry = await readJson(path.join(memoryDir, name));
-    const workflowRun = verifiedWorkflowRun(entry);
-    const commit = entry?.verifiedProduct?.commit;
-    if (commit && Number.isSafeInteger(workflowRun) && workflowRun > 0) {
-      checkpoints.push({ name, commit, workflowRun, checkedAt: entry.checkedAt ?? null });
+    const checkpoint = normalizeVerifiedCheckpoint(entry);
+    if (checkpoint) {
+      checkpoints.push({ name, ...checkpoint });
     }
   }
 
