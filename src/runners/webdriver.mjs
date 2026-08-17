@@ -206,6 +206,46 @@ async function waitForExpectedText(client, step, aliases, timeoutMs) {
   throw new Error(`WebDriver text mismatch within ${budgetMs}ms after ${attempts} attempt${attempts === 1 ? '' : 's'}: expected ${equals ? 'exactly ' : ''}${expected}, last observed ${last}`);
 }
 
+async function waitForDisplayed(client, step, aliases, timeoutMs) {
+  const budgetMs = Number(step.timeoutMs || timeoutMs);
+  const deadline = Date.now() + budgetMs;
+  let attempts = 0;
+  let lastDisplayed = false;
+  let lastElement = null;
+
+  while (Date.now() < deadline) {
+    let remainingMs = Math.max(1, deadline - Date.now());
+    if (step.element) {
+      lastElement = aliases.get(String(step.element));
+      if (!lastElement) throw new Error(`Unknown WebDriver element alias: ${step.element}`);
+    } else {
+      if (!step.using || step.value == null) throw new Error('assert-visible requires using/value or element alias');
+      lastElement = await client.find(String(step.using), String(step.value), { timeoutMs: remainingMs, index: step.index || 0 });
+    }
+
+    remainingMs = Math.max(1, deadline - Date.now());
+    try {
+      const response = await client.request('GET', client.sessionPath(`/element/${lastElement}/displayed`), undefined, { timeoutMs: Math.min(client.timeoutMs, remainingMs) });
+      lastDisplayed = response?.value === true;
+      attempts += 1;
+      if (lastDisplayed) return { element: lastElement, displayed: true, attempts };
+    } catch (error) {
+      const retryable = error?.webdriverError === 'stale element reference' || error?.webdriverError === 'no such element';
+      if (!retryable) throw error;
+      attempts += 1;
+      lastDisplayed = false;
+      if (step.element) {
+        throw new Error(`WebDriver element alias ${step.element} became stale while waiting for visibility`);
+      }
+    }
+
+    const waitMs = Math.min(200, Math.max(0, deadline - Date.now()));
+    if (waitMs > 0) await sleep(waitMs);
+  }
+
+  throw new Error(`WebDriver element did not become displayed within ${budgetMs}ms after ${attempts} attempt${attempts === 1 ? '' : 's'}; last observed displayed=${lastDisplayed}`);
+}
+
 async function captureScreenshot(client, evidence, name) {
   const response = await client.request('GET', client.sessionPath('/screenshot'));
   const buffer = Buffer.from(String(response?.value || ''), 'base64');
@@ -306,10 +346,8 @@ export async function runWebDriverTarget(spec, evidence) {
             break;
           }
           case 'assert-visible': {
-            const id = await elementFor(client, step, aliases, timeoutMs);
-            const response = await client.request('GET', client.sessionPath(`/element/${id}/displayed`), undefined, { timeoutMs: step.timeoutMs || timeoutMs });
-            if (response?.value !== true) throw new Error('WebDriver element is not displayed');
-            output = { element: id, displayed: true };
+            const matched = await waitForDisplayed(client, step, aliases, timeoutMs);
+            output = matched;
             break;
           }
           case 'wait': {
