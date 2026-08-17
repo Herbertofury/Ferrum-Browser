@@ -13,7 +13,9 @@ async function readJson(file) {
 
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
-  const verifiedWorkflowRun = Number(verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? 0);
+  const verifiedWorkflowRun = Number(
+    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? 0
+  );
   if (verifiedProduct?.commit && Number.isSafeInteger(verifiedWorkflowRun) && verifiedWorkflowRun > 0) {
     return {
       commit: verifiedProduct.commit,
@@ -50,6 +52,14 @@ test('checkpoint normalization recognizes verifiedProduct and improvement evolut
       improvement: { product: 'improvement-product', mainRun: 43 },
     }),
     { commit: 'improvement-product', workflowRun: 43, checkedAt: '2026-08-17T21:32:30Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-17T22:10:29Z',
+      verifiedProduct: { commit: 'ci-run-product', ciRun: 44 },
+    }),
+    { commit: 'ci-run-product', workflowRun: 44, checkedAt: '2026-08-17T22:10:29Z' },
   );
 });
 
