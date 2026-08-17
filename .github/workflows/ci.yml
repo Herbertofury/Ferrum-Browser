@@ -21,6 +21,8 @@ jobs:
       - run: npm test
       - name: Syntax check all modules
         run: find src scripts -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - name: Shell syntax check
+        run: bash -n scripts/appium-android-smoke.sh
       - name: MCP surface smoke
         shell: bash
         run: |
@@ -172,25 +174,9 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
-          script: |
-            mkdir -p artifacts/appium
-            adb devices -l | tee artifacts/appium/adb-devices.txt
-            appium --log artifacts/appium/appium-server.log --log-level info &
-            APPIUM_PID=$!
-            trap 'kill "$APPIUM_PID" 2>/dev/null || true' EXIT
-            READY=0
-            for i in $(seq 1 90); do
-              if curl --fail --silent http://127.0.0.1:4723/status > artifacts/appium/status.json; then READY=1; break; fi
-              sleep 1
-            done
-            if [ "$READY" != 1 ]; then
-              cat artifacts/appium/appium-server.log
-              exit 1
-            fi
-            node ./bin/ferrum.mjs test ./examples/self-test-appium-android.json --artifacts artifacts/appium/ferrum --compact
-            adb shell dumpsys package com.android.settings > artifacts/appium/settings-package.txt
+          script: bash ./scripts/appium-android-smoke.sh
       - uses: actions/upload-artifact@v7
         if: always()
         with:
