@@ -44,6 +44,8 @@ test('STATUS points at the newest verified Ferrum product checkpoint', async () 
     latest.commit,
     `STATUS commit ${status.verifiedCodeCommit} does not match newest verified evolution product ${latest.commit} from ${latest.name}`
   );
+  assert.equal(status.verified.latestBuildArtifacts.workflowRun, status.verifiedWorkflowRun);
+  assert.equal(status.verified.latestBuildArtifacts.codeCommit, status.verifiedCodeCommit);
 
   if (latest.checkedAt && status.verifiedAt) {
     assert.ok(
@@ -51,4 +53,13 @@ test('STATUS points at the newest verified Ferrum product checkpoint', async () 
       `STATUS verifiedAt ${status.verifiedAt} predates newest verified checkpoint ${latest.checkedAt}`
     );
   }
+});
+
+test('STATUS verified toolchain matches the package manifest', async () => {
+  const status = await readJson(path.join(memoryDir, 'STATUS.json'));
+  const packageJson = await readJson(path.join(repoRoot, 'package.json'));
+
+  assert.equal(status.verifiedToolchain.playwright, packageJson.dependencies.playwright);
+  assert.equal(status.verifiedToolchain.electron, packageJson.devDependencies.electron);
+  assert.equal(status.verifiedToolchain.electronPackager, packageJson.devDependencies['@electron/packager']);
 });
