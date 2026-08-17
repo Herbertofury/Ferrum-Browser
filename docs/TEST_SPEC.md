@@ -62,4 +62,8 @@ Use packs when a meaningful acceptance flow includes a required build or setup p
 
 Each step is recorded with start/end timing and failure context. Browser failures preserve a Playwright trace. Every finalized run records its exact `evidenceDir` and writes `agent-summary.json`, a compact machine-readable index beside the full `result.json`; the complete event stream remains intact.
 
+Newly finalized bundles also write `evidence-manifest.json` after all normal evidence files are complete. The manifest records every payload file with its relative path, byte size, media type, and streaming SHA-256 digest. The manifest file itself is separately content-addressable through `evidence show`, so an agent or publication workflow can retain one digest for the complete payload descriptor set without dropping any raw evidence.
+
+Use `ferrum evidence verify <id>` or MCP `ferrum_verify_evidence` to re-hash a bundle and detect missing, changed, or unexpected payload files. Older bundles created before integrity manifests remain readable and are reported as `unverifiable` rather than being treated as successfully verified.
+
 Finalized runs are discoverable from disk through the CLI, MCP, and Workbench after the original Ferrum process exits. Replay exposes the complete retained timeline, screenshots, and file inventory without changing the evidence bundle.
