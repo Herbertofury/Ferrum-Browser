@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "fc5d584a5af8ba3f45d0d77354dc0c05c8e762f6",
-  "verifiedWorkflowRun": 32065415813,
-  "verifiedAt": "2026-08-17T20:27:14Z",
+  "verifiedCodeCommit": "cb3e84c36d2c48ddb2c6a6993ea8197de2610ad7",
+  "verifiedWorkflowRun": 32070909275,
+  "verifiedAt": "2026-08-17T21:32:30Z",
   "verifiedToolchain": {
     "playwright": "1.62.1",
     "electron": "43.4.0",
@@ -29,10 +29,11 @@
         "production workload-pack setup and variable expansion",
         "bounded asynchronous assert-text convergence with last-observed-text failure diagnostics",
         "interactive process stdin write and close lifecycle",
+        "bounded constrained Appium find-all convergence with remaining-time budget and count/attempt diagnostics",
         "Appium W3C lifecycle and startup-timeout separation",
         "Electron shutdown and worker-process isolation",
         "GitHub Wiki Git-remote probing, authenticated probe handling, first-page browser bootstrap and private false-404 safety",
-        "STATUS monotonic consistency against the newest verified evolution checkpoint"
+        "STATUS monotonic consistency across verifiedProduct and improvement evolution checkpoint schemas"
       ]
     },
     "linux": {
@@ -114,39 +115,39 @@
       "evidence": ["before-save screenshot", "after-save screenshot", "Git remote availability probe"]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32065415813,
-      "codeCommit": "fc5d584a5af8ba3f45d0d77354dc0c05c8e762f6",
+      "workflowRun": 32070909275,
+      "codeCommit": "cb3e84c36d2c48ddb2c6a6993ea8197de2610ad7",
       "linuxDesktop": {
-        "artifactId": 9299732959,
-        "sizeBytes": 131754338,
-        "providerSha256": "be6b0cc56d2d450ebd4cf3100eb305fbc8f05c9a11889064d5bba76384787a58",
+        "artifactId": 9301918872,
+        "sizeBytes": 131756996,
+        "providerSha256": "bfdc2478f59d88156e09775e558d53c61f5d2d24fb605d8b6caae2a215d0fda3",
         "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9299847338,
-        "sizeBytes": 151621774,
-        "providerSha256": "31c10d24d1fb0e87615e725549ced6c8b12dd3990a2f1f6a1446d5522a3c34f5",
+        "artifactId": 9301806281,
+        "sizeBytes": 151624521,
+        "providerSha256": "4a806b976e20cf4c40646636db8cbaf95132a0d16afed37409950349915e0f00",
         "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9299727459,
-        "sizeBytes": 2126728,
-        "providerSha256": "8c4babbf6ab78d0e10c55469449bba104b7c6cf79c2ec1d03f1e133f09f7c842"
+        "artifactId": 9301914645,
+        "sizeBytes": 2121340,
+        "providerSha256": "73e8042673e31c75cafee355111edbdd98f0741bebf47b4e38b3607d54934d30"
       },
       "windowsEvidence": {
-        "artifactId": 9299841203,
-        "sizeBytes": 2183234,
-        "providerSha256": "43af697a973d5b025eb42cc1367e36f30e70b8b3f835a363749c02943633d2f7"
+        "artifactId": 9301799130,
+        "sizeBytes": 2185032,
+        "providerSha256": "f84ec3c03953c5ed2158ea96eb98e15c90a66576fd494d8b78dffa054eff5006"
       },
       "appiumEvidence": {
-        "artifactId": 9299783644,
-        "sizeBytes": 124986,
-        "providerSha256": "ccd86bd1731c3c798326df3a3e898891e3370a64bc456a8457bf7324b79f9486"
+        "artifactId": 9301746562,
+        "sizeBytes": 121894,
+        "providerSha256": "46845914f72c4976079a0c3ef928ffe9bcb6b233c316e73f85244e242be31896"
       },
       "lightpandaEvidence": {
-        "artifactId": 9299693103,
-        "sizeBytes": 3636,
-        "providerSha256": "56a4ff1c22f79dd115c94dc5d557238ed35a84ae5970525cffee92bffdc59204"
+        "artifactId": 9301678161,
+        "sizeBytes": 3652,
+        "providerSha256": "215f79b4b82921508d42acccbda64465313a5f48ec26986df007c2478c669d5f"
       },
       "independentArtifactRedownloadHash": "not repeated for this checkpoint; provider digests and fresh packaged runtime smokes passed"
     },
@@ -224,6 +225,7 @@
     "replay-capable Electron Workbench on Linux and Windows",
     "native Linux and Windows Ferrum desktop packaging with fresh packaged-executable acceptance",
     "Appium W3C native/mobile runner qualified against real Android 15 Settings with UiAutomator2",
+    "bounded constrained Appium find-all convergence within the existing step budget while preserving attempt/count diagnostics",
     "GitHub Wiki Git-remote probe and real-browser first-page bootstrap with persistent authenticated Spaces, idempotency and private false-404 protection"
   ],
   "implementedButNotRuntimeQualifiedYet": [],
@@ -241,7 +243,9 @@
     "An unauthenticated private GitHub Wiki Git probe can return 404 for an existing wiki; Ferrum now uses available GitHub tokens and authenticated browser-root preflight so false 404s never automatically open or submit the first-page editor.",
     "Process targets could launch interactive CLIs but could not drive stdin; Ferrum now supports bounded write-stdin and close-stdin process steps while preserving normal lifecycle evidence.",
     "Evidence bundles lacked a cryptographic payload inventory; finalized bundles now write SHA-256 manifests and CLI/MCP verification detects tampering without dropping raw evidence.",
-    "MV3 popup text assertions could sample asynchronous content too early; assert-text now retries within one bounded deadline and reports the final observed text on failure."
+    "MV3 popup text assertions could sample asynchronous content too early; assert-text now retries within one bounded deadline and reports the final observed text on failure.",
+    "A transient Appium find-all could return zero matches before Android UI convergence; constrained find-all now retries only within the existing step deadline, preserves the required threshold, and records final count plus attempt diagnostics.",
+    "STATUS monotonicity originally recognized only verifiedProduct evolution ledgers; checkpoint normalization now also recognizes improvement.product/improvement.mainRun so newer verified products cannot be hidden by schema drift."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in the final Windows evidence because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
@@ -263,7 +267,7 @@
     "Use this verified Ferrum checkpoint as the mandatory acceptance layer for applicable GameSync changes.",
     "Use the verified GitHub Wiki bootstrap when a new repository needs its first wiki page before source-controlled wiki Git synchronization can begin.",
     "Extend the grounded GameSync workload packs with change-specific real workflows when a GameSync feature changes; never substitute the generic baseline for affected-feature verification.",
-    "Whenever a newer evolution ledger records a higher verified main workflow, advance STATUS in the same durable checkpoint; tests/status-checkpoint.test.mjs prevents STATUS from lagging or moving backward.",
+    "Normalize every supported verified evolution ledger schema before selecting the newest checkpoint; tests/status-checkpoint.test.mjs covers both verifiedProduct and improvement evolution records.",
     "Preserve all current browser, desktop, replay, Spaces, Appium, GitHub Wiki, diagnostics, evidence and packaging gates when improving Ferrum further."
   ],
   "blockers": []
