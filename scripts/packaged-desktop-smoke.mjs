@@ -42,7 +42,8 @@ const result = await runSpec({
     { action: 'wait', selector: '#evidence .evidence-run', state: 'visible', first: true, timeoutMs: 15000 },
     { action: 'click', selector: '#evidence .evidence-run', first: true },
     { action: 'wait', selector: '#replay .event', state: 'visible', first: true, timeoutMs: 10000 },
-    { action: 'assert-text', selector: '#replay', text: 'step-start' },
+    { action: 'assert-text', selector: '#replay', text: 'process-start' },
+    { action: 'assert-text', selector: '#replay', text: 'process-exit' },
     { action: 'screenshot', name: 'packaged-desktop' },
     { action: 'assert-console-clean' }
   ]
