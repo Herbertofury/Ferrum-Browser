@@ -22,7 +22,9 @@ jobs:
       - name: Syntax check all modules
         run: find src scripts -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - name: Shell syntax check
-        run: bash -n scripts/appium-android-smoke.sh
+        run: |
+          bash -n scripts/appium-android-smoke.sh
+          bash -n scripts/selenium-grid-smoke.sh
       - name: MCP surface smoke
         shell: bash
         run: |
@@ -128,6 +130,24 @@ jobs:
         with:
           name: ferrum-desktop-${{ runner.os }}
           path: dist/
+          if-no-files-found: error
+
+  webdriver-grid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Ferrum real remote WebDriver smoke against Selenium Grid
+        run: npm run smoke:webdriver
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-WebDriver-Grid
+          path: artifacts/webdriver-grid/
           if-no-files-found: error
 
   lightpanda-smoke:
