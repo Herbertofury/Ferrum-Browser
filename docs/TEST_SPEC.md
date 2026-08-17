@@ -7,7 +7,7 @@ Supported targets:
 - `web`: Chromium, a discovered Chromium-family browser, or Lightpanda.
 - `extension`: unpacked Manifest V3 extension in a persistent full-Chromium profile.
 - `electron`: an Electron application driven with Playwright.
-- `process`: an arbitrary process or service with captured logs and optional health URL.
+- `process`: an arbitrary process or service with captured logs, optional health URL, and pipe-based stdin interaction.
 - `appium`: a native/mobile application reachable through an Appium WebDriver server.
 
 ## Variables
@@ -41,6 +41,12 @@ Extension-only steps include `extension-page`, `assert-service-worker`, `service
 `assert-service-worker-diagnostics` can require `minWorkers`, `minConsole`, `minRequests`, `minResponses`, `minInterceptedResponses`, and `maxFailedRequests`. These checks operate on real Chromium service-worker activity and are included in the extension self-test before and after browser restart.
 
 `assert-console-clean` covers page and service-worker console errors, page/worker request failures, and HTTP 5xx diagnostic responses while preserving the raw events in the evidence bundle.
+
+## Process and CLI targets
+
+Process steps include `assert-log`, `write-stdin`, `close-stdin`, `wait`, and `wait-exit`. `write-stdin` sends `text` (or `value`) exactly as supplied and appends `\n` only when `newline: true`. `close-stdin` sends EOF by closing the pipe. Ferrum records only the number of input bytes and whether a newline was appended; raw stdin content is deliberately excluded from evidence so secrets or interactive credentials are not copied into artifacts.
+
+Pipe-based stdin is intended for ordinary interactive CLI programs and service processes. Full terminal/TTY semantics such as curses applications, terminal resizing, control-sequence rendering, and programs that require a pseudoterminal remain a separate capability rather than being simulated by this path.
 
 ## Appium
 
