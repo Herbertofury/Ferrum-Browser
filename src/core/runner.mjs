@@ -1,3 +1,6 @@
+import { execFile, spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { EvidenceWriter } from './evidence.mjs';
 import { FERRUM_VERSION } from '../version.mjs';
 import { prepareRunSpace } from './spaces.mjs';
@@ -7,6 +10,9 @@ import { runProcessTarget } from '../runners/process.mjs';
 import { runElectronTarget } from '../runners/electron.mjs';
 import { runAppiumTarget } from '../runners/appium.mjs';
 
+const execFileAsync = promisify(execFile);
+const ELECTRON_WORKER = fileURLToPath(new URL('../../scripts/electron-run-worker.mjs', import.meta.url));
+
 const RUNNERS = {
   web: runWebTarget,
   extension: runExtensionTarget,
@@ -15,7 +21,101 @@ const RUNNERS = {
   appium: runAppiumTarget
 };
 
+export function normalizeElectronRunTimeout(value, fallback = 120000) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+async function terminateWorkerTree(child) {
+  if (!child?.pid || child.exitCode != null) return;
+  if (process.platform === 'win32') {
+    await execFileAsync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, timeout: 10000 }).catch(() => {});
+    return;
+  }
+  try { process.kill(-child.pid, 'SIGKILL'); } catch {
+    try { child.kill('SIGKILL'); } catch {}
+  }
+}
+
+function serializableOptions(options) {
+  return JSON.parse(JSON.stringify(options, (_key, value) => typeof value === 'function' ? undefined : value));
+}
+
+async function runElectronSpecIsolated(spec, options) {
+  const timeoutMs = normalizeElectronRunTimeout(options.electronRunTimeoutMs ?? spec.timeouts?.runMs);
+  const child = spawn(process.execPath, [ELECTRON_WORKER], {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true,
+    detached: process.platform !== 'win32'
+  });
+  child.stdin.end(JSON.stringify({ spec, options: serializableOptions(options) }));
+
+  let stdout = '';
+  let stderr = '';
+  let settled = false;
+  let timer;
+
+  return await new Promise(resolve => {
+    const finish = async payload => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      await terminateWorkerTree(child);
+      resolve(payload);
+    };
+
+    const parseLine = line => {
+      if (!line.trim()) return false;
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed?.type === 'ferrum-electron-worker-result') {
+          void finish(parsed);
+          return true;
+        }
+      } catch {}
+      return false;
+    };
+
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', chunk => {
+      stdout += chunk;
+      const lines = stdout.split(/\r?\n/);
+      stdout = lines.pop() || '';
+      for (const line of lines) parseLine(line);
+    });
+    child.stderr.on('data', chunk => { stderr += chunk; });
+    child.on('error', error => void finish({ type: 'ferrum-electron-worker-result', ok: false, error: `Electron worker failed to start: ${error.message}` }));
+    child.on('exit', (code, signal) => {
+      if (settled) return;
+      if (parseLine(stdout.trim())) return;
+      void finish({
+        type: 'ferrum-electron-worker-result',
+        ok: false,
+        error: `Electron worker exited before reporting a result (code=${code}, signal=${signal || 'none'}${stderr.trim() ? `): ${stderr.trim().slice(-2000)}` : ')'}`
+      });
+    });
+    timer = setTimeout(() => void finish({
+      type: 'ferrum-electron-worker-result',
+      ok: false,
+      error: `Electron worker timed out after ${timeoutMs}ms`
+    }), timeoutMs);
+  }).then(payload => {
+    if (payload.ok) return payload.result;
+    const error = new Error(payload.error || 'Electron worker failed');
+    if (payload.evidenceDir) error.evidenceDir = payload.evidenceDir;
+    if (payload.stack) error.stack = payload.stack;
+    throw error;
+  });
+}
+
 export async function runSpec(spec, options = {}) {
+  if (spec.target.type === 'electron' && !options.__directElectron) {
+    return await runElectronSpecIsolated(spec, options);
+  }
+
   const spaceName = options.space ?? spec.target.space ?? null;
   const spaceMode = options.spaceMode ?? spec.target.spaceMode ?? 'persistent';
   const evidence = await new EvidenceWriter({
