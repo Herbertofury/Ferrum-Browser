@@ -10,6 +10,7 @@ import { compactRunResult, compactSuiteResult, compactBenchmarkResult, compactBr
 import { discoverBrowsers, runBrowserMatrix } from '../core/browser-matrix.mjs';
 import { createSpace, listSpaces } from '../core/spaces.mjs';
 import { listEvidence, readEvidence } from '../core/evidence-store.mjs';
+import { bootstrapGithubWiki, probeGithubWiki } from '../integrations/github-wiki.mjs';
 
 const commonRunProperties = {
   headless: { type: 'boolean' },
@@ -33,6 +34,8 @@ const tools = [
   { name: 'ferrum_run_pack', description: 'Run a reusable Ferrum workload pack including its real setup/build commands and all member specs, retaining parent and child evidence.', inputSchema: { type: 'object', required: ['packPath'], properties: { packPath: { type: 'string' }, ...commonRunProperties } } },
   { name: 'ferrum_list_spaces', description: 'List persistent Ferrum browser profile spaces and lock state.', inputSchema: { type: 'object', properties: { spacesRoot: { type: 'string' } } } },
   { name: 'ferrum_create_space', description: 'Create a persistent Ferrum browser profile space, optionally cloned from another space.', inputSchema: { type: 'object', required: ['name'], properties: { name: { type: 'string' }, cloneFrom: { type: 'string' }, spacesRoot: { type: 'string' } } } },
+  { name: 'ferrum_github_wiki_probe', description: 'Probe whether a repository GitHub Wiki Git remote already exists, without mutating the repository.', inputSchema: { type: 'object', required: ['repository'], properties: { repository: { type: 'string', description: 'OWNER/REPO or github.com repository URL.' }, serverUrl: { type: 'string' } } } },
+  { name: 'ferrum_github_wiki_bootstrap', description: 'Create the first GitHub Wiki page through a real authenticated Chromium session when the wiki Git remote does not exist. Uses a persistent Ferrum Space so GitHub login can be reused.', inputSchema: { type: 'object', required: ['repository'], properties: { repository: { type: 'string' }, serverUrl: { type: 'string' }, pageTitle: { type: 'string' }, body: { type: 'string' }, headless: { type: 'boolean' }, browser: { type: 'string', enum: ['chromium', 'chrome', 'edge', 'brave', 'opera-gx'] }, space: { type: 'string', description: 'Authenticated persistent Space. Defaults to github.' }, spacesRoot: { type: 'string' }, artifactsRoot: { type: 'string' }, authTimeoutMs: { type: 'integer', minimum: 1000 } } } },
   { name: 'ferrum_list_evidence', description: 'List all finalized Ferrum evidence bundles from disk, including runs retained across process restarts.', inputSchema: { type: 'object', properties: { artifactsRoot: { type: 'string' } } } },
   { name: 'ferrum_read_evidence', description: 'Read one Ferrum evidence bundle and its complete retained file inventory.', inputSchema: { type: 'object', required: ['id'], properties: { id: { type: 'string' }, artifactsRoot: { type: 'string' }, fullOutput: { type: 'boolean' } } } }
 ];
@@ -112,6 +115,23 @@ export async function startMcpStdio() {
           value = await listSpaces({ root: args.spacesRoot });
         } else if (name === 'ferrum_create_space') {
           value = await createSpace(args.name, { root: args.spacesRoot, cloneFrom: args.cloneFrom });
+        } else if (name === 'ferrum_github_wiki_probe') {
+          value = await probeGithubWiki(args.repository, { serverUrl: args.serverUrl });
+        } else if (name === 'ferrum_github_wiki_bootstrap') {
+          const options = await runOptions(args);
+          value = await bootstrapGithubWiki(args.repository, {
+            serverUrl: args.serverUrl,
+            pageTitle: args.pageTitle,
+            body: args.body,
+            space: options.space || 'github',
+            spacesRoot: options.spacesRoot,
+            headless: options.headless ?? false,
+            browserName: options.browser,
+            browserChannel: options.browserChannel,
+            browserExecutable: options.browserExecutable,
+            artifactsRoot: options.artifactsRoot,
+            authTimeoutMs: args.authTimeoutMs
+          });
         } else if (name === 'ferrum_list_evidence') {
           value = await listEvidence({ root: args.artifactsRoot });
         } else if (name === 'ferrum_read_evidence') {
