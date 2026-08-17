@@ -1,55 +1,67 @@
 # Ferrum handoff
 
-Ferrum's canonical target is `Herbertofury/Ferrum-Browser` on `main`. Repository source is authoritative. Older Aether, Hypergraph, and other Library archives are reference material only and must never be promoted over current repository source without independent verification.
+Ferrum's canonical target is `Herbertofury/Ferrum-Browser` on `main`. Repository source is authoritative. Older Aether, Hypergraph, and Library archives are reference material only and must never replace current repository source without independent verification.
 
-## Current verified checkpoint
+## Current verified product checkpoint
 
-Ferrum 0.2.0 product code at `536bbc23dfee068e26eda8b32574f06ce19a43f1` passed GitHub Actions run `31987413168` on 2026-08-17 across unit/syntax/MCP, Lightpanda, Ubuntu Chromium, Windows Chromium, the real Chromium Workbench, Manifest V3 restart testing, and real Electron applications on both operating systems. The durable memory commits after that product checkpoint only update `.agents-memory/**`, which is excluded from product CI.
+Ferrum 0.2.0 product code at `d76744e8add89dc099695b700762f5cf91a956e8` passed GitHub Actions run `32003270111` on 2026-08-17. This is the verified product commit even if `main` later contains a memory-only `.agents-memory/**` checkpoint commit. The workflow completed successfully across all five jobs: unit/syntax/shell/MCP, Lightpanda, Ubuntu full runtime, Windows full runtime, and real Android/Appium.
 
-The unit lane passed the complete Node test suite, whole-module syntax checking, and MCP surface smoke. New regression coverage now exercises service-worker diagnostics, compact CLI evidence output, compact-by-default MCP responses with an explicit full-output escape hatch, and benchmark machine/workload/reliability metadata.
+The exact head passed web smoke, cloned Space isolation, MV3 extension restart coverage, workload-pack orchestration, replay-capable Workbench smoke, generic Electron, source desktop Workbench, native desktop packaging, and a smoke of the freshly packaged desktop executable on both Linux and Windows. Windows additionally passed the full required Chromium, Chrome, Edge, Brave, and Opera GX browser matrix without skipping a browser.
 
-Both Chromium operating systems load the real MV3 fixture, exercise popup-to-worker messaging, require the extension service worker to make a real request, capture worker console plus worker-owned request/response/failure/interception evidence, assert those diagnostic counters, restart Chromium using the same persistent profile, rediscover the extension, repeat the messaging path, and repeat the worker diagnostic proof after restart. Page, worker, HTTP, request, screenshot, and trace evidence remain unified under the same run bundle.
+Appium is now runtime-qualified. Ferrum used Appium 3.6.0 with UiAutomator2 8.4.0 against an accelerated Android 15 emulator and the real system Settings application. The retained evidence proves W3C session creation, real element lookup and visibility/text use, navigation into a Settings detail page, page-source capture, screenshots before/detail/return, back navigation, and deterministic session cleanup. Appium server readiness and session creation use the declared startup budget rather than the shorter per-step budget.
 
-The visible Ferrum Workbench remains part of the acceptance gate on Ubuntu and Windows. CI exercises the real browser-facing Doctor/spec/Headless/Run/result workflow rather than treating those controls as presentation-only UI.
+## Current byte-verified publication evidence
 
-Electron is now runtime-qualified instead of implementation-only. Ferrum launches a real Electron application with context isolation and a preload bridge, records Electron/Chrome/Node runtime identity, captures main-process console and process streams, observes renderer diagnostics, clicks the renderer control, verifies the renderer-to-preload-to-main IPC result, captures a screenshot, and closes cleanly. This path passes on Ubuntu and Windows.
+GitHub Actions run `32003270111` published the tested product artifacts. The Linux desktop artifact `9279151828` is 131,033,072 bytes with provider SHA-256 `216c378a97e2f9c3e5221b402124e1722b938e167d62c9695f7d633256cca016`. It was independently downloaded, hashed to the same digest, passed a full ZIP integrity test, and contains `Ferrum-linux-x64/Ferrum`.
 
-Agent-facing output is now cheaper without losing evidence. Successful runs carry the exact `evidenceDir`, every finalized bundle contains the full `result.json` plus compact `agent-summary.json`, CLI supports compact output, and MCP run/suite/benchmark tools return compact actionable results by default. MCP callers can request `fullOutput: true` when they need the complete event stream. Compactness changes serialization only; it does not reduce steps, diagnostics, target coverage, fidelity, or stored evidence.
+The Windows desktop artifact `9279216434` is 151,526,282 bytes with provider SHA-256 `42166f7b44ac8415ccf257f6370b72208d9c1d07f50846da8e0dd62241606fea`. It was independently downloaded, hashed to the same digest, passed a full ZIP integrity test, and contains `Ferrum-win32-x64/Ferrum.exe`.
 
-Benchmarks now retain median/p95 timing and additionally report host platform/release/architecture, Node/V8, CPU model/count, total memory, workload name/type, steps per run, requested/successful/failed runs, success rate, timeout count, warmup failures, attempted/completed measured step budgets, and per-sample evidence directories. This makes cross-host agent performance comparisons materially more reproducible.
+The Windows evidence artifact `9279211226` is 1,860,916 bytes with provider SHA-256 `48adbeaf09e872f0d3d077290af038585117b05e6c575f623969121c8a34be22`; the downloaded archive matched the same digest and passed ZIP integrity. The Appium evidence artifact `9279171480` is 120,819 bytes with provider SHA-256 `e82400f107d7e60b591b78274e77169a6898b659493967d78c2327102e037832`; its downloaded archive matched exactly, passed ZIP integrity, and contains `appium-session.json`, the Settings detail XML source, `result.json`, and the `settings-home`, `settings-detail`, and `settings-returned` screenshots.
 
-Lightpanda 0.3.7 remains a real additive fast lane. CI downloads the official Linux x86_64 release and checks SHA-256 `895339b02205171a181dde743ae0068bb4564884076feac8482baca9c212aa5a` before use. Ferrum drives it directly through Lightpanda's native CDP server rather than through Playwright.
+The final Windows evidence has zero `electron-force-close` events and zero `electron-shutdown-warning` events. Opera GX records one bounded `browser-teardown-warning` because its vendor startup page did not close within 10 seconds. This is explicitly retained rather than hidden: diagnostics are isolated from the workload page, the Opera GX workload passed, the five-browser matrix passed 5/5, final browser context teardown completed, and the warning did not affect product acceptance.
 
-## Historical byte-verified evidence retained
+## Shipped control plane and runtime architecture
 
-The earlier product checkpoint `b94902e34db716ffc88395909108901cd4de415a` in GitHub Actions run `31964792142` was independently round-tripped from GitHub artifacts. The downloaded Linux, Windows, and Lightpanda archives exactly matched provider digests: Linux `9b7230a88f23b939f0719a1e5cfc6bba83b27ed60c6c827c34a4d641ea407a6f`, Windows `d677c0519a0d262e85b6312544c3d9e8029cadaa0e7bff0b1fcb0fa913c27502`, and Lightpanda `146fc1bd68ed559300909465bc6ed7964d9ba37843cde2f33114cb41a1e7d672`.
+Full Chromium remains the unpacked MV3 correctness lane. Chrome, Edge, Brave, and Opera GX are additive real-browser web compatibility lanes. Lightpanda 0.3.7 remains the pinned direct-CDP fast lane. Electron covers generic real desktop applications plus the Ferrum Workbench. Appium covers native/mobile W3C workflows. Generic process/service targets cover CLIs and services.
 
-At that historical checkpoint, both Chromium systems loaded identical MV3 fixture bytes with SHA-256 `57024706eed1b4dc2f07ab0f343a0bbc0524bf10c43fb7a2c810c4ddb8bebebb`, resolved runtime extension ID `felmepoiflfponlkemhjaadagpppepgf`, passed restart/messaging proof, and finished with zero runtime errors. Linux and Windows Workbench screenshots and post-restart popup screenshots were visually inspected. Keep these hashes labeled as historical byte-verified evidence; do not relabel them as artifact hashes from newer runs unless a newer artifact is independently downloaded and hashed.
+Persistent Spaces support safe cloned isolation and locking for authenticated/profile-based work. Deterministic selectors remain primary, with explicit semantic fallback only after deterministic failure and a retained `locator-fallback` evidence event. Legitimate multi-match selectors can explicitly choose `first` or `nth`.
 
-## Architecture that must not regress
+Browser matrix lanes are isolated in killable worker processes. Browser launch, vendor startup-page close, trace stop, context close, and force-close paths are bounded and evidence-visible. This prevents Chrome-family runtimes from holding the control plane indefinitely while preserving the required browser set.
 
-Full Chromium remains the extension correctness lane. Lightpanda is a faster web/agent lane and never substitutes for Chromium-specific behavior. Electron is now a verified real-app lane on Ubuntu and Windows. Generic process/service is verified. Appium exists under the same evidence model but still requires qualification against a real native/mobile target before being described as fully runtime verified.
+Electron targets also execute behind a killable worker boundary. The Workbench desktop server closes idle/all connections during shutdown, Electron close is bounded, and Windows Workbench startup waits for the first real Electron window before main-process runtime identity is queried. These safeguards fixed the Windows lifecycle deadlocks and the asynchronous identity race without weakening the Workbench workflow.
 
-Ferrum supports unique immutable evidence folders, exact extension build inventories, runtime identity, persistent profiles, restart proof, screenshots and Playwright traces where visual Chromium is used, page and service-worker runtime diagnostics, compact agent refs/actions, bounded parallel suites, reproducible benchmark metadata, a real Chromium Workbench, and MCP tools for doctor, single-run, suite, and benchmark operations.
+Durable evidence replay reads finalized evidence from disk, survives Workbench restart, exposes the complete retained event timeline, screenshots, and file inventory, and constrains reads to the selected evidence directory. CLI and MCP expose the same durable evidence, Spaces, matrix, workload-pack, suite, benchmark, and run primitives over the shared core.
 
-## Failures that must not be repeated
+Production workload packs are grounded against both canonical GameSync repositories. `packs/gamesync-current-extension.pack.json` targets `Herbertofury/Gamesync`, invokes the canonical `npm run build`, and verifies the resulting `dist` MV3 runtime. `packs/gamesync-next-extension.pack.json` targets `Herbertofury/GameSync-Next` and verifies its WXT `.output/chrome-mv3` output. Baseline packs are not substitutes for change-specific GameSync workflow acceptance.
 
-Do not use Playwright's reduced default headless shell as proof of MV3 extension behavior. Headless extension runs must use the full `chromium` channel unless a future replacement is independently proven equivalent.
+## Resolved failures that must not be reintroduced
 
-Do not wrap Lightpanda navigation in Playwright's Chromium lifecycle model. That timed out even when Lightpanda itself was healthy. Use Ferrum's native direct-CDP Lightpanda adapter.
+Do not use a nonexistent `build:extension` command for standalone GameSync. The canonical repository exposes `npm run build`.
 
-Do not let performance or agent-context work reduce test steps, runtime fidelity, diagnostics, evidence, target coverage, output quality, or stored event detail. Compact outputs are indexes into the full evidence, not replacements for it. Do not allow parallel runs to share an evidence directory. Preserve explicit benchmark settings such as warmup zero exactly.
+Do not let Android emulator-runner interpret a compound multiline shell loop as separate commands. The real Appium lane uses `scripts/appium-android-smoke.sh`, which is shell-syntax checked in CI.
 
-Do not treat Workbench controls as decorative. Doctor, spec selection/input, Headless, Run, and visible run status are real product promises and are click-tested on Linux and Windows. Missing static assets must produce truthful 404 responses rather than contaminating browser diagnostics with server 500s.
+Do not allow `noReset` to leave Android Settings in the background. The qualified fixture uses `appium:forceAppLaunch`.
 
-Do not describe the Appium lane as verified until a real native/mobile application plus device/emulator/server path has been exercised end-to-end and retained evidence proves the session.
+Do not apply the short per-step timeout to Appium session creation. UiAutomator2 installation/startup can exceed 20 seconds; server readiness and `POST /session` use `startupMs`.
+
+Do not let any branded browser or Electron runtime leak hold the parent runner indefinitely. Browser matrix and Electron targets have process isolation plus bounded lifecycle operations.
+
+Do not diagnose Opera GX's vendor startup page as if it were the workload page. Startup surfaces are isolated and bounded; workload diagnostics remain scoped to the real page under test.
+
+Do not query Workbench Electron main-process identity before its asynchronous dashboard startup produces the first real window. Identity capture occurs after `firstWindow()`.
+
+Do not weaken MV3, browser, replay, packaging, desktop, Appium, or evidence gates to make CI pass. The final product checkpoint was accepted with all required lanes present.
 
 ## GameSync operating rule
 
-For every applicable GameSync extension bug fix, performance proposal, stack proposal, or behavior/build change, Ferrum is a mandatory full end-to-end acceptance layer. Load the exact newly built unpacked extension, record its SHA-256/runtime identity, exercise the affected real workflow plus background/service-worker/content-script paths where applicable, inspect available console/network/service-worker diagnostics, repeat meaningful use, reload/restart the browser, verify persistence and loaded-build identity, and retain the evidence bundle. Isolated Opera GX fresh/restart testing remains additional compatibility coverage rather than a substitute.
+For every applicable GameSync extension bug fix, performance proposal, stack proposal, or behavior/build change, Ferrum is the mandatory full end-to-end acceptance layer. Build the exact changed extension, load the exact unpacked artifact, retain SHA-256/runtime identity, exercise the affected user flow and background/service-worker/content-script paths where applicable, inspect diagnostics, repeat meaningful use, reload/restart as appropriate, verify persistence and loaded-build identity, and keep the evidence bundle.
 
-When GameSync testing exposes Ferrum friction that is generalizable, improve Ferrum at the reusable boundary, regression-test Ferrum, then rerun GameSync rather than routing around the tester. The GameSync Bug Sync automation may merge a verified Ferrum correctness fix only after Ferrum's exact-head unit plus Linux and Windows Chromium web/MV3 restart gates pass. Ferrum Performance and Stack proposals remain advisory for manual review.
+When GameSync testing exposes general Ferrum friction, repair Ferrum at the reusable boundary, regression-test Ferrum, and rerun the GameSync flow rather than routing around the tester.
 
-## Next high-value development tracks
+## Final closeout state
 
-Turn real GameSync workflows into reusable production workload packs. Expand exact runtime qualification across Chrome, Edge, Brave, and Opera GX. Add isolated parallel Spaces/profile cloning for authenticated concurrent work. Build a session replay/evidence viewer. Add semantic locator recovery as an additive fallback above deterministic selectors. Qualify Appium against a real native/mobile target. Continue improving Ferrum at reusable boundaries whenever real agent or GameSync work exposes measurable speed, reliability, observability, setup, orchestration, or coverage friction.
+GitHub issues #1 (standalone GameSync pack build command) and #2 (Windows/Opera GX matrix stall) are closed as completed with verification comments pointing to product commit `d76744e8add89dc099695b700762f5cf91a956e8` and workflow run `32003270111`.
+
+The hostile audit on the final product head found no repository TODO markers, no FIXME markers, and no common private-key, GitHub token, or API-key marker matches. Compared with the previous verified product checkpoint `536bbc23dfee068e26eda8b32574f06ce19a43f1`, the final product is 21 commits ahead with no deleted files. No product blockers remain.
+
+Future Ferrum changes should preserve this checkpoint's breadth and only advance the verified product SHA after the changed exact head again clears the relevant real-runtime and artifact gates.
