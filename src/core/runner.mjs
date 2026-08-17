@@ -122,6 +122,7 @@ export async function runSpec(spec, options = {}) {
   const evidence = await new EvidenceWriter({
     root: options.artifactsRoot || spec.artifacts?.root || 'artifacts',
     name: spec.name,
+    redactValues: spec.__redactValues || [],
     metadata: {
       specFile: spec.__file || null,
       targetType: spec.target.type,
