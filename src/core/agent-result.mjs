@@ -37,6 +37,8 @@ export function compactBenchmarkResult(result) {
   return {
     status: result.status,
     specPath: result.specPath,
+    workload: result.workload,
+    machine: result.machine,
     fastestMedianEngine: result.fastestMedianEngine,
     comparisons: result.comparisons.map(item => ({
       engine: item.engine,
@@ -44,6 +46,7 @@ export function compactBenchmarkResult(result) {
       warmup: item.warmup,
       runs: item.runs,
       timings: item.timings,
+      measurement: item.measurement,
       failureCount: item.failures.length
     }))
   };

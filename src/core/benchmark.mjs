@@ -1,11 +1,18 @@
 import { loadSpec } from './spec.mjs';
 import { runSpec } from './runner.mjs';
 import { summarizeDurations } from './stats.mjs';
+import { collectRuntimeMetadata } from './runtime-metadata.mjs';
+
+function isTimeout(error) {
+  return error?.name === 'TimeoutError' || /timed?\s*out|timeout/i.test(String(error?.message || ''));
+}
 
 export async function benchmarkSpec(specPath, options = {}) {
   const runs = Math.max(1, Number(options.runs ?? 5));
   const warmup = Math.max(0, Number(options.warmup ?? 1));
   const engines = String(options.engines || options.engine || 'chromium').split(',').map(value => value.trim()).filter(Boolean);
+  const referenceSpec = await loadSpec(specPath);
+  const stepsPerRun = referenceSpec.steps?.length || 0;
   const comparisons = [];
 
   for (const engine of engines) {
@@ -21,17 +28,38 @@ export async function benchmarkSpec(specPath, options = {}) {
           artifactsRoot: options.artifactsRoot
         });
         const durationMs = performance.now() - started;
-        if (index >= warmup) samples.push({ durationMs, evidenceId: result.id });
+        if (index >= warmup) samples.push({ durationMs, evidenceId: result.id, evidenceDir: result.evidenceDir });
       } catch (error) {
-        failures.push({ iteration: index + 1, warmup: index < warmup, message: error.message, evidenceDir: error.evidenceDir || null });
+        failures.push({
+          iteration: index + 1,
+          warmup: index < warmup,
+          timeout: isTimeout(error),
+          message: error.message,
+          evidenceDir: error.evidenceDir || null
+        });
       }
     }
+    const measuredFailures = failures.filter(item => !item.warmup);
+    const successfulRuns = samples.length;
+    const failedRuns = measuredFailures.length;
     comparisons.push({
       engine,
       status: failures.length ? 'failed' : 'passed',
       warmup,
       runs,
       timings: summarizeDurations(samples.map(sample => sample.durationMs)),
+      measurement: {
+        requestedRuns: runs,
+        successfulRuns,
+        failedRuns,
+        successRate: runs ? successfulRuns / runs : 0,
+        timeoutCount: measuredFailures.filter(item => item.timeout).length,
+        warmupRuns: warmup,
+        warmupFailureCount: failures.filter(item => item.warmup).length,
+        stepsPerRun,
+        attemptedMeasuredSteps: runs * stepsPerRun,
+        completedMeasuredSteps: successfulRuns * stepsPerRun
+      },
       samples,
       failures
     });
@@ -42,6 +70,14 @@ export async function benchmarkSpec(specPath, options = {}) {
   return {
     status: comparisons.some(item => item.status === 'failed') ? 'failed' : 'passed',
     specPath,
+    workload: {
+      name: referenceSpec.name,
+      targetType: referenceSpec.target?.type || null,
+      stepsPerRun,
+      requestedMeasuredRuns: runs,
+      warmupRuns: warmup
+    },
+    machine: collectRuntimeMetadata(),
     fastestMedianEngine: fastest,
     comparisons
   };
