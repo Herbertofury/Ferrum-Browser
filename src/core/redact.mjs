@@ -1,5 +1,7 @@
 const REDACTED = '[REDACTED]';
 const TEMPLATE = /\$\{(?:VAR|ENV):[A-Za-z_][A-Za-z0-9_]*\}/;
+const URL_IN_TEXT = /\b(?:https?|wss?):\/\/[^\s"'<>]+/gi;
+const BEARER_IN_TEXT = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi;
 
 const SENSITIVE_KEYS = new Set([
   'authorization',
@@ -45,8 +47,7 @@ function isTemplate(value) {
   return typeof value === 'string' && TEMPLATE.test(value);
 }
 
-export function redactUrl(value) {
-  if (typeof value !== 'string' || isTemplate(value)) return value;
+function redactSingleUrl(value) {
   let parsed;
   try {
     parsed = new URL(value);
@@ -65,12 +66,26 @@ export function redactUrl(value) {
   return parsed.toString();
 }
 
+export function redactUrl(value) {
+  if (typeof value !== 'string' || isTemplate(value)) return value;
+  return redactSingleUrl(value);
+}
+
+function redactString(value) {
+  if (isTemplate(value)) return value;
+  const wholeUrl = redactSingleUrl(value);
+  if (wholeUrl !== value) return wholeUrl;
+  return value
+    .replace(URL_IN_TEXT, match => redactSingleUrl(match))
+    .replace(BEARER_IN_TEXT, `Bearer ${REDACTED}`);
+}
+
 export function redactSensitive(value, key = null) {
   if (key != null && isSensitiveKey(key)) {
     if (isTemplate(value)) return value;
     return REDACTED;
   }
-  if (typeof value === 'string') return redactUrl(value);
+  if (typeof value === 'string') return redactString(value);
   if (Array.isArray(value)) return value.map(item => redactSensitive(item));
   if (!value || typeof value !== 'object') return value;
   return Object.fromEntries(Object.entries(value).map(([childKey, child]) => [childKey, redactSensitive(child, childKey)]));
