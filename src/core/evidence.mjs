@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ensureDir, safeName, timestampId } from './paths.mjs';
+import { writeEvidenceManifest } from './evidence-store.mjs';
 
 function summarizeEvents(events) {
   const eventCounts = {};
@@ -94,6 +95,7 @@ export class EvidenceWriter {
       ...compact,
       failure: result.failure || null
     });
+    await writeEvidenceManifest(this.dir);
     return result;
   }
 }
