@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { evidenceFilePath, listEvidence, readEvidence, readEvidenceText } from '../src/core/evidence-store.mjs';
+import { EvidenceWriter } from '../src/core/evidence.mjs';
+import { evidenceFilePath, listEvidence, readEvidence, readEvidenceText, verifyEvidence } from '../src/core/evidence-store.mjs';
 
 async function fixture() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-store-'));
@@ -24,7 +25,43 @@ test('evidence history lists finalized runs and reads every retained file', asyn
     assert.equal(list[0].id, id);
     const item = await readEvidence(id, { root });
     assert.equal(item.result.status, 'passed');
+    assert.equal(item.manifest, null);
     assert.deepEqual(item.files.map(file => file.path).sort(), ['agent-summary.json', 'result.json', 'screenshots/shot.png']);
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('finalized evidence gets a content-addressed manifest that detects tampering', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-integrity-'));
+  try {
+    const writer = await new EvidenceWriter({ root, name: 'integrity-fixture' }).init();
+    await writer.writeText('logs/output.log', 'verified output\n');
+    await writer.finalize({ status: 'passed' });
+
+    const item = await readEvidence(writer.id, { root });
+    assert.equal(item.manifest.algorithm, 'sha256');
+    assert.ok(item.manifest.totalFiles >= 3);
+    assert.match(item.manifestDescriptor.digest, /^sha256:[a-f0-9]{64}$/);
+    assert.ok(item.files.some(file => file.path === 'evidence-manifest.json'));
+    assert.ok(item.manifest.files.some(file => file.path === 'logs/output.log' && file.mediaType === 'text/plain'));
+
+    const verified = await verifyEvidence(writer.id, { root });
+    assert.equal(verified.status, 'passed');
+    assert.deepEqual(verified.issues, []);
+
+    await fs.writeFile(path.join(writer.dir, 'logs', 'output.log'), 'tampered output\n', 'utf8');
+    const tampered = await verifyEvidence(writer.id, { root });
+    assert.equal(tampered.status, 'failed');
+    assert.ok(tampered.issues.some(issue => issue.path === 'logs/output.log' && issue.kind === 'digest-mismatch'));
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('legacy evidence without a manifest reports unverifiable instead of fake success', async () => {
+  const { root, id } = await fixture();
+  try {
+    const result = await verifyEvidence(id, { root });
+    assert.equal(result.status, 'unverifiable');
+    assert.equal(result.manifestPresent, false);
+    assert.deepEqual(result.issues, [{ kind: 'manifest-missing', path: 'evidence-manifest.json' }]);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
