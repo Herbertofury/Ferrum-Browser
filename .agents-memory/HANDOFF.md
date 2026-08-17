@@ -2,7 +2,21 @@
 
 Ferrum's canonical target is `Herbertofury/Ferrum-Browser` on `main`. Repository source is authoritative. Older Aether, Hypergraph, and Library archives are reference material only and must never replace current repository source without independent verification.
 
-## Current verified product checkpoint
+## Current verified GitHub Wiki automation checkpoint
+
+Ferrum 0.2.0 product code at `71faada1cd13214fc4444fc11034c891f80c2708` passed GitHub Actions run `32050699041` on 2026-08-17. This checkpoint supersedes the prior product code identity below. All five jobs passed: unit/syntax/shell/MCP, Lightpanda, Ubuntu full runtime, Windows full runtime, and real Android/Appium.
+
+This checkpoint adds reusable GitHub Wiki initialization support without weakening any existing Ferrum lane. The CLI now exposes `ferrum github-wiki probe OWNER/REPO` and `ferrum github-wiki bootstrap OWNER/REPO`; MCP exposes `ferrum_github_wiki_probe` and `ferrum_github_wiki_bootstrap`. Bootstrap uses a real persistent Chromium Space, preserves authenticated GitHub browser state, captures before/after screenshots, verifies the saved page, and confirms that the separate `.wiki.git` smart-HTTP remote becomes available.
+
+Git probing automatically uses `GH_TOKEN` or `GITHUB_TOKEN` when one is available, without recording the token in evidence. A token-authenticated 404 is accepted as proof that the wiki Git remote is absent. Without a token, Ferrum first inspects the authenticated wiki root and only enters the first-page editor when it sees the first-page state. A dedicated browser smoke simulates the dangerous private-repository case where an unauthenticated Git probe returns 404 even though a wiki already exists; Ferrum detected the existing wiki content and made zero visits to `_new` and zero save submissions.
+
+GitHub Wiki bootstrap browser smoke passed on both Ubuntu and Windows in run `32050699041`. The same Linux lane also performed a live non-mutating probe of `Herbertofury/ProjectDump` and confirmed its real wiki Git remote is initialized. Unit tests cover repository normalization, wiki Git URL construction, missing/existing probes, authenticated probe headers, secret non-disclosure, and transport failure handling. MCP surface verification passed with the new wiki tools exposed.
+
+The unchanged broader regression gates also passed at this exact head: Linux and Windows web smoke, cloned Spaces, browser matrices, MV3 extension smoke, workload packs, dashboard, real Electron, desktop Workbench, native desktop packaging, and fresh packaged desktop launch. Lightpanda and the real Android/Appium lane also passed.
+
+Run `32050699041` published fresh tested artifacts. Linux desktop artifact `9294605778` is 131,039,685 bytes with provider SHA-256 `c0559bd7e699ffc7d9eba854dc20dfd1061dd53a8028181bb8ee72f6a83b3f4d`. Windows desktop artifact `9294675134` is 151,532,578 bytes with provider SHA-256 `df3275c6a58791f32e199abcf379d13d6f6d59d7e7e82643c9a1055c32c08a8f`. Linux evidence artifact `9294600764` has provider SHA-256 `f60c010b067aefc17fca8c6a6d19276a07090d87ebcafe3b8664bb6a334fb0d4`; Windows evidence artifact `9294669636` has provider SHA-256 `276acb6be5a6e41e9afdad6d6581b8b8fb104093d2d1d8a661107cf1df840bd8`; Appium evidence artifact `9294628955` has provider SHA-256 `a344fd5c7372a52c5ecdb6f502741d3f56d44cd1df3f9239cdc0efea6cddb61a`; Lightpanda evidence artifact `9294573169` has provider SHA-256 `9760ea72a2a234b0fe2d1107347a35c64d871faced2766fee96bf54b24cbef0e`. The desktop packages were launched through the existing fresh-packaged smoke gates on both platforms. These latest artifacts have provider digests but were not independently re-downloaded and re-hashed in this checkpoint, so the older independently byte-verified publication evidence below remains preserved separately.
+
+## Prior verified product checkpoint
 
 Ferrum 0.2.0 product code at `d76744e8add89dc099695b700762f5cf91a956e8` passed GitHub Actions run `32003270111` on 2026-08-17. This is the verified product commit even if `main` later contains a memory-only `.agents-memory/**` checkpoint commit. The workflow completed successfully across all five jobs: unit/syntax/shell/MCP, Lightpanda, Ubuntu full runtime, Windows full runtime, and real Android/Appium.
 
