@@ -54,8 +54,8 @@ export class AppiumClient {
     throw new Error(`Appium server did not become ready within ${timeoutMs}ms${lastError ? `: ${lastError.message}` : ''}`);
   }
 
-  async createSession(capabilities) {
-    const response = await this.request('POST', '/session', { capabilities: { alwaysMatch: capabilities || {} } });
+  async createSession(capabilities, { timeoutMs = this.timeoutMs } = {}) {
+    const response = await this.request('POST', '/session', { capabilities: { alwaysMatch: capabilities || {} } }, { timeoutMs });
     this.sessionId = response?.value?.sessionId || response?.sessionId;
     if (!this.sessionId) throw new Error('Appium did not return a session id');
     return response;
@@ -126,16 +126,17 @@ async function captureSource(client, evidence, name) {
 
 export async function runAppiumTarget(spec, evidence) {
   const timeoutMs = spec.timeouts?.stepMs || 30000;
+  const startupMs = spec.timeouts?.startupMs || 30000;
   const client = new AppiumClient(spec.target.server || 'http://127.0.0.1:4723', { timeoutMs, evidence });
   const aliases = new Map();
   const durations = [];
   const outputs = [];
-  const serverStatus = await client.waitUntilReady(spec.timeouts?.startupMs || 30000);
+  const serverStatus = await client.waitUntilReady(startupMs);
   evidence.record('appium-server-ready', { server: client.baseUrl, status: serverStatus?.value || serverStatus });
-  const created = await client.createSession(spec.target.capabilities || {});
+  const created = await client.createSession(spec.target.capabilities || {}, { timeoutMs: startupMs });
   const capabilities = created?.value?.capabilities || created?.capabilities || spec.target.capabilities || {};
-  evidence.record('appium-session-start', { sessionId: client.sessionId, capabilities });
-  await evidence.writeJson('appium-session.json', { sessionId: client.sessionId, server: client.baseUrl, capabilities, serverStatus: serverStatus?.value || serverStatus });
+  evidence.record('appium-session-start', { sessionId: client.sessionId, capabilities, startupTimeoutMs: startupMs });
+  await evidence.writeJson('appium-session.json', { sessionId: client.sessionId, server: client.baseUrl, capabilities, serverStatus: serverStatus?.value || serverStatus, startupTimeoutMs: startupMs });
 
   try {
     for (let index = 0; index < spec.steps.length; index++) {

@@ -14,14 +14,17 @@ function respond(res, value) {
   res.end(body);
 }
 
-async function startFakeAppium() {
+async function startFakeAppium({ sessionDelayMs = 0 } = {}) {
   const calls = [];
   const server = http.createServer(async (req, res) => {
     let body = '';
     for await (const chunk of req) body += chunk;
     calls.push({ method: req.method, url: req.url, body: body ? JSON.parse(body) : null });
     if (req.method === 'GET' && req.url === '/status') return respond(res, { ready: true, build: { version: '3.6.0' } });
-    if (req.method === 'POST' && req.url === '/session') return respond(res, { sessionId: 's1', capabilities: { platformName: 'Android', automationName: 'UiAutomator2' } });
+    if (req.method === 'POST' && req.url === '/session') {
+      if (sessionDelayMs) await new Promise(resolve => setTimeout(resolve, sessionDelayMs));
+      return respond(res, { sessionId: 's1', capabilities: { platformName: 'Android', automationName: 'UiAutomator2' } });
+    }
     if (req.method === 'POST' && req.url === '/session/s1/elements') return respond(res, [{ [ELEMENT]: 'e1' }]);
     if (req.method === 'POST' && req.url === '/session/s1/element/e1/click') return respond(res, null);
     if (req.method === 'GET' && req.url === '/session/s1/element/e1/text') return respond(res, 'Network & internet');
@@ -49,6 +52,11 @@ async function fakeEvidence() {
     async writeJson(name, value) { const file = path.join(dir, name); await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, JSON.stringify(value)); return file; },
     async writeText(name, value) { const file = path.join(dir, name); await fs.mkdir(path.dirname(file), { recursive: true }); await fs.writeFile(file, value); return file; }
   };
+}
+
+async function cleanup(fake, evidence) {
+  await new Promise(resolve => fake.server.close(resolve));
+  await fs.rm(evidence.dir, { recursive: true, force: true });
 }
 
 test('Appium runner waits for server, drives a W3C session, retains evidence, and deletes session', async () => {
@@ -79,7 +87,26 @@ test('Appium runner waits for server, drives a W3C session, retains evidence, an
     assert.equal(await fs.readFile(path.join(evidence.dir, 'screenshots', 'after-click.png'), 'utf8'), 'fake-png');
     assert.match(await fs.readFile(path.join(evidence.dir, 'appium', 'settings.xml'), 'utf8'), /Settings/);
   } finally {
-    await new Promise(resolve => fake.server.close(resolve));
-    await fs.rm(evidence.dir, { recursive: true, force: true });
+    await cleanup(fake, evidence);
+  }
+});
+
+test('Appium session creation uses startup timeout instead of the shorter step timeout', async () => {
+  const fake = await startFakeAppium({ sessionDelayMs: 120 });
+  const evidence = await fakeEvidence();
+  try {
+    const started = performance.now();
+    const result = await runAppiumTarget({
+      target: { server: fake.url, capabilities: { platformName: 'Android', 'appium:automationName': 'UiAutomator2' } },
+      timeouts: { startupMs: 1000, stepMs: 40 },
+      steps: [{ action: 'assert-session' }]
+    }, evidence);
+    assert.equal(result.engine, 'appium');
+    assert.ok(performance.now() - started >= 100);
+    const sessionEvent = evidence.events.find(event => event.type === 'appium-session-start');
+    assert.equal(sessionEvent?.startupTimeoutMs, 1000);
+    assert.ok(fake.calls.some(call => call.method === 'DELETE' && call.url === '/session/s1'));
+  } finally {
+    await cleanup(fake, evidence);
   }
 });
