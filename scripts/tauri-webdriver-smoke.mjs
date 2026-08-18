@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { createHash } from 'node:crypto';
 import { runSpec } from '../src/core/runner.mjs';
 
 const appPath = path.resolve(process.env.FERRUM_TAURI_APP || '');
@@ -10,6 +11,9 @@ const server = process.env.FERRUM_TAURI_SERVER || 'http://127.0.0.1:4444';
 const driverCommand = process.env.FERRUM_TAURI_DRIVER || 'tauri-driver';
 const startupMs = Number(process.env.FERRUM_TAURI_STARTUP_MS || 60000);
 const stepMs = Number(process.env.FERRUM_TAURI_STEP_MS || 15000);
+const fixtureCommit = process.env.FERRUM_TAURI_FIXTURE_COMMIT || 'e4c2607cd60287a0ceb69458a0d69d0b676f39a6';
+const driverVersion = process.env.FERRUM_TAURI_DRIVER_VERSION || '2.0.6';
+const nativeDriverVersion = process.env.FERRUM_TAURI_NATIVE_DRIVER_VERSION || null;
 
 if (!process.env.FERRUM_TAURI_APP) {
   throw new Error('FERRUM_TAURI_APP must point to a built Tauri application binary');
@@ -19,6 +23,7 @@ const appStat = await fs.stat(appPath).catch(() => null);
 if (!appStat?.isFile()) {
   throw new Error(`Tauri application binary not found: ${appPath}`);
 }
+const applicationSha256 = createHash('sha256').update(await fs.readFile(appPath)).digest('hex');
 
 await fs.mkdir(artifactsRoot, { recursive: true });
 const driverLogPath = path.join(artifactsRoot, 'tauri-driver.log');
@@ -63,6 +68,13 @@ try {
       capabilities: {
         browserName: 'wry',
         'tauri:options': { application: appPath }
+      },
+      identity: {
+        fixture: 'tauri-apps/webdriver-example',
+        fixtureCommit,
+        applicationSha256,
+        tauriDriverVersion: driverVersion,
+        nativeDriverVersion
       }
     },
     timeouts: { startupMs, stepMs },
@@ -87,6 +99,10 @@ try {
     durationMs: result.durationMs,
     evidenceDir: result.evidenceDir,
     application: appPath,
+    applicationSha256,
+    fixtureCommit,
+    tauriDriverVersion: driverVersion,
+    nativeDriverVersion,
     server
   };
   process.stdout.write(`${JSON.stringify(summary)}\n`);
