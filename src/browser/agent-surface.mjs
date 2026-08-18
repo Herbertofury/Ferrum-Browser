@@ -18,9 +18,11 @@ export async function snapshotPage(page, { interactiveOnly = false, max = 400 } 
       const ref = el.getAttribute(attr);
       const match = /^e(\d+)$/.exec(ref || '');
       if (!match) continue;
+      const numeric = Number(match[1]);
+      if (!Number.isSafeInteger(numeric) || numeric < 1) continue;
       if (!refOwners.has(ref)) refOwners.set(ref, el);
       reservedRefs.add(ref);
-      next = Math.max(next, Number(match[1]) + 1);
+      next = Math.max(next, numeric + 1);
     }
     const results = [];
     for (const el of all) {
