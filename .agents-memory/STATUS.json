@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "32140bdd1558c82f2b8bd7056ece8a6ef8ecada6",
-  "verifiedWorkflowRun": 32151856152,
-  "verifiedAt": "2026-08-18T15:09:09Z",
+  "verifiedCodeCommit": "502232441fdd828b9e7f191bb01f75a9154a789d",
+  "verifiedWorkflowRun": 32155315750,
+  "verifiedAt": "2026-08-18T15:48:48Z",
   "verifiedToolchain": {
     "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
@@ -47,7 +47,8 @@
         "remote WebDriver lookup remains inside the existing step deadline and exposes final count diagnostics",
         "monotonic per-event elapsed time and direct run duration for compact agent results",
         "process HTTP requests retain complete response evidence before status/text assertion failure",
-        "process HTTP transport failures converge on authoritative child-exit attribution within the existing bounded request budget"
+        "process HTTP transport failures converge on authoritative child-exit attribution within the existing bounded request budget",
+        "finalized evidence emits a complete secret-redacted Perfetto/Chrome Trace Event sidecar with monotonic event timestamps and authoritative wall-clock metadata"
       ]
     },
     "linux": {
@@ -140,6 +141,7 @@
       "monotonicEventElapsedMs": true,
       "directRunDurationMs": true,
       "processHttpRequest": true,
+      "traceEventSidecar": true,
       "fullEvidencePreservedOnDisk": true
     },
     "evidenceIntegrity": {
@@ -175,47 +177,48 @@
       ]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32151856152,
-      "codeCommit": "32140bdd1558c82f2b8bd7056ece8a6ef8ecada6",
-      "verifiedProposalHead": "28212082ca166d42c2d284ddf99f02ba85be6602",
-      "verifiedTree": "33396abc3bab32d99a71d93e149620d71c55b696",
+      "workflowRun": 32155315750,
+      "codeCommit": "502232441fdd828b9e7f191bb01f75a9154a789d",
+      "verifiedProposalHead": "9a7f7694f347804febc5f6b14ef9f35a83839d6d",
+      "verifiedTree": "2f63f9342c9cf7eafc14e6e9af77b6cfbe509af0",
       "treeMatchesMergedProduct": true,
+      "perfettoCompatibilityWorkflowRun": 32155315736,
       "linuxDesktop": {
-        "artifactId": 9330120294,
-        "sizeBytes": 131745698,
-        "providerSha256": "fb6ac3df42f02d82fe667b87ff97d1b962c989b8c51a744f9fa9c6a4d309a49a",
+        "artifactId": 9331522491,
+        "sizeBytes": 131746529,
+        "providerSha256": "2e6da0d191ff7840fd281010dd21674f089e875eed419204f78536440b8e672d",
         "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9330366927,
-        "sizeBytes": 151614188,
-        "providerSha256": "e53b49ab635b9e083f094d265a3a354cfb4aba4693a002358a29904381842dde",
+        "artifactId": 9331666763,
+        "sizeBytes": 151615015,
+        "providerSha256": "42bcf2351ca668577f7610acb5c59030eac13408bfb9e6697a04364c6770f606",
         "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9330112657,
-        "sizeBytes": 2179933,
-        "providerSha256": "6bdf0b2de16499da2d86a7e2e7fce4c7932c04e01a578f8d132d0ba40da4657b"
+        "artifactId": 9331514873,
+        "sizeBytes": 2206454,
+        "providerSha256": "0ff2c81c6256b1f7016541916bcc3cdd4b608b8ce4bd3668a93d15828cee772a"
       },
       "windowsEvidence": {
-        "artifactId": 9330359260,
-        "sizeBytes": 4037412,
-        "providerSha256": "233c5b6364c742654b1929d7352b5eee0b4e797cd902d0ed2c5cd8ae9a1d48b2"
+        "artifactId": 9331658252,
+        "sizeBytes": 4016758,
+        "providerSha256": "b11243bd8fcae3ee66d11c49759af4c67516dc4a2ecd8aa617666143dfe1e242"
       },
       "appiumEvidence": {
-        "artifactId": 9330131883,
-        "sizeBytes": 121692,
-        "providerSha256": "b889e971cce39bc04256628b02ce77575652d11fd608698860b7a7a8c5a3d2fd"
+        "artifactId": 9331568060,
+        "sizeBytes": 124075,
+        "providerSha256": "b734ca04bf1ba1346a54c50d04c722eaba19901885f5f2c6165100c20d5ebcf4"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9330066355,
-        "sizeBytes": 20248,
-        "providerSha256": "2516ddae4f4524353f188d5cad56b9c7b0e80f3c61dde1883a595e1ff67f6e42"
+        "artifactId": 9331494183,
+        "sizeBytes": 23390,
+        "providerSha256": "c630830423fe5557a058c89f114decebcdf7ed82a3e3f9306bf72886b8bd75b6"
       },
       "lightpandaEvidence": {
-        "artifactId": 9330047147,
-        "sizeBytes": 11451,
-        "providerSha256": "282bd767290d99a00d494fba7f17e14e16fd4496e02a3171ac80c9410b96dac6"
+        "artifactId": 9331487170,
+        "sizeBytes": 12895,
+        "providerSha256": "1bc20ce3f81d5f347f46b509aadf9d51f9803f764ef73cec93529c274d0da00c"
       },
       "serviceNetworkFaultEvidence": {
         "artifactId": 9330056839,
@@ -223,7 +226,7 @@
         "providerSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7",
         "downloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"
       },
-      "independentArtifactRedownloadHash": "provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; service-network-fault evidence independently redownloaded and hash-matched; merged product tree equals verified proposal tree"
+      "independentArtifactRedownloadHash": "provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; run-25 Perfetto compatibility independently loaded and queried trace-event.json; merged product tree equals verified proposal tree"
     },
     "artifactPublication": {
       "sourceCheckpoint": {
@@ -298,6 +301,7 @@
     "evidence run IDs reject dot and dot-dot traversal aliases before path resolution",
     "bounded-parallel evidence history summary scans retain every finalized run without caps, pagination shortcuts, or cache staleness",
     "monotonic evidence event elapsedMs and direct run durationMs exposed to compact CLI/MCP results while raw ISO timestamps remain preserved",
+    "Perfetto-compatible secret-redacted trace-event.json sidecar derived from the complete evidence event stream without replacing raw Ferrum evidence",
     "bounded suites and reproducible median/p95 benchmarks",
     "production workload-pack orchestration with setup/build evidence and explicit variables",
     "grounded production packs for Herbertofury/Gamesync and Herbertofury/GameSync-Next",
@@ -342,7 +346,8 @@
     "Opaque Node process crashes lacked structured secret-safe runtime context; optional Ferrum-owned Node diagnostic reports now retain useful crash/stack/resource evidence while excluding raw environment/network data.",
     "Process health checks and final WebDriver lookups could overrun their enclosing deadline via a fresh per-request timeout; they now use the remaining bounded budget and report attempts/final state.",
     "Evidence timelines exposed wall-clock timestamps but required agents to derive run-relative timing; events now include monotonic elapsedMs and finalized/compact results expose direct durationMs without hiding raw evidence.",
-    "Process targets could health-check a service but could not directly exercise its API; Ferrum now supports bounded HTTP requests with retained full-response evidence, and transport failures wait only briefly for the authoritative child terminal state so real process exits are attributed instead of being flattened into generic fetch errors."
+    "Process targets could health-check a service but could not directly exercise its API; Ferrum now supports bounded HTTP requests with retained full-response evidence, and transport failures wait only briefly for the authoritative child terminal state so real process exits are attributed instead of being flattened into generic fetch errors.",
+    "Run-25 checkpoint advanced beyond STATUS after a verified product merge; STATUS is now synchronized to product 502232441fdd828b9e7f191bb01f75a9154a789d and CI 32155315750, including the Perfetto-compatible evidence trace sidecar."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in an earlier Windows evidence bundle because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
@@ -364,13 +369,11 @@
     "Use this verified Ferrum checkpoint as the mandatory acceptance layer for applicable GameSync changes.",
     "Use the verified GitHub Wiki bootstrap when a new repository needs its first wiki page before source-controlled wiki Git synchronization can begin.",
     "Extend the grounded GameSync workload packs with change-specific real workflows when a GameSync feature changes; never substitute the generic baseline for affected-feature verification.",
-    "Run the Perfetto same-workload correlation differential using Ferrum's monotonic event timeline and retain Perfetto only if queryable trace evidence adds actionable signal at bounded cost.",
-    "Run bounded failure-only strace diagnostics on a controlled opaque process failure before considering deeper bpftrace instrumentation.",
-    "Run the nsjail isolation parity experiment before heavier gVisor/Kata isolation, proving restrictions and complete output/evidence/restart/cleanup parity.",
+    "Run the ProcDump-for-Linux plus rust-minidump same-crash experiment, retaining raw dump, process/build identity, ordinary logs, structured stack evidence, cleanup and bounded overhead.",
+    "Compare multikernel/sandlock against nsjail for an identical unprivileged Linux process fixture, proving filesystem/network restrictions plus full Ferrum output/evidence/cleanup parity before considering either adapter.",
     "Run rr deterministic record/replay only after a controlled intermittent Linux process failure fixture is available.",
-    "Compare a disposable Testcontainers Node HTTP/OpenAPI fixture with the same local process fixture for setup, cleanup, identity and evidence parity.",
-    "Run a fixed-seed bounded Schemathesis stateful API workload and require a minimized repeatable seeded-defect reproducer before integration.",
-    "Put the same service fixture behind Toxiproxy and prove deterministic latency/reset/recovery with exact fault configuration.",
+    "Run bounded failure-only strace diagnostics on a controlled opaque process failure before considering deeper bpftrace instrumentation.",
+    "Compare Anthropic Sandbox Runtime policy ergonomics against lower-level Linux isolation without adopting it while its current Ubuntu/bubblewrap and TUI compatibility issues remain open.",
     "Preserve all current browser, desktop, replay, Spaces, WebDriver, Appium, GitHub Wiki, diagnostics, evidence and packaging gates when improving Ferrum further."
   ],
   "blockers": []
