@@ -169,6 +169,112 @@ async function collectNodeDiagnosticReports(tempDir, evidence) {
   }
 }
 
+function processHttpTerminalError(method, url, terminal) {
+  if (terminal?.type === 'error') {
+    return new Error(`Process failed during HTTP request ${method} ${url}: ${terminal.error?.message || 'spawn error'}`);
+  }
+  const code = terminal?.code == null ? 'none' : terminal.code;
+  const signal = terminal?.signal || 'none';
+  return new Error(`Process exited during HTTP request ${method} ${url} (code ${code}, signal ${signal})`);
+}
+
+function requestHeaders(step) {
+  const headers = { ...(step.headers || {}) };
+  const hasContentType = Object.keys(headers).some(name => name.toLowerCase() === 'content-type');
+  if (step.json != null && !hasContentType) headers['content-type'] = 'application/json';
+  return headers;
+}
+
+async function terminalAfterTransportError(lifecycle, timeoutMs) {
+  const existing = lifecycle.getTerminal();
+  if (existing) return existing;
+  return Promise.race([
+    lifecycle.terminalPromise,
+    new Promise(resolve => setTimeout(() => resolve(null), Math.min(25, timeoutMs)))
+  ]);
+}
+
+async function performHttpRequest(step, index, evidence, lifecycle, defaultTimeoutMs) {
+  const url = String(step.url || '');
+  if (!url) throw new Error(`process http-request step ${index} requires url`);
+  if (step.body != null && step.json != null) throw new Error(`process http-request step ${index} cannot define both body and json`);
+  const method = String(step.method || 'GET').toUpperCase();
+  const body = step.json != null ? JSON.stringify(step.json) : step.body == null ? undefined : String(step.body);
+  const timeoutMs = Number(step.timeoutMs || defaultTimeoutMs || 5000);
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error(`process http-request step ${index} requires a positive timeout`);
+
+  const existingTerminal = lifecycle.getTerminal();
+  if (existingTerminal) throw processHttpTerminalError(method, url, existingTerminal);
+
+  const requestAbort = new AbortController();
+  const requestSignal = AbortSignal.any([AbortSignal.timeout(timeoutMs), requestAbort.signal]);
+  const requestOutcome = fetch(url, {
+    method,
+    headers: requestHeaders(step),
+    body,
+    signal: requestSignal
+  }).then(
+    response => ({ type: 'response', response }),
+    error => ({ type: 'error', error })
+  );
+  const terminalOutcome = lifecycle.terminalPromise.then(terminal => ({ type: 'terminal', terminal }));
+  const outcome = await Promise.race([requestOutcome, terminalOutcome]);
+  if (outcome.type === 'terminal') {
+    requestAbort.abort();
+    await requestOutcome;
+    throw processHttpTerminalError(method, url, outcome.terminal);
+  }
+  if (outcome.type === 'error') {
+    const terminal = await terminalAfterTransportError(lifecycle, timeoutMs);
+    if (terminal) throw processHttpTerminalError(method, url, terminal);
+    if (outcome.error?.name === 'TimeoutError' || outcome.error?.name === 'AbortError') {
+      throw new Error(`HTTP request timed out after ${timeoutMs}ms: ${method} ${url}`);
+    }
+    throw new Error(`HTTP request failed: ${method} ${url}: ${outcome.error?.message || outcome.error}`);
+  }
+
+  const bodyOutcome = outcome.response.text().then(
+    text => ({ type: 'body', text }),
+    error => ({ type: 'error', error })
+  );
+  const completed = await Promise.race([bodyOutcome, terminalOutcome]);
+  if (completed.type === 'terminal') {
+    requestAbort.abort();
+    await bodyOutcome;
+    throw processHttpTerminalError(method, url, completed.terminal);
+  }
+  if (completed.type === 'error') {
+    const terminal = await terminalAfterTransportError(lifecycle, timeoutMs);
+    if (terminal) throw processHttpTerminalError(method, url, terminal);
+    if (completed.error?.name === 'TimeoutError' || completed.error?.name === 'AbortError') {
+      throw new Error(`HTTP response timed out after ${timeoutMs}ms: ${method} ${url}`);
+    }
+    throw new Error(`HTTP response failed: ${method} ${url}: ${completed.error?.message || completed.error}`);
+  }
+
+  const fileName = path.join('http', `${String(index + 1).padStart(3, '0')}-response.txt`);
+  const target = await evidence.writeText(fileName, completed.text);
+  const relative = path.relative(evidence.dir, target).replaceAll('\\', '/');
+  evidence.record('process-http-response', {
+    method,
+    url,
+    status: outcome.response.status,
+    ok: outcome.response.ok,
+    requestBytes: body == null ? 0 : Buffer.byteLength(body),
+    responseBytes: Buffer.byteLength(completed.text),
+    contentType: outcome.response.headers.get('content-type'),
+    path: relative
+  });
+
+  if (step.status != null && outcome.response.status !== Number(step.status)) {
+    throw new Error(`Expected HTTP status ${step.status}, got ${outcome.response.status} for ${method} ${url}`);
+  }
+  if (step.text != null && !completed.text.includes(String(step.text))) {
+    throw new Error(`HTTP response missing expected text for ${method} ${url}: ${step.text}`);
+  }
+  return { status: outcome.response.status, path: relative };
+}
+
 function observeProcessLifecycle(child, evidence) {
   let terminal = null;
   let spawnError = null;
@@ -232,6 +338,7 @@ export async function runProcessTarget(spec, evidence) {
   ] : originalArgs;
   const lines = [];
   let outcome = null;
+  let httpRequests = 0;
   const child = spawnLogged(command, args, {
     cwd: spec.target.cwd || process.cwd(),
     env: { ...process.env, ...(spec.target.env || {}) },
@@ -268,6 +375,9 @@ export async function runProcessTarget(spec, evidence) {
           lifecycle.getClosed,
           lifecycle.getSpawnError
         );
+      } else if (step.action === 'http-request') {
+        await performHttpRequest(step, index, evidence, lifecycle, spec.timeouts?.stepMs || 5000);
+        httpRequests += 1;
       } else if (step.action === 'write-stdin') {
         const payload = String(step.text ?? step.value ?? '') + (step.newline ? '\n' : '');
         await writeStdin(child, payload);
@@ -282,7 +392,7 @@ export async function runProcessTarget(spec, evidence) {
         throw new Error(`Unsupported process step ${index}: ${step.action}`);
       }
     }
-    outcome = { pid: child.pid, logs: lines.length, running: child.exitCode === null, nodeReports: 0 };
+    outcome = { pid: child.pid, logs: lines.length, running: child.exitCode === null, nodeReports: 0, httpRequests };
     return outcome;
   } finally {
     if (child.pid) await terminate(child).catch(() => {});
