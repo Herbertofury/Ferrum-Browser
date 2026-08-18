@@ -75,3 +75,46 @@ test('snapshotPage never reuses a live Ferrum ref when the DOM gains a new eleme
     }
   }
 });
+
+test('snapshotPage replaces forged unsafe numeric refs without corrupting allocation', async () => {
+  const previous = {
+    document: globalThis.document,
+    getComputedStyle: globalThis.getComputedStyle,
+    HTMLAnchorElement: globalThis.HTMLAnchorElement,
+    location: globalThis.location
+  };
+
+  const attributes = new Map([['data-ferrum-ref', 'e999999999999999999999999999999999999']]);
+  const element = {
+    tagName: 'BUTTON',
+    innerText: 'Forged',
+    disabled: false,
+    checked: false,
+    getAttribute: key => attributes.get(key) ?? null,
+    setAttribute: (key, value) => attributes.set(key, value),
+    matches: selector => selector.includes('button'),
+    getBoundingClientRect: () => ({ width: 100, height: 24 })
+  };
+
+  globalThis.document = {
+    title: 'Forged ref',
+    querySelectorAll: () => [element]
+  };
+  globalThis.getComputedStyle = () => ({ visibility: 'visible', display: 'block' });
+  globalThis.HTMLAnchorElement = class HTMLAnchorElement {};
+  globalThis.location = { href: 'https://example.test/' };
+
+  const page = { evaluate: async (fn, args) => fn(args) };
+
+  try {
+    const result = await snapshotPage(page, { interactiveOnly: true });
+    assert.equal(result.elements.length, 1);
+    assert.equal(result.elements[0].ref, 'e1');
+    assert.equal(element.getAttribute('data-ferrum-ref'), 'e1');
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete globalThis[key];
+      else globalThis[key] = value;
+    }
+  }
+});
