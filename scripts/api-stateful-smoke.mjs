@@ -283,9 +283,38 @@ function plantedReproduction(output) {
   const block = output.slice(reproduction, replay >= 0 ? replay : undefined);
   const commands = [...block.matchAll(/^\s+curl\s+(.+)$/gm)].map(match => `curl ${match[1].trim()}`);
   assert.equal(commands.length, 2, `Expected a minimized two-call planted-defect reproducer, got ${commands.length}`);
-  const linked = commands[1].match(/\/items\/(\d+)$/);
+  assert.match(commands[0], /curl -X POST .*\/items$/, `Unexpected first reproducer operation: ${commands[0]}`);
+  const linked = commands[1].match(/^curl -X GET .*\/items\/(\d+)$/);
   assert.ok(linked, `Could not extract linked item id from: ${commands[1]}`);
-  return { commands, linkedId: Number(linked[1]) };
+  return {
+    commands,
+    linkedId: Number(linked[1]),
+    operations: ['POST /items', 'GET /items/{created-id}']
+  };
+}
+
+async function replayMinimizedSequence(origin) {
+  const started = performance.now();
+  const createResponse = await fetch(`${origin}/items`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'ferrum-replay' }),
+    signal: AbortSignal.timeout(3000)
+  });
+  assert.equal(createResponse.status, 201, `Semantic replay create returned ${createResponse.status}`);
+  const created = await createResponse.json();
+  assert.ok(Number.isSafeInteger(created.id), 'Semantic replay did not receive a created integer id');
+  const linkedResponse = await fetch(`${origin}/items/${created.id}`, { signal: AbortSignal.timeout(3000) });
+  assert.equal(linkedResponse.status, 500, `Semantic replay linked GET returned ${linkedResponse.status}`);
+  const body = await linkedResponse.json();
+  assert.deepEqual(body, { error: 'planted-state-corruption', id: created.id });
+  return {
+    operations: ['POST /items', 'GET /items/{created-id}'],
+    linkedId: created.id,
+    status: linkedResponse.status,
+    marker: body.error,
+    wallMs: performance.now() - started
+  };
 }
 
 async function runSchemathesis(origin, runNumber) {
@@ -384,9 +413,13 @@ try {
   await resetService(origin);
   const first = await runSchemathesis(origin, 1);
   await resetService(origin);
+  const directReplay = await replayMinimizedSequence(origin);
+  assert.deepEqual(directReplay.operations, first.reproduction.operations, 'Direct replay did not match the minimized operation sequence');
+  assert.equal(directReplay.linkedId, first.reproduction.linkedId, 'Direct replay did not reproduce the minimized linked resource id');
+  await resetService(origin);
   const second = await runSchemathesis(origin, 2);
-  assert.deepEqual(second.reproduction.commands, first.reproduction.commands, 'Deterministic minimized reproduction commands changed between runs');
-  assert.equal(second.reproduction.linkedId, first.reproduction.linkedId, 'Deterministic linked resource id changed between runs');
+  assert.deepEqual(second.reproduction.operations, first.reproduction.operations, 'Minimized stateful operation sequence changed between runs');
+  assert.equal(second.reproduction.linkedId, first.reproduction.linkedId, 'Minimized linked resource id changed between runs');
 
   const cleanupStarted = performance.now();
   const removed = await run('docker', ['rm', '-f', containerId], { timeoutMs: 15000 });
@@ -404,7 +437,9 @@ try {
     generationMode: 'deterministic',
     maxExamples,
     ferrumBaseline,
-    deterministicMinimizedReproduction: first.reproduction,
+    minimizedOperationSequence: first.reproduction.operations,
+    firstGeneratedReproduction: first.reproduction.commands,
+    directReplay,
     schemathesis: {
       image: schemathesisImage,
       version: `${schemathesisVersion.stdout}\n${schemathesisVersion.stderr}`.trim(),
@@ -430,7 +465,8 @@ try {
       ferrumBaselineEvidenceRetained: true,
       openApiLinkExercised: true,
       stateOnlyDefectFound: true,
-      deterministicMinimizedReproducerStable: true,
+      minimizedOperationSequenceStable: true,
+      directSemanticReplayPassed: true,
       structuredNdjsonRetained: true,
       exactExternalRuntimeIdentityRetained: true,
       explicitCleanupProof: true
