@@ -26,6 +26,45 @@ function elapsedMs(startedAt) {
   return Math.max(0, Number((performance.now() - startedAt).toFixed(3)));
 }
 
+function toTraceEvent(event) {
+  const { at, type, elapsedMs: eventElapsedMs, ...args } = event;
+  return {
+    name: type,
+    cat: 'ferrum',
+    ph: 'i',
+    s: 't',
+    pid: 1,
+    tid: 1,
+    ts: Math.round(Number(eventElapsedMs || 0) * 1000),
+    args: {
+      ...args,
+      wallClockAt: at
+    }
+  };
+}
+
+function traceSidecar(name, events) {
+  return {
+    traceEvents: [
+      {
+        name: 'process_name',
+        ph: 'M',
+        pid: 1,
+        tid: 1,
+        args: { name: `Ferrum: ${name}` }
+      },
+      {
+        name: 'thread_name',
+        ph: 'M',
+        pid: 1,
+        tid: 1,
+        args: { name: 'evidence' }
+      },
+      ...events.map(toTraceEvent)
+    ]
+  };
+}
+
 export class EvidenceWriter {
   constructor({ root, name, metadata = {}, redactValues = [] }) {
     this.root = path.resolve(root || 'artifacts');
@@ -111,6 +150,7 @@ export class EvidenceWriter {
       ...compact,
       failure: result.failure || null
     });
+    await this.writeJson('trace-event.json', traceSidecar(this.name, this.events));
     await writeEvidenceManifest(this.dir);
     return result;
   }
