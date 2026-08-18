@@ -222,8 +222,10 @@ class LightpandaPage {
     return valueFromRemote(response.result);
   }
 
-  async ferrumSnapshot({ interactiveOnly = false, max = 400 } = {}) {
+  async ferrumSnapshot({ interactiveOnly = false, max } = {}) {
     return await this.evaluate(({ interactiveOnly, max }) => {
+      const requestedMax = Number(max);
+      const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? Math.floor(requestedMax) : null;
       const interactiveSelector = 'a[href],button,input,textarea,select,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]';
       const all = [...document.querySelectorAll(interactiveOnly ? interactiveSelector : 'body *')];
       const results = [];
@@ -250,7 +252,7 @@ class LightpandaPage {
           disabled: 'disabled' in element ? Boolean(element.disabled) : false,
           checked: 'checked' in element ? Boolean(element.checked) : null
         });
-        if (results.length >= max) break;
+        if (limit != null && results.length >= limit) break;
       }
       return { url: location.href, title: document.title, elements: results };
     }, { interactiveOnly, max });

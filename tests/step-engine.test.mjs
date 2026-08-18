@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { terminateExtensionServiceWorker, waitForLocatorText } from '../src/runners/step-engine.mjs';
+import { StepEngine, terminateExtensionServiceWorker, waitForLocatorText } from '../src/runners/step-engine.mjs';
 
 test('waitForLocatorText retries until asynchronous expected text appears', async () => {
   const samples = ['idle', 'waiting', 'ok:runtime'];
@@ -37,6 +37,28 @@ test('waitForLocatorText times out with the last observed text', async () => {
     }
   );
   assert.ok(calls > 1);
+});
+
+test('StepEngine snapshots are uncapped by default and preserve explicit caller limits', async () => {
+  const calls = [];
+  const page = {
+    async ferrumSnapshot(options) {
+      calls.push(options);
+      return { url: 'https://example.test/', title: 'Example', elements: [{ ref: 'e1' }] };
+    }
+  };
+  const engine = new StepEngine({
+    evidence: { record() {} },
+    session: { engine: 'chromium' },
+    page
+  });
+
+  const complete = await engine.execute({ action: 'snapshot', interactiveOnly: true }, 0);
+  assert.equal(complete.elements, 1);
+  assert.equal(calls[0].max, undefined);
+
+  await engine.execute({ action: 'snapshot', interactiveOnly: true, max: 123 }, 1);
+  assert.equal(calls[1].max, 123);
 });
 
 test('terminateExtensionServiceWorker closes and confirms only the exact extension service-worker target', async () => {
