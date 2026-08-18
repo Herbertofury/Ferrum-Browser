@@ -18,6 +18,7 @@
     "smoke:extension": "node ./bin/ferrum.mjs test ./examples/self-test-extension.json --headless",
     "smoke:web": "node ./bin/ferrum.mjs test ./examples/self-test-web.json --headless",
     "smoke:network": "node ./scripts/network-offline-smoke.mjs",
+    "smoke:service-fixture": "node ./scripts/testcontainers-service-smoke.mjs",
     "smoke:webdriver": "bash ./scripts/selenium-grid-smoke.sh",
     "smoke:github-wiki": "node ./scripts/github-wiki-bootstrap-smoke.mjs",
     "smoke:mcp-inspector": "node ./scripts/mcp-inspector-smoke.mjs",
