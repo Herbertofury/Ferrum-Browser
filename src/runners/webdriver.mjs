@@ -230,7 +230,13 @@ async function waitForDisplayed(client, step, aliases, timeoutMs) {
       attempts += 1;
       if (lastDisplayed) return { element: lastElement, displayed: true, attempts };
     } catch (error) {
+      const requestTimedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
       const retryable = error?.webdriverError === 'stale element reference' || error?.webdriverError === 'no such element';
+      if (requestTimedOut) {
+        attempts += 1;
+        lastDisplayed = false;
+        break;
+      }
       if (!retryable) throw error;
       attempts += 1;
       lastDisplayed = false;
