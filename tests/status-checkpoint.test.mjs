@@ -24,7 +24,7 @@ function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const proposal = entry?.proposal;
   const directVerifiedWorkflowRun =
-    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun;
+    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.latestFullGate ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun;
   const siblingProposalWorkflowRun = Number(proposal?.workflowRun ?? 0);
   const siblingProposalProof =
     verifiedProduct?.commit &&
@@ -89,6 +89,22 @@ function normalizeVerifiedCheckpoint(entry) {
       commit: product.commit,
       workflowRun: proposalWorkflowRun,
       verifiedAt: product?.verifiedAt ?? null,
+    };
+  }
+
+  const finalVerifiedProduct = entry?.finalVerifiedProduct;
+  const finalVerifiedWorkflowRun = Number(finalVerifiedProduct?.workflow ?? 0);
+  const finalVerifiedProductProof =
+    finalVerifiedProduct?.commit &&
+    typeof finalVerifiedProduct?.tree === 'string' && finalVerifiedProduct.tree.length > 0 &&
+    typeof finalVerifiedProduct?.proposalHead === 'string' && finalVerifiedProduct.proposalHead.length > 0 &&
+    Number.isSafeInteger(finalVerifiedWorkflowRun) &&
+    finalVerifiedWorkflowRun > 0;
+  if (finalVerifiedProductProof) {
+    return {
+      commit: finalVerifiedProduct.commit,
+      workflowRun: finalVerifiedWorkflowRun,
+      verifiedAt: finalVerifiedProduct?.verifiedAt ?? entry?.checkedAt ?? null,
     };
   }
 
@@ -218,6 +234,42 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       },
     }),
     null,
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-18T17:25:18Z',
+      finalVerifiedProduct: {
+        commit: 'final-product',
+        tree: 'final-tree',
+        proposalHead: 'final-proposal',
+        workflow: 53,
+      },
+    }),
+    { commit: 'final-product', workflowRun: 53, verifiedAt: '2026-08-18T17:25:18Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      finalVerifiedProduct: {
+        commit: 'unproven-final-product',
+        proposalHead: 'final-proposal',
+        workflow: 54,
+      },
+    }),
+    null,
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      verifiedProduct: {
+        commit: 'latest-full-gate-product',
+        tree: 'latest-full-gate-tree',
+        latestFullGate: 55,
+        productCodeChangedThisRun: false,
+      },
+    }),
+    { commit: 'latest-full-gate-product', workflowRun: 55, verifiedAt: null },
   );
 });
 
