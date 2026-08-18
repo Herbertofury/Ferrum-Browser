@@ -1,3 +1,5 @@
+export { diffSnapshots } from './snapshot-delta.mjs';
+
 const REF_ATTR = 'data-ferrum-ref';
 const DEFAULT_FALLBACK_PROBE_MS = 1000;
 const NEXT_REF_BY_PAGE = new WeakMap();
