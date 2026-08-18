@@ -43,6 +43,13 @@ function isNodeCommand(command) {
   return name === 'node' || name === 'node.exe';
 }
 
+function validateNodeDiagnosticArgs(args) {
+  const conflicting = args.find(arg => /^(?:--(?:no-)?report-|--diagnostic-report-)/.test(String(arg)));
+  if (conflicting) {
+    throw new Error(`process target nodeDiagnosticReport owns Node report flags; remove conflicting argument: ${conflicting}`);
+  }
+}
+
 function sanitizeLibuvHandles(handles) {
   if (!Array.isArray(handles)) return null;
   return handles.map(handle => ({
@@ -119,9 +126,10 @@ export async function runProcessTarget(spec, evidence) {
   if (nodeDiagnosticReport && !isNodeCommand(command)) {
     throw new Error('process target nodeDiagnosticReport requires target.command to be node or node.exe');
   }
+  const originalArgs = spec.target.args || [];
+  if (nodeDiagnosticReport) validateNodeDiagnosticArgs(originalArgs);
   let nodeReportDir = null;
   if (nodeDiagnosticReport) nodeReportDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-node-report-'));
-  const originalArgs = spec.target.args || [];
   const args = nodeDiagnosticReport ? [
     '--report-uncaught-exception',
     '--report-on-fatalerror',
