@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { collectPageVitals } from '../browser/diagnostics.mjs';
-import { executeAgentAction, performWithLocatorFallback, snapshotPage } from '../browser/agent-surface.mjs';
+import { diffSnapshots, executeAgentAction, performWithLocatorFallback, snapshotPage } from '../browser/agent-surface.mjs';
 import { summarizeDurations } from '../core/stats.mjs';
 
 export function navigationWaitUntil(sessionEngine, requested) {
@@ -94,6 +94,7 @@ export class StepEngine {
     this.timeoutMs = timeoutMs;
     this.onRestart = onRestart;
     this.durations = [];
+    this.namedSnapshots = new Map();
   }
 
   async run(steps) {
@@ -167,8 +168,29 @@ export class StepEngine {
       }
       case 'snapshot': {
         const snapshot = await snapshotPage(this.page, { interactiveOnly: step.interactiveOnly ?? false, max: step.max });
-        if (step.name) await this.evidence.writeJson(`snapshots/${step.name}.json`, snapshot);
-        return { elements: snapshot.elements.length, url: snapshot.url };
+        const name = step.name == null ? null : String(step.name);
+        const compareTo = step.compareTo == null ? null : String(step.compareTo);
+        if (compareTo && !name) throw new Error('snapshot compareTo requires name so the complete current snapshot remains retained evidence');
+        const fullSnapshotFile = name ? `snapshots/${name}.json` : null;
+        if (fullSnapshotFile) await this.evidence.writeJson(fullSnapshotFile, snapshot);
+
+        let delta = null;
+        let deltaFile = null;
+        if (compareTo) {
+          const baseline = this.namedSnapshots.get(compareTo);
+          if (!baseline) throw new Error(`snapshot compareTo requires an earlier named snapshot: ${compareTo}`);
+          const snapshotDelta = diffSnapshots(baseline, snapshot);
+          deltaFile = `snapshots/${name}.delta.json`;
+          await this.evidence.writeJson(deltaFile, snapshotDelta);
+          delta = {
+            added: snapshotDelta.added.length,
+            removed: snapshotDelta.removed.length,
+            changed: snapshotDelta.changed.length,
+            unchanged: snapshotDelta.unchangedCount
+          };
+        }
+        if (name) this.namedSnapshots.set(name, snapshot);
+        return { elements: snapshot.elements.length, url: snapshot.url, fullSnapshotFile, compareTo, deltaFile, delta };
       }
       case 'screenshot': {
         const file = await this.evidence.screenshot(this.page, step.name || `step-${index}`);
@@ -280,6 +302,7 @@ export class StepEngine {
         const restarted = await this.onRestart();
         this.session = restarted.session;
         this.page = restarted.page;
+        this.namedSnapshots.clear();
         if (restarted.extensionId) this.extensionId = restarted.extensionId;
         return { restarted: true, extensionId: this.extensionId };
       }
