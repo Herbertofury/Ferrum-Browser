@@ -1,9 +1,11 @@
 const REF_ATTR = 'data-ferrum-ref';
 const DEFAULT_FALLBACK_PROBE_MS = 1000;
 
-export async function snapshotPage(page, { interactiveOnly = false, max = 400 } = {}) {
+export async function snapshotPage(page, { interactiveOnly = false, max } = {}) {
   if (typeof page.ferrumSnapshot === 'function') return await page.ferrumSnapshot({ interactiveOnly, max });
   return await page.evaluate(({ interactiveOnly, max, attr }) => {
+    const requestedMax = Number(max);
+    const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? Math.floor(requestedMax) : null;
     const visible = el => {
       const style = getComputedStyle(el);
       const rect = el.getBoundingClientRect();
@@ -49,7 +51,7 @@ export async function snapshotPage(page, { interactiveOnly = false, max = 400 } 
         disabled: 'disabled' in el ? Boolean(el.disabled) : false,
         checked: 'checked' in el ? Boolean(el.checked) : null
       });
-      if (results.length >= max) break;
+      if (limit != null && results.length >= limit) break;
     }
     return { url: location.href, title: document.title, elements: results };
   }, { interactiveOnly, max, attr: REF_ATTR });
