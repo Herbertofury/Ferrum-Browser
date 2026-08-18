@@ -1,0 +1,43 @@
+name: Ferrum stateful API benchmark
+
+on:
+  push:
+    paths:
+      - 'scripts/api-stateful-smoke.mjs'
+      - 'src/runners/process.mjs'
+      - 'src/core/**'
+      - 'bin/**'
+      - 'package.json'
+      - '.github/workflows/api-stateful.yml'
+  pull_request:
+    paths:
+      - 'scripts/api-stateful-smoke.mjs'
+      - 'src/runners/process.mjs'
+      - 'src/core/**'
+      - 'bin/**'
+      - 'package.json'
+      - '.github/workflows/api-stateful.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  stateful-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Ferrum fixed-seed stateful OpenAPI planted-defect benchmark
+        run: |
+          umask 000
+          npm run smoke:api-stateful
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-Stateful-API
+          path: artifacts/api-stateful/
+          if-no-files-found: error
