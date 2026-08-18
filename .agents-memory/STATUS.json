@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "1217144c626fade0a52596e16d78f995f827652b",
-  "verifiedWorkflowRun": 32084212634,
-  "verifiedAt": "2026-08-18T00:51:27Z",
+  "verifiedCodeCommit": "3878969425e4af9f50b21f9e555dc3f5c647e96d",
+  "verifiedWorkflowRun": 32104799699,
+  "verifiedAt": "2026-08-18T06:02:24Z",
   "verifiedToolchain": {
     "playwright": "1.63.0-alpha-2026-08-01",
     "electron": "43.4.0",
@@ -37,7 +37,9 @@
         "verified Stack candidate promotion rejects stale verification-in-progress markers",
         "provider-neutral remote WebDriver endpoint and bounded visible-state convergence",
         "deterministic Chromium offline/recovery network-state control",
-        "secret-safe recursive evidence redaction for templated and remote credentials"
+        "secret-safe recursive evidence redaction for templated and remote credentials",
+        "evidence ID containment rejects dot and dot-dot traversal aliases at the shared validation boundary",
+        "bounded-parallel evidence history scans return every finalized run while skipping incomplete and malformed entries"
       ]
     },
     "linux": {
@@ -129,47 +131,47 @@
       "evidence": ["before-save screenshot", "after-save screenshot", "Git remote availability probe"]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32084212634,
-      "codeCommit": "1217144c626fade0a52596e16d78f995f827652b",
-      "verifiedProposalHead": "5a7befd36f189de90dc5c21d560c9a4723f76842",
-      "verifiedTree": "b0b90dfcec10e9639160acdf49e4d2f6770e279f",
+      "workflowRun": 32104799699,
+      "codeCommit": "3878969425e4af9f50b21f9e555dc3f5c647e96d",
+      "verifiedProposalHead": "953fe679ab48274e6de615ce7d2aa41523beb421",
+      "verifiedTree": "c788055c77909b419e4904337ce538dfe880ac2b",
       "treeMatchesMergedProduct": true,
       "linuxDesktop": {
-        "artifactId": 9306214764,
-        "sizeBytes": 131885867,
-        "providerSha256": "3af13b2653863c887c363e22e7e1290f3493bf5ca71f825e1903c030e1eb803a",
+        "artifactId": 9312816785,
+        "sizeBytes": 131790206,
+        "providerSha256": "4613587caea6a7f80b96a0a50c447edbc5a606c868bd2d699a352c4f8c3b0f68",
         "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9306251783,
-        "sizeBytes": 151754936,
-        "providerSha256": "25797e4701d3b2d5ed21a9c4a18867843ffcadc49ed63d5c5b70aa18c1d61e8a",
+        "artifactId": 9312866988,
+        "sizeBytes": 151659547,
+        "providerSha256": "30e5489ba0c7f6dd9405a43a9d963b440612cb00691675983bec82ba51fca4e5",
         "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9306211578,
-        "sizeBytes": 2165089,
-        "providerSha256": "89ad1ca2e71d29b81165f3d3d93dc106bfdf63d6c68166b92a0adfdeb77beb9b"
+        "artifactId": 9312813526,
+        "sizeBytes": 2179744,
+        "providerSha256": "9a135390fdde4e56781b5057c52a1ec4c377e2ffb4453bd184d2f633d706db1d"
       },
       "windowsEvidence": {
-        "artifactId": 9306246556,
-        "sizeBytes": 3987176,
-        "providerSha256": "0d4e8ed096fbbf6ca550c4718a3e5e33b10e1e6e2d9fdb213394ca0b2d579f58"
+        "artifactId": 9312861903,
+        "sizeBytes": 3940860,
+        "providerSha256": "4d68ac920af4783af9de19bc456c65e7a0c6c2bf925629a54234bd2a15335c42"
       },
       "appiumEvidence": {
-        "artifactId": 9306177926,
-        "sizeBytes": 123910,
-        "providerSha256": "98066c47cedfd4a7433316f4aba66d1f93abebb82a7607b04bce323714733f91"
+        "artifactId": 9312895884,
+        "sizeBytes": 121810,
+        "providerSha256": "fc04bce0d3525cd78e7c26512599b2f102bad68a26901b2e020470a8d632c19a"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9306136678,
-        "sizeBytes": 20033,
-        "providerSha256": "9164cca14be80ecda792f9849a5a0fcab92f2750bfa7094bdd59452581462d83"
+        "artifactId": 9312838552,
+        "sizeBytes": 20013,
+        "providerSha256": "35b4e1107ea1509995f802be6d14de1754f3b9649d125883d45f59d97e2b6946"
       },
       "lightpandaEvidence": {
-        "artifactId": 9306128030,
-        "sizeBytes": 3643,
-        "providerSha256": "d095a2b1b14c2c33649d8b7182a3b3ae7d51165e9414cfd4667b73cb07297b33"
+        "artifactId": 9312822660,
+        "sizeBytes": 3657,
+        "providerSha256": "4160569c39f0e1dff0d41d866e824637c440bf0dd5699e3601a22d3edc488906"
       },
       "independentArtifactRedownloadHash": "provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; merged product tree equals verified proposal tree"
     },
@@ -242,6 +244,8 @@
     "CLI and MCP durable evidence inspection and SHA-256 integrity verification",
     "independent MCP Inspector compatibility smoke",
     "content-addressed evidence manifests with missing/changed/unexpected payload detection",
+    "evidence run IDs reject dot and dot-dot traversal aliases before path resolution",
+    "bounded-parallel evidence history summary scans retain every finalized run without caps, pagination shortcuts, or cache staleness",
     "bounded suites and reproducible median/p95 benchmarks",
     "production workload-pack orchestration with setup/build evidence and explicit variables",
     "grounded production packs for Herbertofury/Gamesync and Herbertofury/GameSync-Next",
@@ -274,7 +278,9 @@
     "A transient Appium find-all could return zero matches before Android UI convergence; constrained find-all now retries only within the existing step deadline, preserves the required threshold, and records final count plus attempt diagnostics.",
     "STATUS monotonicity originally recognized only verifiedProduct evolution ledgers; checkpoint normalization now recognizes verifiedProduct, improvement, and product records whose trees were proven identical to an exact-head verified proposal.",
     "A merged and fully verified Stack candidate could leave STATUS stale and retain a verification-in-progress marker; promotion now updates the verified toolchain/product identity and tests reject stale candidate markers.",
-    "Resolved ENV/VAR credentials and remote Appium/provider values could enter durable evidence; Ferrum now recursively redacts sensitive keys, credential-bearing URLs, bearer tokens and tracked sensitive substitutions at evidence boundaries while preserving real runtime inputs."
+    "Resolved ENV/VAR credentials and remote Appium/provider values could enter durable evidence; Ferrum now recursively redacts sensitive keys, credential-bearing URLs, bearer tokens and tracked sensitive substitutions at evidence boundaries while preserving real runtime inputs.",
+    "Evidence IDs '.' and '..' could collapse evidence paths to the evidence root or its parent; the shared validation boundary now rejects both aliases while preserving the existing accepted ID character set.",
+    "Evidence history summary reads were serialized; the verified implementation now uses a bounded 32-worker async pool while preserving the complete finalized run set, malformed/incomplete skip behavior, and chronological ordering."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in an earlier Windows evidence bundle because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
