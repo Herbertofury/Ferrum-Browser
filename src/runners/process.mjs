@@ -14,10 +14,16 @@ async function waitHealth(url, timeoutMs) {
   throw new Error(`Health URL did not become ready: ${url}: ${last?.message || 'timeout'}`);
 }
 
-async function waitForLog(lines, text, timeoutMs) {
+async function waitForLog(lines, text, timeoutMs, getClosed) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (lines.some(line => line.text.includes(text))) return true;
+    const closed = getClosed?.();
+    if (closed) {
+      const code = closed.code == null ? 'none' : closed.code;
+      const signal = closed.signal || 'none';
+      throw new Error(`Process exited before output contained expected text: ${text} (code ${code}, signal ${signal})`);
+    }
     await new Promise(resolve => setTimeout(resolve, 25));
   }
   throw new Error(`Process output missing expected text: ${text}`);
@@ -35,6 +41,7 @@ export async function runProcessTarget(spec, evidence) {
   if (!command) throw new Error('process target requires target.command');
   const args = spec.target.args || [];
   const lines = [];
+  let closed = null;
   const child = spawnLogged(command, args, {
     cwd: spec.target.cwd || process.cwd(),
     env: { ...process.env, ...(spec.target.env || {}) },
@@ -44,6 +51,7 @@ export async function runProcessTarget(spec, evidence) {
     lines.push(line);
     evidence.record('process-log', line);
   });
+  child.once('close', (code, signal) => { closed = { code, signal }; });
   evidence.record('process-start', { command, args, pid: child.pid });
   try {
     if (spec.target.healthUrl) await waitHealth(spec.target.healthUrl, spec.timeouts?.startupMs || 30000);
@@ -53,7 +61,7 @@ export async function runProcessTarget(spec, evidence) {
         if (step.code != null && exit.code !== step.code) throw new Error(`Expected exit code ${step.code}, got ${exit.code}`);
         evidence.record('process-exit', exit);
       } else if (step.action === 'assert-log') {
-        await waitForLog(lines, String(step.text), step.timeoutMs || spec.timeouts?.stepMs || 5000);
+        await waitForLog(lines, String(step.text), step.timeoutMs || spec.timeouts?.stepMs || 5000, () => closed);
       } else if (step.action === 'write-stdin') {
         const payload = String(step.text ?? step.value ?? '') + (step.newline ? '\n' : '');
         await writeStdin(child, payload);
