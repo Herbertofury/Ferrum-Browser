@@ -48,7 +48,7 @@ jobs:
           sudo apt-get install -y webkit2gtk-4.1 libayatana-appindicator3-dev xvfb
       - name: Prepare pinned Tauri fixture for embedded W3C provider
         env:
-          FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.0.0
+          FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.3.0
         run: node scripts/prepare-tauri-embedded-fixture.mjs .ferrum/tauri-fixture/v2
       - name: Install pinned Tauri fixture dependencies
         working-directory: .ferrum/tauri-fixture/v2
@@ -63,7 +63,7 @@ jobs:
           FERRUM_TAURI_APP: ${{ github.workspace }}/.ferrum/tauri-fixture/v2/src-tauri/target/debug/tauri-app
           FERRUM_TAURI_ARTIFACTS: ${{ github.workspace }}/artifacts/tauri-embedded
           FERRUM_TAURI_FIXTURE_COMMIT: e4c2607cd60287a0ceb69458a0d69d0b676f39a6
-          FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.0.0
+          FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.3.0
           FERRUM_TAURI_SERVER: http://127.0.0.1:4445
         run: xvfb-run -a npm run smoke:tauri-embedded
       - name: Ferrum embedded Tauri application smoke
@@ -71,9 +71,9 @@ jobs:
         shell: powershell
         env:
           FERRUM_TAURI_APP: ${{ github.workspace }}\.ferrum\tauri-fixture\v2\src-tauri\target\debug\tauri-app.exe
-          FERRUM_TAURI_ARTIFACTS: ${{ github.workspace }}\artifacts\tauri-embedded
+          FERRUM_TAURI_ARTIFACTS: ${{ github.workspace }}\artifacts/tauri-embedded
           FERRUM_TAURI_FIXTURE_COMMIT: e4c2607cd60287a0ceb69458a0d69d0b676f39a6
-          FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.0.0
+          FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.3.0
           FERRUM_TAURI_SERVER: http://127.0.0.1:4445
         run: npm run smoke:tauri-embedded
       - uses: actions/upload-artifact@v7
@@ -147,7 +147,7 @@ jobs:
         shell: powershell
         env:
           FERRUM_TAURI_APP: ${{ github.workspace }}\.ferrum\tauri-fixture\v2\src-tauri\target\release\tauri-app.exe
-          FERRUM_TAURI_ARTIFACTS: ${{ github.workspace }}\artifacts\tauri-official
+          FERRUM_TAURI_ARTIFACTS: ${{ github.workspace }}\artifacts/tauri-official
           FERRUM_TAURI_FIXTURE_COMMIT: e4c2607cd60287a0ceb69458a0d69d0b676f39a6
           FERRUM_TAURI_DRIVER_VERSION: 2.0.6
           FERRUM_TAURI_STARTUP_MS: 240000
