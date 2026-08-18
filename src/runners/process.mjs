@@ -185,6 +185,15 @@ function requestHeaders(step) {
   return headers;
 }
 
+async function terminalAfterTransportError(lifecycle, timeoutMs) {
+  const existing = lifecycle.getTerminal();
+  if (existing) return existing;
+  return Promise.race([
+    lifecycle.terminalPromise,
+    new Promise(resolve => setTimeout(() => resolve(null), Math.min(25, timeoutMs)))
+  ]);
+}
+
 async function performHttpRequest(step, index, evidence, lifecycle, defaultTimeoutMs) {
   const url = String(step.url || '');
   if (!url) throw new Error(`process http-request step ${index} requires url`);
@@ -216,7 +225,7 @@ async function performHttpRequest(step, index, evidence, lifecycle, defaultTimeo
     throw processHttpTerminalError(method, url, outcome.terminal);
   }
   if (outcome.type === 'error') {
-    const terminal = lifecycle.getTerminal();
+    const terminal = await terminalAfterTransportError(lifecycle, timeoutMs);
     if (terminal) throw processHttpTerminalError(method, url, terminal);
     if (outcome.error?.name === 'TimeoutError' || outcome.error?.name === 'AbortError') {
       throw new Error(`HTTP request timed out after ${timeoutMs}ms: ${method} ${url}`);
@@ -235,7 +244,7 @@ async function performHttpRequest(step, index, evidence, lifecycle, defaultTimeo
     throw processHttpTerminalError(method, url, completed.terminal);
   }
   if (completed.type === 'error') {
-    const terminal = lifecycle.getTerminal();
+    const terminal = await terminalAfterTransportError(lifecycle, timeoutMs);
     if (terminal) throw processHttpTerminalError(method, url, terminal);
     if (completed.error?.name === 'TimeoutError' || completed.error?.name === 'AbortError') {
       throw new Error(`HTTP response timed out after ${timeoutMs}ms: ${method} ${url}`);
