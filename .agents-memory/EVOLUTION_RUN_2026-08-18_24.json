@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "evolution-run",
+  "runId": "2026-08-18_24",
+  "checkedAt": "2026-08-18T15:10:30Z",
+  "deltaWatermark": {
+    "previousCheckpointCommit": "fea8df3874da01aeb73ff65f80cc6eeb60598fe2",
+    "startMain": "1a1f32fd14922ee2368d8aa4c3f5c91588d67194"
+  },
+  "verifiedProduct": {
+    "commit": "32140bdd1558c82f2b8bd7056ece8a6ef8ecada6",
+    "tree": "33396abc3bab32d99a71d93e149620d71c55b696",
+    "proposalHead": "28212082ca166d42c2d284ddf99f02ba85be6602",
+    "proposalTree": "33396abc3bab32d99a71d93e149620d71c55b696",
+    "treeMatchesVerifiedProposal": true,
+    "ciRun": 32151856152,
+    "ciConclusion": "success",
+    "auxiliaryRuns": {
+      "serviceNetworkFault": 32151856107,
+      "statefulApi": 32151856228,
+      "disposableService": 32151855897
+    },
+    "ciCoverage": {
+      "unitMcpInspectorEvidenceIntegrity": "success",
+      "linuxBrowserMv3WorkloadElectronDesktopPackage": "success",
+      "windowsFiveBrowserMv3WorkloadElectronDesktopPackage": "success",
+      "seleniumGridWebDriver": "success",
+      "lightpanda": "success",
+      "realAndroidAppium": "success"
+    },
+    "artifacts": {
+      "windowsDesktop": {"id": 9330366927, "sizeBytes": 151614188, "sha256": "e53b49ab635b9e083f094d265a3a354cfb4aba4693a002358a29904381842dde"},
+      "linuxDesktop": {"id": 9330120294, "sizeBytes": 131745698, "sha256": "fb6ac3df42f02d82fe667b87ff97d1b962c989b8c51a744f9fa9c6a4d309a49a"},
+      "windowsEvidence": {"id": 9330359260, "sizeBytes": 4037412, "sha256": "233c5b6364c742654b1929d7352b5eee0b4e797cd902d0ed2c5cd8ae9a1d48b2"},
+      "linuxEvidence": {"id": 9330112657, "sizeBytes": 2179933, "sha256": "6bdf0b2de16499da2d86a7e2e7fce4c7932c04e01a578f8d132d0ba40da4657b"},
+      "appiumEvidence": {"id": 9330131883, "sizeBytes": 121692, "sha256": "b889e971cce39bc04256628b02ce77575652d11fd608698860b7a7a8c5a3d2fd"},
+      "webdriverGridEvidence": {"id": 9330066355, "sizeBytes": 20248, "sha256": "2516ddae4f4524353f188d5cad56b9c7b0e80f3c61dde1883a595e1ff67f6e42"},
+      "lightpandaEvidence": {"id": 9330047147, "sizeBytes": 11451, "sha256": "282bd767290d99a00d494fba7f17e14e16fd4496e02a3171ac80c9410b96dac6"},
+      "serviceNetworkFaultEvidence": {"id": 9330056839, "sizeBytes": 20057, "sha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7", "independentDownloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"}
+    }
+  },
+  "improvements": [
+    {
+      "title": "Remove invalid cross-run numeric ID equality from stateful API benchmark",
+      "pullRequest": 40,
+      "proposalHead": "a3a83b672c4524373191ac967536df807ef196d2",
+      "verifiedRuns": {"ferrumCi": 32146620895, "statefulApi": 32146620737},
+      "mergedCommit": "ca5746c839856e90ab1232d3fdd0cce20328776b",
+      "tree": "1131522725f0bbf51f6ecb8cdec9f714c90d312e",
+      "failureFirstRun": 32145680225,
+      "rootCause": "Schemathesis numeric resource IDs are local to independent generation, shrinking and replay runs, while linked-operation semantics are the stable property.",
+      "result": "Preserved POST-created-ID-GET semantics, OpenAPI link coverage, planted defect, deterministic generation mode, runtime identity and evidence without assuming the same integer across independent runs."
+    },
+    {
+      "title": "Add deterministic real Toxiproxy service network fault benchmark",
+      "pullRequest": 39,
+      "proposalHead": "17db56c044b4226c5d11967b8aebc1101c7e6235",
+      "tree": "8092b19cb38cb431c66aba5e7f4ea43a01a64716",
+      "verifiedRuns": {"ferrumCi": 32151159290, "serviceNetworkFault": 32151159201, "statefulApi": 32151159197, "disposableService": 32151159163},
+      "mergedCommit": "1332ca468bef2fb1c0ce0b37ab3330b37b5cd202",
+      "fixture": {"toxiproxy": "ghcr.io/shopify/toxiproxy:2.12.0", "toxiproxyImageId": "sha256:3edf5d14625b9aa8ad71d5dd084da1f8a0eb46ee749457549ae91d29d96546aa", "toxiproxyDigest": "ghcr.io/shopify/toxiproxy@sha256:9378ed52a28bc50edc1350f936f518f31fa95f0d15917d6eb40b8e376d1a214e", "service": "node:24-alpine", "additionalNodeDependencies": 0},
+      "proof": {"configuredLatencyMs": 350, "upstreamDeltaMs": 349.983, "downstreamDeltaMs": 352.445, "truthfulOutageFailure": true, "recovery": true, "fullResponseEvidence": true, "cleanup": true}
+    },
+    {
+      "title": "Stop completed process targets retaining unused termination grace timers",
+      "pullRequest": 41,
+      "proposalHead": "28212082ca166d42c2d284ddf99f02ba85be6602",
+      "tree": "33396abc3bab32d99a71d93e149620d71c55b696",
+      "verifiedRuns": {"ferrumCi": 32151856152, "serviceNetworkFault": 32151856107, "statefulApi": 32151856228, "disposableService": 32151855897},
+      "mergedCommit": "32140bdd1558c82f2b8bd7056ece8a6ef8ecada6",
+      "rootCause": "The losing 5000 ms SIGTERM grace timer stayed referenced after prompt child exit and kept the Node event loop alive after Ferrum work and evidence finalization were complete.",
+      "implementation": "Unref and clear the grace timer when prompt exit wins while preserving the same 5000 ms grace and SIGKILL escalation for genuinely running children; add a subprocess regression test.",
+      "failureFirstReproducer": {"terminateAwaitMs": 2.122, "helperWallMs": 5970},
+      "fixedReproducer": {"terminateAwaitMs": 3.499, "helperWallMs": 220},
+      "sameWorkloadBeforeAfter": {
+        "baseline": {"beforeMs": 5143.126758, "afterMs": 175.109455, "reductionPct": 96.5953},
+        "upstreamLatency": {"beforeMs": 5477.490996, "afterMs": 504.878991, "reductionPct": 90.7827},
+        "downstreamLatency": {"beforeMs": 5483.726048, "afterMs": 512.005146, "reductionPct": 90.6632},
+        "outage": {"beforeMs": 5141.229991, "afterMs": 161.066818, "reductionPct": 96.8672},
+        "recovery": {"beforeMs": 5129.916133, "afterMs": 170.13454, "reductionPct": 96.6835}
+      },
+      "preservedProof": {"upstreamDeltaMs": 346.296, "downstreamDeltaMs": 345.437, "outageDetected": true, "recovery": true, "fullEvidence": true, "cleanup": true, "coverageReduced": false}
+    }
+  ],
+  "ecosystemRotation": "service-network-fault-injection, bounded-chaos, occurrence-aware-fault-triggering, protocol-aware-fault-proxies",
+  "candidates": [
+    {
+      "project": "Shopify/toxiproxy", "url": "https://github.com/Shopify/toxiproxy", "owner": "Shopify", "checkedDate": "2026-08-18", "head": "94d6d4b3c385e48534622b138da61e95014196d5", "release": "2.12.0", "maintenanceFreshness": "active through 2026-07-21 with current 2026 PR activity", "purpose": "API-controlled TCP resilience proxy", "architecture": "standalone proxy with HTTP control API and upstream/downstream toxics", "relevantFerrumCapability": "service/API network faults", "harvest": "explicit stream direction; latency, jitter, timeout, reset_peer, bandwidth, slow_close, slicer, limit_data, packet_loss, enable/disable", "integrationMode": "isolated official Docker benchmark", "expectedBenefit": "deterministic fault/recovery with full Ferrum evidence and runtime identity", "requiredDependencies": "Docker benchmark lane only", "platformCoverage": "proxy is cross-platform; Ferrum benchmark qualified on Linux CI", "compatibilityRisks": "TCP-level not kernel packet-level; stochastic toxics need careful gating", "upstreamIssues": "historical #655 exposed one-way latency ambiguity; current docs PR clarifies it", "benchmarkEvidence": "Ferrum proved independent 350 ms upstream/downstream effects, outage, recovery and cleanup", "smallestExperiment": "add reset_peer and timeout; evaluate packet_loss only if repeatable", "acceptanceTest": "same service path classifies fault, recovers, retains evidence and leaves no residue", "decision": "ADOPT", "nextReviewTrigger": "new release/head or need for another deterministic toxic"
+    },
+    {
+      "project": "Linux tc-netem", "url": "https://man7.org/linux/man-pages/man8/tc-netem.8.html", "owner": "Linux/iproute2 ecosystem", "checkedDate": "2026-08-18", "head": "0f23d56f17fdfc7db69d51f64c8b91bbab947aa9", "release": "current interface", "maintenanceFreshness": "core Linux traffic-control facility", "purpose": "packet-level network emulation", "architecture": "kernel qdisc configured by tc", "relevantFerrumCapability": "seeded loss/reorder/corruption/duplication/delay/rate", "harvest": "SEED plus packet-level fault semantics", "integrationMode": "privileged isolated experiment", "expectedBenefit": "reproducible packet faults beyond Toxiproxy", "requiredDependencies": "Linux, iproute2, isolated CAP_NET_ADMIN", "platformCoverage": "Linux", "compatibilityRisks": "privileged and host-network-sensitive without namespace isolation", "upstreamIssues": "wall timing can vary even with deterministic random sequence", "benchmarkEvidence": "netem manual exposes delay/loss/corrupt/duplicate/reorder/rate/slot/seed", "smallestExperiment": "repeat fixed-seed loss/reorder profile 10 times in isolated namespace", "acceptanceTest": "repeatable fault class, recovery, cleanup and no host-network contamination", "decision": "EXPERIMENT", "nextReviewTrigger": "after Toxiproxy reset/timeout coverage"
+    },
+    {
+      "project": "alexei-led/pumba", "url": "https://github.com/alexei-led/pumba", "owner": "alexei-led", "checkedDate": "2026-08-18", "head": "69b78e6d286cc1da33c192df2a591b0335582bd7", "release": "1.1.7", "maintenanceFreshness": "active through 2026-05-05", "purpose": "container chaos and netem wrapper", "architecture": "CLI over container runtime plus network/resource chaos primitives", "relevantFerrumCapability": "container-scoped network/process chaos", "harvest": "target selection plus delay/loss/duplicate/corrupt/rate/resource/lifecycle faults", "integrationMode": "compare wrapper against direct netem", "expectedBenefit": "lower fixture authoring cost for containerized targets", "requiredDependencies": "container runtime and Linux privileges", "platformCoverage": "primarily Linux containers", "compatibilityRisks": "extra wrapper can obscure low-level state and cleanup", "upstreamIssues": "no current Ferrum need proves it superior to Toxiproxy plus netem", "benchmarkEvidence": "maintained 2026 container-chaos project", "smallestExperiment": "same packet-loss workload via Pumba and raw netem", "acceptanceTest": "same fault/evidence with materially simpler setup and no cleanup ambiguity", "decision": "WATCH", "nextReviewTrigger": "raw netem proves too costly or multi-resource chaos becomes common"
+    },
+    {
+      "project": "chaos-mesh/chaos-mesh", "url": "https://github.com/chaos-mesh/chaos-mesh", "owner": "chaos-mesh", "checkedDate": "2026-08-18", "head": "4c09a0db22df0559e987988219e5cc7ff45af906", "release": "2.8.x", "maintenanceFreshness": "active head dated 2026-08-18", "purpose": "cloud-native chaos engineering", "architecture": "Kubernetes CRDs/controllers/daemon plus chaosd", "relevantFerrumCapability": "future distributed/Kubernetes resilience adapter", "harvest": "NetworkChaos delay/loss/duplicate/corrupt/partition/bandwidth and declarative lifecycle", "integrationMode": "benchmark/watch for Kubernetes targets", "expectedBenefit": "production-shaped distributed fault experiments", "requiredDependencies": "Kubernetes or chaosd plus privileges", "platformCoverage": "Kubernetes/Linux focused", "compatibilityRisks": "large privileged footprint for normal Ferrum local use", "upstreamIssues": "current network-chaos lifecycle edge cases reinforce cleanup verification", "benchmarkEvidence": "active maintained cloud-native chaos ecosystem", "smallestExperiment": "one bounded NetworkChaos on disposable Kubernetes service when target exists", "acceptanceTest": "declared failure/recovery and complete chaos-resource cleanup with identity evidence", "decision": "WATCH", "nextReviewTrigger": "real Ferrum Kubernetes target"
+    },
+    {
+      "project": "chaosblade-io/chaosblade", "url": "https://github.com/chaosblade-io/chaosblade", "owner": "chaosblade-io", "checkedDate": "2026-08-18", "head": "d8c5473ccda329a3841f114f83a43881a2205ab5", "release": "1.7.x", "maintenanceFreshness": "active through 2026-07-28", "purpose": "host/container/network fault toolkit", "architecture": "Blade CLI with platform executors", "relevantFerrumCapability": "broad native/service faults", "harvest": "network delay/loss/corrupt/duplicate/reorder/port/DNS and resource faults", "integrationMode": "isolated subprocess watch candidate", "expectedBenefit": "broader host/container fault library", "requiredDependencies": "ChaosBlade binaries/agents and privileges", "platformCoverage": "Linux/container/Kubernetes centric", "compatibilityRisks": "privileged and invasive compared with narrower Ferrum fixtures", "upstreamIssues": "no current need beats native controls/Toxiproxy/netem", "benchmarkEvidence": "active 2026 project", "smallestExperiment": "only when a real host fault cannot be expressed natively", "acceptanceTest": "new capability, reliable rollback and full target/evidence identity", "decision": "WATCH", "nextReviewTrigger": "real unsupported host-fault need"
+    },
+    {
+      "project": "envoyproxy/envoy", "url": "https://github.com/envoyproxy/envoy", "owner": "envoyproxy", "checkedDate": "2026-08-18", "head": "a961f48a5683acb80b51581776073244bf0f1f7d", "release": "1.40.0-dev", "maintenanceFreshness": "active head dated 2026-08-18", "purpose": "production L4/L7 proxy with HTTP fault filter", "architecture": "proxy configured statically or by xDS", "relevantFerrumCapability": "HTTP/2 and gRPC delay/abort/throughput faults", "harvest": "deterministic L7 delay, abort, custom response, throughput and statistics", "integrationMode": "optional benchmark/transplant idea", "expectedBenefit": "protocol-aware fault classes beyond raw TCP", "requiredDependencies": "Envoy binary/container and config", "platformCoverage": "server/container environments", "compatibilityRisks": "heavy runtime/config for ordinary fixtures", "upstreamIssues": "no current Ferrum need justifies default use", "benchmarkEvidence": "production fault filter with continuous maintenance", "smallestExperiment": "future gRPC fixture comparing one abort/delay against Toxiproxy", "acceptanceTest": "new L7 diagnostics with bounded startup and complete teardown/evidence", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "real gRPC/HTTP2 target"
+    },
+    {
+      "project": "istio/istio", "url": "https://github.com/istio/istio", "owner": "istio", "checkedDate": "2026-08-18", "head": "97ab928751666c0e472cb963f0cddd19a25dd7ee", "release": "1.30.x", "maintenanceFreshness": "active head dated 2026-08-18", "purpose": "service-mesh traffic fault injection", "architecture": "Kubernetes control plane programming Envoy data plane", "relevantFerrumCapability": "production-mesh delay/abort testing", "harvest": "route-scoped percentage/delay/abort semantics", "integrationMode": "watch only when target already uses Istio", "expectedBenefit": "test production-equivalent mesh policies", "requiredDependencies": "Kubernetes and Istio", "platformCoverage": "Kubernetes", "compatibilityRisks": "far too heavy to add solely for Ferrum", "upstreamIssues": "no current Ferrum target uses a mesh", "benchmarkEvidence": "active production service-mesh ecosystem", "smallestExperiment": "use app-native VirtualService fault on an existing Istio target", "acceptanceTest": "intended effect/recovery with topology and evidence preserved", "decision": "WATCH", "nextReviewTrigger": "user app under test already uses Istio"
+    },
+    {
+      "project": "mitmproxy/mitmproxy", "url": "https://github.com/mitmproxy/mitmproxy", "owner": "mitmproxy", "checkedDate": "2026-08-18", "head": "bae1a7e179da7f9e516ba1b9fe0743f4fd758894", "release": "12.2.3", "maintenanceFreshness": "active through 2026-08-13", "purpose": "programmable HTTP(S)/HTTP2/WebSocket interception", "architecture": "proxy core with addon hooks and CLI/web/TUI fronts", "relevantFerrumCapability": "TLS/WebSocket mutation, failure and replay", "harvest": "flow hooks, message mutation, connection termination and replay", "integrationMode": "isolated experiment/transplant idea", "expectedBenefit": "protocol-aware faults with message context", "requiredDependencies": "mitmproxy binary/container and trust setup for HTTPS", "platformCoverage": "Windows/macOS/Linux", "compatibilityRisks": "certificate routing and secret handling add setup ambiguity", "upstreamIssues": "target-specific Windows/local mode and WebSocket behavior requires qualification", "benchmarkEvidence": "mature active 2026 release line", "smallestExperiment": "terminate a disposable WebSocket flow after a semantic message", "acceptanceTest": "repeatable exact flow failure/recovery with isolated trust state and evidence", "decision": "EXPERIMENT", "nextReviewTrigger": "real TLS/WebSocket fault need"
+    },
+    {
+      "project": "litmuschaos/litmus", "url": "https://github.com/litmuschaos/litmus", "owner": "litmuschaos", "checkedDate": "2026-08-18", "head": "7777c27b324a48e997b8107bd0874ce9b8f90482", "release": "current 2026 line", "maintenanceFreshness": "active through 2026-07-31", "purpose": "cloud-native resilience workflow platform", "architecture": "Kubernetes chaos infrastructure/workflows/ChaosHub", "relevantFerrumCapability": "distributed Kubernetes chaos benchmark", "harvest": "network loss/latency workloads and experiment-result conventions", "integrationMode": "benchmark/watch", "expectedBenefit": "external comparison for future Ferrum Kubernetes ergonomics", "requiredDependencies": "Kubernetes and Litmus components", "platformCoverage": "Kubernetes", "compatibilityRisks": "large platform setup for local testing", "upstreamIssues": "no current target needs it", "benchmarkEvidence": "maintained ChaosHub/platform ecosystem", "smallestExperiment": "import one network-loss workload after Kubernetes adapter exists", "acceptanceTest": "same failure/recovery as Litmus without weaker Ferrum evidence", "decision": "BENCHMARK", "nextReviewTrigger": "Ferrum Kubernetes target support"
+    },
+    {
+      "project": "SequenceFI", "url": "https://arxiv.org/abs/2607.20050", "owner": "Yuzhen Tan et al.", "checkedDate": "2026-08-18", "head": null, "release": "arXiv:2607.20050v1, 2026-07-22", "maintenanceFreshness": "new 2026 research", "purpose": "non-intrusive temporal microservice fault injection", "architecture": "temporal guards over observed message-event sequences", "relevantFerrumCapability": "occurrence-aware fault triggering from evidence state", "harvest": "activate faults after semantic workflow conditions instead of sleeps", "integrationMode": "Ferrum-native TRANSPLANT-IDEA", "expectedBenefit": "less premature/late injection flake in multi-step services", "requiredDependencies": "none proposed", "platformCoverage": "concept is platform-neutral", "compatibilityRisks": "paper results require independent reproduction; guards must remain explainable", "upstreamIssues": "no maintained drop-in adapter selected", "benchmarkEvidence": "paper reports 9 scenarios/450 trials, 100% timing success and 95.91% search-time reduction versus H-Random", "smallestExperiment": "trigger Toxiproxy only after first named successful Ferrum response event", "acceptanceTest": "20 repeats fire exactly once at intended occurrence with raw evidence", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "after deterministic Toxiproxy/netem baseline expands"
+    },
+    {
+      "project": "TheaterQ", "url": "https://arxiv.org/abs/2510.27057", "owner": "research project", "checkedDate": "2026-08-18", "head": null, "release": "arXiv:2510.27057v1, 2025-10-30", "maintenanceFreshness": "recent research", "purpose": "trace-driven dynamic network emulation", "architecture": "Linux queuing discipline applying synchronized time-varying traces", "relevantFerrumCapability": "realistic mobile/WAN network profiles", "harvest": "time-varying delay/bandwidth/loss/dup/reorder trace replay", "integrationMode": "research benchmark/watch", "expectedBenefit": "test changing network conditions rather than static faults", "requiredDependencies": "Linux kernel/module/tooling and privileges", "platformCoverage": "Linux", "compatibilityRisks": "kernel/root complexity and research-grade maintenance", "upstreamIssues": "no stable cross-platform production adapter identified", "benchmarkEvidence": "paper describes microsecond-scale updates and synchronized trace replay", "smallestExperiment": "after netem, replay one published dynamic profile", "acceptanceTest": "reproducible trace effects, cleanup and Ferrum timing correlation", "decision": "BENCHMARK", "nextReviewTrigger": "static seeded netem proves value and dynamic profile need emerges"
+    },
+    {
+      "project": "FaultWeave", "url": "https://conf.researchr.org/details/fse-2026/fse-2026-industry-papers/55/FaultWeave-Bounded-Resilience-Testing-with-Failure-Diagnosis-Capability-for-Microser", "owner": "Mingzhuo Zheng et al.", "checkedDate": "2026-08-18", "head": null, "release": "FSE 2026 Industry Paper", "maintenanceFreshness": "new 2026 research", "purpose": "bounded resilience exploration with diagnosis", "architecture": "bounded-depth incremental fault combinations reusing prior outcomes", "relevantFerrumCapability": "agent-efficient multi-fault exploration", "harvest": "small-scope hypothesis, bounded depth, outcome reuse and failure classification", "integrationMode": "Ferrum-native TRANSPLANT-IDEA", "expectedBenefit": "fewer redundant fault scenarios without losing discovered failures", "requiredDependencies": "none proposed", "platformCoverage": "concept is platform-neutral", "compatibilityRisks": "unsound pruning could miss interaction faults", "upstreamIssues": "no drop-in implementation selected", "benchmarkEvidence": "FSE 2026 paper describes reducing redundant scenarios by reusing prior injection results", "smallestExperiment": "compare exhaustive and bounded depth-2 combinations of two deterministic Toxiproxy faults", "acceptanceTest": "identical unique failures with materially fewer executed scenarios or reject pruning", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "after two deterministic fault types are qualified"
+    }
+  ],
+  "deepInspection": {
+    "topCandidates": ["Shopify/toxiproxy", "Linux tc-netem", "SequenceFI", "FaultWeave"],
+    "toxiproxy": "ADOPT as isolated benchmark after real-runtime proof; explicit stream direction is mandatory.",
+    "netem": "Next packet-level experiment because SEED and loss/reorder/corrupt semantics could extend determinism beyond TCP proxy faults.",
+    "sequenceFi": "Harvest occurrence-aware triggering only after Ferrum reproduction.",
+    "faultWeave": "Harvest bounded exploration only after multiple deterministic faults exist."
+  },
+  "maximumImprovementChallenge": {
+    "finding": "The newly qualified service-fault path exposed a generic 5000 ms post-work process cleanup latency leak.",
+    "action": "Implemented and verified PR 41 instead of stopping after the network benchmark.",
+    "evidence": "The identical Toxiproxy workload reduced CLI wall time by 90.66-96.87% while fault deltas, outage/recovery and raw evidence remained intact."
+  },
+  "nextExperiments": [
+    "Extend adopted Toxiproxy benchmark with deterministic reset_peer and timeout; evaluate packet_loss only if repeated evidence is stable.",
+    "Run fixed-seed tc-netem loss/reorder in an isolated Linux namespace/container and prove cleanup plus repeatability.",
+    "Prototype a SequenceFI-inspired Ferrum occurrence guard that activates a fault only after a named evidence condition.",
+    "After two deterministic fault types exist, compare exhaustive depth-2 combinations with a FaultWeave-inspired bounded/reuse scheduler.",
+    "Then rotate back to process isolation, deterministic replay and trace correlation."
+  ],
+  "guardrails": [
+    "No caps, reduced datasets, skipped evidence, weaker browser/app coverage, lower diagnostics, weaker tests or stale caching were introduced.",
+    "Toxiproxy remains isolated with zero permanent Node dependencies.",
+    "Privileged packet/chaos experiments must be isolated and prove complete cleanup.",
+    "All new fault paths remain additive to browser, MV3, WebDriver, desktop, Lightpanda and Android/Appium coverage."
+  ],
+  "publication": {
+    "githubPath": ".agents-memory/EVOLUTION_RUN_2026-08-18_24.json",
+    "googleDriveFolderId": "1go4wFbItSyUc65MrjVepB9WeD3SdykPB",
+    "googleDriveDocumentId": "1moxoAGgRBJMQwiOBWP4NiyxMB9fTnDCwwMmAMYPl3s8",
+    "verification": "Remote GitHub bytes and Google Drive export are independently re-read and hashed after publication."
+  }
+}
