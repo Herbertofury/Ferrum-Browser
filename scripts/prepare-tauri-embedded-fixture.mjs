@@ -19,7 +19,12 @@ if (!tauriPattern.test(cargo)) throw new Error('Pinned Tauri fixture Cargo.toml 
 cargo = cargo.replace(tauriBuildPattern, `tauri-build = { version = "=${tauriBuildVersion}", features = [] }`);
 cargo = cargo.replace(tauriPattern, `tauri = { version = "=${tauriVersion}", features = [] }`);
 if (!cargo.includes('tauri-plugin-wdio-webdriver')) {
-  cargo = `${cargo.trimEnd()}${cargoEol}${cargoEol}[target.'cfg(debug_assertions)'.dependencies]${cargoEol}tauri-plugin-wdio-webdriver = "=${pluginVersion}"${cargoEol}`;
+  const dependenciesMarker = `[dependencies]${cargoEol}`;
+  if (!cargo.includes(dependenciesMarker)) throw new Error('Pinned Tauri fixture Cargo.toml no longer has the expected dependencies section');
+  cargo = cargo.replace(
+    dependenciesMarker,
+    `${dependenciesMarker}tauri-plugin-wdio-webdriver = "=${pluginVersion}"${cargoEol}`,
+  );
 }
 await fs.writeFile(cargoPath, cargo);
 
