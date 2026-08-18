@@ -51,5 +51,8 @@ export async function terminate(child, graceMs = 5000) {
     graceElapsed
   ]);
   clearTimeout(graceTimer);
-  if (!exited && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+  if (exited || child.exitCode !== null || child.signalCode !== null) return;
+
+  if (!child.kill('SIGKILL')) throw new Error(`Failed to force-terminate process ${child.pid ?? 'unknown'}`);
+  await waitForExit(child, graceMs);
 }
