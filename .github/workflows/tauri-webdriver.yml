@@ -50,16 +50,18 @@ jobs:
         env:
           FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION: 1.3.0
           FERRUM_TAURI_EMBEDDED_TAURI_VERSION: 2.11.5
-          FERRUM_TAURI_EMBEDDED_TAURI_BUILD_VERSION: 2.6.0
+          FERRUM_TAURI_EMBEDDED_TAURI_BUILD_VERSION: 2.6.3
         run: node scripts/prepare-tauri-embedded-fixture.mjs .ferrum/tauri-fixture/v2
       - name: Align embedded Tauri runtime family
         working-directory: .ferrum/tauri-fixture/v2/src-tauri
         shell: bash
         run: |
           set -euo pipefail
+          cargo update -p tauri-build --precise 2.6.3
           cargo update -p tauri --precise 2.11.5
           cargo update -p tauri-runtime --precise 2.11.3
           cargo update -p tauri-runtime-wry --precise 2.11.4
+          cargo tree -i tauri-build
           cargo tree -i tauri-runtime
           cargo tree -i tauri-runtime-wry
       - name: Install pinned Tauri fixture dependencies
