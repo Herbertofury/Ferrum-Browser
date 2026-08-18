@@ -1,0 +1,43 @@
+name: Ferrum service network fault benchmark
+
+on:
+  push:
+    paths:
+      - 'scripts/service-network-fault-smoke.mjs'
+      - 'src/runners/process.mjs'
+      - 'src/core/**'
+      - 'bin/**'
+      - 'package.json'
+      - '.github/workflows/service-network-fault.yml'
+  pull_request:
+    paths:
+      - 'scripts/service-network-fault-smoke.mjs'
+      - 'src/runners/process.mjs'
+      - 'src/core/**'
+      - 'bin/**'
+      - 'package.json'
+      - '.github/workflows/service-network-fault.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  service-network-fault:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Ferrum deterministic Toxiproxy service fault benchmark
+        run: |
+          umask 000
+          npm run smoke:service-network-fault
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-Service-Network-Fault
+          path: artifacts/service-network-fault/
+          if-no-files-found: error

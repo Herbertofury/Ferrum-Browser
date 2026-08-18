@@ -20,6 +20,7 @@
     "smoke:network": "node ./scripts/network-offline-smoke.mjs",
     "smoke:service-fixture": "node ./scripts/disposable-service-smoke.mjs",
     "smoke:api-stateful": "node ./scripts/api-stateful-smoke.mjs",
+    "smoke:service-network-fault": "node ./scripts/service-network-fault-smoke.mjs",
     "smoke:webdriver": "bash ./scripts/selenium-grid-smoke.sh",
     "smoke:github-wiki": "node ./scripts/github-wiki-bootstrap-smoke.mjs",
     "smoke:mcp-inspector": "node ./scripts/mcp-inspector-smoke.mjs",
