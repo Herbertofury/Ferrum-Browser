@@ -37,8 +37,8 @@ function toTraceEvent(event) {
     tid: 1,
     ts: Math.round(Number(eventElapsedMs || 0) * 1000),
     args: {
-      wallClockAt: at,
-      ...args
+      ...args,
+      wallClockAt: at
     }
   };
 }
