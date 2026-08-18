@@ -8,7 +8,7 @@ const capabilityPath = path.join(fixtureRoot, 'src-tauri', 'capabilities', 'defa
 
 const pluginVersion = process.env.FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION || '1.3.0';
 const tauriVersion = process.env.FERRUM_TAURI_EMBEDDED_TAURI_VERSION || '2.11.5';
-const tauriBuildVersion = process.env.FERRUM_TAURI_EMBEDDED_TAURI_BUILD_VERSION || '2.6.0';
+const tauriBuildVersion = process.env.FERRUM_TAURI_EMBEDDED_TAURI_BUILD_VERSION || '2.6.3';
 
 let cargo = await fs.readFile(cargoPath, 'utf8');
 const cargoEol = cargo.includes('\r\n') ? '\r\n' : '\n';
