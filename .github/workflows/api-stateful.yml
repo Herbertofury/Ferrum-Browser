@@ -3,7 +3,7 @@ name: Ferrum stateful API benchmark
 on:
   push:
     paths:
-      - 'scripts/schemathesis-stateful-smoke.mjs'
+      - 'scripts/api-stateful-smoke.mjs'
       - 'src/runners/process.mjs'
       - 'src/core/**'
       - 'bin/**'
@@ -11,7 +11,7 @@ on:
       - '.github/workflows/api-stateful.yml'
   pull_request:
     paths:
-      - 'scripts/schemathesis-stateful-smoke.mjs'
+      - 'scripts/api-stateful-smoke.mjs'
       - 'src/runners/process.mjs'
       - 'src/core/**'
       - 'bin/**'
