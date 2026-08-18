@@ -11,7 +11,7 @@ const server = process.env.FERRUM_TAURI_SERVER || 'http://127.0.0.1:4445';
 const startupMs = Number(process.env.FERRUM_TAURI_STARTUP_MS || 90000);
 const stepMs = Number(process.env.FERRUM_TAURI_STEP_MS || 15000);
 const fixtureCommit = process.env.FERRUM_TAURI_FIXTURE_COMMIT || 'e4c2607cd60287a0ceb69458a0d69d0b676f39a6';
-const pluginVersion = process.env.FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION || '1.0.0';
+const pluginVersion = process.env.FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION || '1.3.0';
 
 if (!process.env.FERRUM_TAURI_APP) {
   throw new Error('FERRUM_TAURI_APP must point to a built Tauri application binary');
