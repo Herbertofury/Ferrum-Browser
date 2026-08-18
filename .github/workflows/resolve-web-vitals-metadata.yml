@@ -28,10 +28,12 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const data = JSON.parse(fs.readFileSync('web-vitals-6.1.0-registry.json','utf8'));
+          const integrity = data['dist.integrity'] ?? data.dist?.integrity;
+          const tarball = data['dist.tarball'] ?? data.dist?.tarball;
           if (data.version !== '6.1.0') throw new Error(`Unexpected version: ${data.version}`);
-          if (!data.dist?.integrity || !data.dist?.tarball) throw new Error('Missing registry dist integrity/tarball');
+          if (!integrity || !tarball) throw new Error('Missing registry dist integrity/tarball');
           if (data.dependencies && Object.keys(data.dependencies).length) throw new Error(`Unexpected runtime dependencies: ${JSON.stringify(data.dependencies)}`);
-          console.log(`REGISTRY_RESULT=${JSON.stringify(data)}`);
+          console.log(`REGISTRY_RESULT=${JSON.stringify({version:data.version,integrity,tarball,dependencies:data.dependencies??{}})}`);
           NODE
       - uses: actions/upload-artifact@v7
         with:
