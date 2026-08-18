@@ -24,8 +24,8 @@ export function compactSuiteResult(result) {
     failed: result.failed,
     results: result.results.map(item => item.status === 'passed' ? {
       specPath: item.specPath,
-      durationMs: item.durationMs,
-      ...compactRunResult(item.result)
+      ...compactRunResult(item.result),
+      durationMs: item.durationMs
     } : {
       specPath: item.specPath,
       status: 'failed',
