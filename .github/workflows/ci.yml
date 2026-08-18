@@ -73,6 +73,8 @@ jobs:
       - if: runner.os != 'Linux'
         run: npx playwright install chromium
       - run: npm run smoke:web
+      - name: Ferrum stable-ref snapshot delta smoke
+        run: npm run smoke:snapshot-delta
       - name: Ferrum Chromium offline/recovery smoke
         run: npm run smoke:network
       - name: Ferrum GitHub Wiki first-page browser smoke
