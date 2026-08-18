@@ -11,13 +11,13 @@
     "electronPackager": "20.3.0"
   },
   "proposedToolchain": {
-    "playwright": "1.63.0-alpha-2026-07-31",
+    "playwright": "1.63.0-alpha-2026-08-01",
     "electron": "43.4.0",
     "electronPackager": "20.3.0"
   },
   "upstream": {
     "playwrightMainVersion": "1.63.0-next",
-    "publishedCandidate": "1.63.0-alpha-2026-07-31"
+    "publishedCandidate": "1.63.0-alpha-2026-08-01"
   },
   "acceptance": "Full Ferrum CI must pass on the exact proposal head after rebasing onto current main before this candidate may be promoted or merged. The verified main STATUS remains authoritative until that happens."
 }
