@@ -39,7 +39,7 @@ export async function waitForExit(child, timeoutMs = 0) {
 }
 
 export async function terminate(child, graceMs = 5000) {
-  if (!child || child.exitCode !== null || child.killed) return;
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
   child.kill('SIGTERM');
   let graceTimer;
   const graceElapsed = new Promise(resolve => {
@@ -51,5 +51,5 @@ export async function terminate(child, graceMs = 5000) {
     graceElapsed
   ]);
   clearTimeout(graceTimer);
-  if (!exited && child.exitCode === null) child.kill('SIGKILL');
+  if (!exited && child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
 }
