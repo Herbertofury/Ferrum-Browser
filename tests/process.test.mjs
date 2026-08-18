@@ -94,3 +94,20 @@ test('process runner captures a secret-safe structured Node diagnostic report on
   assert.equal(serialized.includes('remoteEndpoint'), false);
   assert.equal(serialized.includes(secret), false);
 });
+
+test('process runner keeps diagnostic report safety flags Ferrum-owned', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-node-report-flags-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-node-report-flags-test' }).init();
+  const spec = {
+    target: {
+      command: process.execPath,
+      args: ['--report-directory=elsewhere', '-e', 'process.exit(0)'],
+      nodeDiagnosticReport: true
+    },
+    steps: []
+  };
+  await assert.rejects(
+    runProcessTarget(spec, evidence),
+    /nodeDiagnosticReport owns Node report flags; remove conflicting argument: --report-directory=elsewhere/
+  );
+});
