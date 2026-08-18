@@ -118,3 +118,62 @@ test('snapshotPage replaces forged unsafe numeric refs without corrupting alloca
     }
   }
 });
+
+test('snapshotPage does not impose a default cap on runtime-native snapshots', async () => {
+  let called;
+  const page = {
+    ferrumSnapshot: async options => {
+      called = options;
+      return { url: 'lp://test', title: 'Lightpanda', elements: [] };
+    }
+  };
+  await snapshotPage(page, { interactiveOnly: true });
+  assert.equal(called.max, undefined);
+});
+
+test('snapshotPage returns every qualifying element by default while preserving explicit caller limits', async () => {
+  const previous = {
+    document: globalThis.document,
+    getComputedStyle: globalThis.getComputedStyle,
+    HTMLAnchorElement: globalThis.HTMLAnchorElement,
+    location: globalThis.location
+  };
+
+  const makeElement = index => {
+    const attributes = new Map();
+    return {
+      tagName: 'BUTTON',
+      innerText: `Button ${index}`,
+      disabled: false,
+      checked: false,
+      getAttribute: key => attributes.get(key) ?? null,
+      setAttribute: (key, value) => attributes.set(key, value),
+      matches: selector => selector.includes('button'),
+      getBoundingClientRect: () => ({ width: 100, height: 24 })
+    };
+  };
+  const elements = Array.from({ length: 450 }, (_, index) => makeElement(index));
+
+  globalThis.document = {
+    title: 'Large page',
+    querySelectorAll: () => elements
+  };
+  globalThis.getComputedStyle = () => ({ visibility: 'visible', display: 'block' });
+  globalThis.HTMLAnchorElement = class HTMLAnchorElement {};
+  globalThis.location = { href: 'https://example.test/large' };
+
+  const page = { evaluate: async (fn, args) => fn(args) };
+
+  try {
+    const complete = await snapshotPage(page, { interactiveOnly: true });
+    assert.equal(complete.elements.length, 450);
+
+    const explicitlyLimited = await snapshotPage(page, { interactiveOnly: true, max: 123 });
+    assert.equal(explicitlyLimited.elements.length, 123);
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete globalThis[key];
+      else globalThis[key] = value;
+    }
+  }
+});
