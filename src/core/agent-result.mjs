@@ -3,6 +3,7 @@ export function compactRunResult(result) {
     id: result.id,
     name: result.name,
     status: result.status,
+    durationMs: result.durationMs ?? null,
     evidenceDir: result.evidenceDir,
     targetType: result.metadata?.targetType || null,
     browser: result.metadata?.browser || result.result?.browser || null,
@@ -23,8 +24,8 @@ export function compactSuiteResult(result) {
     failed: result.failed,
     results: result.results.map(item => item.status === 'passed' ? {
       specPath: item.specPath,
-      durationMs: item.durationMs,
-      ...compactRunResult(item.result)
+      ...compactRunResult(item.result),
+      durationMs: item.durationMs
     } : {
       specPath: item.specPath,
       status: 'failed',
