@@ -11,6 +11,15 @@ async function readJson(file) {
   return JSON.parse(await fs.readFile(file, 'utf8'));
 }
 
+async function readOptionalJson(file) {
+  try {
+    return await readJson(file);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const verifiedWorkflowRun = Number(
@@ -102,11 +111,23 @@ test('STATUS points at the newest verified Ferrum product checkpoint', async () 
   }
 });
 
-test('STATUS verified toolchain matches the package manifest', async () => {
+test('package manifest matches verified toolchain or an explicit Stack candidate', async () => {
   const status = await readJson(path.join(memoryDir, 'STATUS.json'));
   const packageJson = await readJson(path.join(repoRoot, 'package.json'));
+  const actualToolchain = {
+    playwright: packageJson.dependencies.playwright,
+    electron: packageJson.devDependencies.electron,
+    electronPackager: packageJson.devDependencies['@electron/packager'],
+  };
 
-  assert.equal(status.verifiedToolchain.playwright, packageJson.dependencies.playwright);
-  assert.equal(status.verifiedToolchain.electron, packageJson.devDependencies.electron);
-  assert.equal(status.verifiedToolchain.electronPackager, packageJson.devDependencies['@electron/packager']);
+  if (JSON.stringify(actualToolchain) === JSON.stringify(status.verifiedToolchain)) return;
+
+  const candidate = await readOptionalJson(path.join(memoryDir, 'STACK_CANDIDATE.json'));
+  assert.ok(candidate, 'unverified package toolchain drift requires .agents-memory/STACK_CANDIDATE.json');
+  assert.equal(candidate.schemaVersion, 1);
+  assert.equal(candidate.projectId, 'ferrum-browser');
+  assert.equal(candidate.checkpointType, 'stack-candidate');
+  assert.equal(candidate.state, 'verification-in-progress');
+  assert.deepEqual(candidate.baseVerifiedToolchain, status.verifiedToolchain);
+  assert.deepEqual(candidate.proposedToolchain, actualToolchain);
 });
