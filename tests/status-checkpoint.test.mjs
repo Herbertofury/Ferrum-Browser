@@ -92,6 +92,22 @@ function normalizeVerifiedCheckpoint(entry) {
     };
   }
 
+  const finalVerifiedProduct = entry?.finalVerifiedProduct;
+  const finalVerifiedWorkflowRun = Number(finalVerifiedProduct?.workflow ?? 0);
+  const finalVerifiedProductProof =
+    finalVerifiedProduct?.commit &&
+    typeof finalVerifiedProduct?.tree === 'string' && finalVerifiedProduct.tree.length > 0 &&
+    typeof finalVerifiedProduct?.proposalHead === 'string' && finalVerifiedProduct.proposalHead.length > 0 &&
+    Number.isSafeInteger(finalVerifiedWorkflowRun) &&
+    finalVerifiedWorkflowRun > 0;
+  if (finalVerifiedProductProof) {
+    return {
+      commit: finalVerifiedProduct.commit,
+      workflowRun: finalVerifiedWorkflowRun,
+      verifiedAt: finalVerifiedProduct?.verifiedAt ?? entry?.checkedAt ?? null,
+    };
+  }
+
   return null;
 }
 
@@ -215,6 +231,30 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
         treeMatchesVerifiedProposal: true,
         proposalCiRun: 52,
         proposalCiConclusion: 'failure',
+      },
+    }),
+    null,
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-18T17:25:18Z',
+      finalVerifiedProduct: {
+        commit: 'final-product',
+        tree: 'final-tree',
+        proposalHead: 'final-proposal',
+        workflow: 53,
+      },
+    }),
+    { commit: 'final-product', workflowRun: 53, verifiedAt: '2026-08-18T17:25:18Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      finalVerifiedProduct: {
+        commit: 'unproven-final-product',
+        proposalHead: 'final-proposal',
+        workflow: 54,
       },
     }),
     null,
