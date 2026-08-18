@@ -29,6 +29,44 @@ export async function waitForLocatorText(locator, expected, timeoutMs, { pollMs 
   throw new Error(`Expected text not found within ${timeoutMs}ms: ${expected}; last text: ${JSON.stringify(lastText.slice(0, 300))}`);
 }
 
+export async function terminateExtensionServiceWorker(context, page, extensionId) {
+  if (!extensionId) throw new Error('terminate-service-worker requires an extension target');
+  if (typeof context?.newCDPSession !== 'function') {
+    throw new Error('terminate-service-worker requires Chromium CDP access');
+  }
+
+  const cdp = await context.newCDPSession(page);
+  try {
+    const { targetInfos = [] } = await cdp.send('Target.getTargets');
+    const extensionPrefix = `chrome-extension://${extensionId}/`;
+    const matches = targetInfos.filter(target => target.type === 'service_worker' && String(target.url || '').startsWith(extensionPrefix));
+    if (!matches.length) {
+      throw new Error(`No service_worker target found for loaded extension ${extensionId}`);
+    }
+    if (matches.length > 1) {
+      throw new Error(`Refusing ambiguous service-worker termination for extension ${extensionId}: ${matches.length} matching targets`);
+    }
+
+    const target = matches[0];
+    const response = await cdp.send('Target.closeTarget', { targetId: target.targetId });
+    if (response?.success === false) {
+      throw new Error(`Chrome refused to close extension service-worker target ${target.targetId}`);
+    }
+    return {
+      extensionId,
+      targetId: target.targetId,
+      url: target.url,
+      closed: response?.success ?? true,
+    };
+  } finally {
+    try {
+      await cdp.detach?.();
+    } catch {
+      // The target may disappear while the CDP session is detaching; termination evidence remains authoritative.
+    }
+  }
+}
+
 export class StepEngine {
   constructor({ evidence, session, page, extensionId = null, extensionManifest = null, timeoutMs = 30000, onRestart = null }) {
     this.evidence = evidence;
@@ -101,6 +139,11 @@ export class StepEngine {
         await setOffline.call(this.session.context, offline);
         this.evidence.record('network-state', { engine: this.session.engine || null, offline });
         return { offline };
+      }
+      case 'terminate-service-worker': {
+        const result = await terminateExtensionServiceWorker(this.session?.context, this.page, this.extensionId);
+        this.evidence.record('service-worker-termination', result);
+        return result;
       }
       case 'snapshot': {
         const snapshot = await snapshotPage(this.page, { interactiveOnly: step.interactiveOnly ?? false, max: step.max || 400 });
