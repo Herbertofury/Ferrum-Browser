@@ -9,14 +9,14 @@ $appiumCommand = (Get-Command appium.cmd -ErrorAction Stop).Source
 $serverLog = Join-Path $artifactDir 'appium-server.log'
 $stdoutLog = Join-Path $artifactDir 'appium-stdout.log'
 $stderrLog = Join-Path $artifactDir 'appium-stderr.log'
-$commandLine = "`"$appiumCommand`" --address 127.0.0.1 --port 4723 --log `"$serverLog`" --log-level info"
-$appium = Start-Process -FilePath 'cmd.exe' -ArgumentList @('/d', '/s', '/c', $commandLine) -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
+$appium = Start-Process -FilePath $appiumCommand -ArgumentList @('--address', '127.0.0.1', '--port', '4723', '--log', $serverLog, '--log-level', 'info') -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdoutLog -RedirectStandardError $stderrLog
 
 try {
     $deadline = [DateTime]::UtcNow.AddSeconds(90)
     $ready = $false
     while ([DateTime]::UtcNow -lt $deadline) {
         if ($appium.HasExited) {
+            try { $appium.WaitForExit() } catch {}
             throw "Appium exited before readiness with code $($appium.ExitCode)"
         }
         try {
