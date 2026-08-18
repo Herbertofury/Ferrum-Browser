@@ -23,11 +23,19 @@ async function readOptionalJson(file) {
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const verifiedWorkflowRun = Number(
-    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? 0
+    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun ?? 0
   );
-  if (verifiedProduct?.commit && Number.isSafeInteger(verifiedWorkflowRun) && verifiedWorkflowRun > 0) {
+  const mergedProof = String(verifiedProduct?.proposalConclusion ?? verifiedProduct?.ci ?? '').toLowerCase();
+  const verifiedCommit = verifiedProduct?.commit ?? (
+    verifiedProduct?.mergedCommit &&
+    verifiedProduct?.treeMatches === true &&
+    mergedProof === 'success'
+      ? verifiedProduct.mergedCommit
+      : null
+  );
+  if (verifiedCommit && Number.isSafeInteger(verifiedWorkflowRun) && verifiedWorkflowRun > 0) {
     return {
-      commit: verifiedProduct.commit,
+      commit: verifiedCommit,
       workflowRun: verifiedWorkflowRun,
       verifiedAt: verifiedProduct?.verifiedAt ?? null,
     };
@@ -80,10 +88,46 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
 
   assert.deepEqual(
     normalizeVerifiedCheckpoint({
-      proposal: { workflowRun: 45 },
+      verifiedProduct: {
+        mergedCommit: 'proposal-run-product',
+        proposalRun: 45,
+        proposalConclusion: 'success',
+        treeMatches: true,
+      },
+    }),
+    { commit: 'proposal-run-product', workflowRun: 45, verifiedAt: null },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      verifiedProduct: {
+        mergedCommit: 'merged-ci-product',
+        ciRun: 46,
+        ci: 'success',
+        treeMatches: true,
+      },
+    }),
+    { commit: 'merged-ci-product', workflowRun: 46, verifiedAt: null },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      verifiedProduct: {
+        mergedCommit: 'unproven-merged-product',
+        proposalRun: 47,
+        proposalConclusion: 'failure',
+        treeMatches: true,
+      },
+    }),
+    null,
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      proposal: { workflowRun: 48 },
       product: { commit: 'tree-matched-product', treeMatchesVerifiedProposal: true, verifiedAt: '2026-08-18T00:01:10Z' },
     }),
-    { commit: 'tree-matched-product', workflowRun: 45, verifiedAt: '2026-08-18T00:01:10Z' },
+    { commit: 'tree-matched-product', workflowRun: 48, verifiedAt: '2026-08-18T00:01:10Z' },
   );
 });
 
