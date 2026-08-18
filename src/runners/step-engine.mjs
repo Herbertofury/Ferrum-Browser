@@ -29,7 +29,7 @@ export async function waitForLocatorText(locator, expected, timeoutMs, { pollMs 
   throw new Error(`Expected text not found within ${timeoutMs}ms: ${expected}; last text: ${JSON.stringify(lastText.slice(0, 300))}`);
 }
 
-export async function terminateExtensionServiceWorker(context, page, extensionId) {
+export async function terminateExtensionServiceWorker(context, page, extensionId, { timeoutMs = 3000, pollMs = 25 } = {}) {
   if (!extensionId) throw new Error('terminate-service-worker requires an extension target');
   if (typeof context?.newCDPSession !== 'function') {
     throw new Error('terminate-service-worker requires Chromium CDP access');
@@ -52,12 +52,29 @@ export async function terminateExtensionServiceWorker(context, page, extensionId
     if (response?.success === false) {
       throw new Error(`Chrome refused to close extension service-worker target ${target.targetId}`);
     }
-    return {
-      extensionId,
-      targetId: target.targetId,
-      url: target.url,
-      closed: response?.success ?? true,
-    };
+
+    const budgetMs = Math.max(1, Number(timeoutMs) || 1);
+    const deadline = Date.now() + budgetMs;
+    let confirmationAttempts = 0;
+    while (true) {
+      const current = await cdp.send('Target.getTargets');
+      confirmationAttempts += 1;
+      const stillPresent = (current?.targetInfos || []).some(candidate => candidate.targetId === target.targetId);
+      if (!stillPresent) {
+        return {
+          extensionId,
+          targetId: target.targetId,
+          url: target.url,
+          closed: true,
+          confirmedBy: 'Target.getTargets',
+          confirmationAttempts
+        };
+      }
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await new Promise(resolve => setTimeout(resolve, Math.min(Math.max(1, Number(pollMs) || 1), remaining)));
+    }
+    throw new Error(`Extension service-worker target ${target.targetId} remained present after Target.closeTarget within ${budgetMs}ms`);
   } finally {
     try {
       await cdp.detach?.();
@@ -141,7 +158,10 @@ export class StepEngine {
         return { offline };
       }
       case 'terminate-service-worker': {
-        const result = await terminateExtensionServiceWorker(this.session?.context, this.page, this.extensionId);
+        const result = await terminateExtensionServiceWorker(this.session?.context, this.page, this.extensionId, {
+          timeoutMs: step.timeoutMs || Math.min(this.timeoutMs, 5000),
+          pollMs: step.pollMs || 25
+        });
         this.evidence.record('service-worker-termination', result);
         return result;
       }
