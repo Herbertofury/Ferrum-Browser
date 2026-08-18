@@ -66,6 +66,7 @@ try {
       type: 'webdriver',
       server,
       capabilities: {
+        browserName: 'wry',
         'tauri:options': { application: appPath }
       },
       identity: {
@@ -74,7 +75,7 @@ try {
         applicationSha256,
         tauriDriverVersion: driverVersion,
         nativeDriverVersion,
-        capabilityModel: 'wdio-tauri-service-current'
+        capabilityModel: 'tauri-driver-direct-wry'
       }
     },
     timeouts: { startupMs, stepMs },
@@ -103,7 +104,7 @@ try {
     fixtureCommit,
     tauriDriverVersion: driverVersion,
     nativeDriverVersion,
-    capabilityModel: 'wdio-tauri-service-current',
+    capabilityModel: 'tauri-driver-direct-wry',
     server
   };
   process.stdout.write(`${JSON.stringify(summary)}\n`);
