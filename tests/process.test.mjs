@@ -71,6 +71,38 @@ test('process runner stops readiness polling promptly when the child exits befor
   assert.ok(elapsed < 1200, `dead child should short-circuit the 2500ms readiness timeout; elapsed=${elapsed.toFixed(0)}ms`);
 });
 
+test('process runner aborts an in-flight health request when the supervised child exits', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-health-hang-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-health-hang-test' }).init();
+  const server = http.createServer(() => {});
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  const spec = {
+    target: {
+      command: process.execPath,
+      args: ['-e', 'setTimeout(() => process.exit(24), 100)'],
+      healthUrl: `http://127.0.0.1:${address.port}/health`
+    },
+    timeouts: { startupMs: 2500, stepMs: 5000 },
+    steps: []
+  };
+  const startedAt = performance.now();
+  try {
+    await assert.rejects(
+      runProcessTarget(spec, evidence),
+      /Process exited before health URL became ready: .* \(code 24, signal none\)/
+    );
+  } finally {
+    server.closeAllConnections?.();
+    await new Promise(resolve => server.close(resolve));
+  }
+  const elapsed = performance.now() - startedAt;
+  assert.ok(elapsed < 1200, `terminal child state should abort the hanging health request; elapsed=${elapsed.toFixed(0)}ms`);
+});
+
 test('process runner reports spawn failures as structured evidence without an unhandled child error', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-spawn-error-'));
   const evidence = await new EvidenceWriter({ root, name: 'process-spawn-error-test' }).init();
