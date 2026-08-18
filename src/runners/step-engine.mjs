@@ -302,6 +302,7 @@ export class StepEngine {
         const restarted = await this.onRestart();
         this.session = restarted.session;
         this.page = restarted.page;
+        this.namedSnapshots.clear();
         if (restarted.extensionId) this.extensionId = restarted.extensionId;
         return { restarted: true, extensionId: this.extensionId };
       }
