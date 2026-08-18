@@ -70,3 +70,30 @@ test('StepEngine retains both complete named snapshots and an additive compact d
   assert.equal(JSON.stringify(writes.get('snapshots/after.delta.json')).includes('Enabled'), false, 'delta excludes unchanged element payload');
   assert.deepEqual(deltaResult.delta, { added: 1, removed: 1, changed: 1, unchanged: 1 });
 });
+
+test('StepEngine invalidates named snapshot baselines after a runtime restart', async () => {
+  const writes = new Map();
+  const evidence = {
+    dir: '/tmp/ferrum-delta-restart-test',
+    events: [],
+    record() {},
+    async writeJson(name, value) { writes.set(name, structuredClone(value)); }
+  };
+  const firstPage = { ferrumSnapshot: async () => structuredClone(before) };
+  const restartedPage = { ferrumSnapshot: async () => structuredClone(after) };
+  const engine = new StepEngine({
+    evidence,
+    session: { engine: 'chromium' },
+    page: firstPage,
+    onRestart: async () => ({ session: { engine: 'chromium' }, page: restartedPage })
+  });
+
+  await engine.execute({ action: 'snapshot', name: 'before' }, 0);
+  await engine.execute({ action: 'restart' }, 1);
+  await assert.rejects(
+    () => engine.execute({ action: 'snapshot', name: 'after', compareTo: 'before' }, 2),
+    /requires an earlier named snapshot: before/
+  );
+  assert.deepEqual(writes.get('snapshots/after.json'), after, 'complete post-restart snapshot remains retained evidence');
+  assert.equal(writes.has('snapshots/after.delta.json'), false, 'cross-runtime refs must never be treated as a comparable baseline');
+});
