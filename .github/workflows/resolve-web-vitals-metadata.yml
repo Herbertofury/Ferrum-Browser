@@ -1,0 +1,37 @@
+name: Resolve web-vitals 6.1.0 registry metadata
+
+on:
+  push:
+    branches:
+      - automation/resolve-web-vitals-6-1-0-metadata-20260818
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Resolve exact published package metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm view web-vitals@6.1.0 version dist.integrity dist.tarball dependencies --json | tee web-vitals-6.1.0-registry.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const data = JSON.parse(fs.readFileSync('web-vitals-6.1.0-registry.json','utf8'));
+          if (data.version !== '6.1.0') throw new Error(`Unexpected version: ${data.version}`);
+          if (!data.dist?.integrity || !data.dist?.tarball) throw new Error('Missing registry dist integrity/tarball');
+          if (data.dependencies && Object.keys(data.dependencies).length) throw new Error(`Unexpected runtime dependencies: ${JSON.stringify(data.dependencies)}`);
+          console.log(`REGISTRY_RESULT=${JSON.stringify(data)}`);
+          NODE
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-vitals-6.1.0-registry-metadata
+          path: web-vitals-6.1.0-registry.json
+          if-no-files-found: error
