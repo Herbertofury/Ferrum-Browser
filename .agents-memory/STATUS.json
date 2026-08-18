@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "71f85c8c7e10f6098dc5d49a501b07e9c4c4d21f",
-  "verifiedWorkflowRun": 32134811799,
-  "verifiedAt": "2026-08-18T12:08:30Z",
+  "verifiedCodeCommit": "32140bdd1558c82f2b8bd7056ece8a6ef8ecada6",
+  "verifiedWorkflowRun": 32151856152,
+  "verifiedAt": "2026-08-18T15:09:09Z",
   "verifiedToolchain": {
     "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
@@ -55,7 +55,10 @@
       "webSmoke": "passed",
       "networkOfflineRecoverySmoke": "passed",
       "clonedSpaceSmoke": "passed",
-      "browserMatrix": ["chromium", "chrome"],
+      "browserMatrix": [
+        "chromium",
+        "chrome"
+      ],
       "mv3ExtensionSmoke": "passed",
       "workloadPackSmoke": "passed",
       "workbenchReplaySmoke": "passed",
@@ -71,7 +74,13 @@
       "webSmoke": "passed",
       "networkOfflineRecoverySmoke": "passed",
       "clonedSpaceSmoke": "passed",
-      "browserMatrix": ["chromium", "chrome", "edge", "brave", "opera-gx"],
+      "browserMatrix": [
+        "chromium",
+        "chrome",
+        "edge",
+        "brave",
+        "opera-gx"
+      ],
       "browserMatrixStatus": "5/5 passed",
       "mv3ExtensionSmoke": "passed",
       "workloadPackSmoke": "passed",
@@ -105,12 +114,26 @@
       "sessionLifecycle": "passed",
       "realElementLookupAndActions": "passed",
       "sourceCapture": "passed",
-      "screenshots": ["settings-home", "settings-detail", "settings-returned"],
+      "screenshots": [
+        "settings-home",
+        "settings-detail",
+        "settings-returned"
+      ],
       "startupBudget": "60000ms used for server readiness and session creation"
     },
     "agentInterfaces": {
       "status": "passed",
-      "cli": ["test", "suite", "matrix", "pack", "spaces", "evidence", "bench", "dashboard", "github-wiki"],
+      "cli": [
+        "test",
+        "suite",
+        "matrix",
+        "pack",
+        "spaces",
+        "evidence",
+        "bench",
+        "dashboard",
+        "github-wiki"
+      ],
       "mcp": "doctor, run, suite, browser-matrix, benchmark, workload-pack, Spaces, durable-evidence and GitHub Wiki probe/bootstrap tools",
       "mcpInspectorCompatibility": "passed",
       "compactResults": true,
@@ -130,8 +153,14 @@
     },
     "githubWikiAutomation": {
       "status": "passed",
-      "cli": ["github-wiki probe", "github-wiki bootstrap"],
-      "mcp": ["ferrum_github_wiki_probe", "ferrum_github_wiki_bootstrap"],
+      "cli": [
+        "github-wiki probe",
+        "github-wiki bootstrap"
+      ],
+      "mcp": [
+        "ferrum_github_wiki_probe",
+        "ferrum_github_wiki_bootstrap"
+      ],
       "persistentAuthenticatedSpace": "github",
       "firstPageBrowserSmokeLinux": "passed",
       "firstPageBrowserSmokeWindows": "passed",
@@ -139,52 +168,62 @@
       "authenticatedGitProbe": "GH_TOKEN or GITHUB_TOKEN is used when available and is not written to evidence",
       "privateFalse404Safety": "passed: existing private-wiki fixture caused zero _new visits and zero save submissions",
       "idempotentExistingWiki": "passed",
-      "evidence": ["before-save screenshot", "after-save screenshot", "Git remote availability probe"]
+      "evidence": [
+        "before-save screenshot",
+        "after-save screenshot",
+        "Git remote availability probe"
+      ]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32134811799,
-      "codeCommit": "71f85c8c7e10f6098dc5d49a501b07e9c4c4d21f",
-      "verifiedProposalHead": "bd42ee47203f541a5e416468f7da9d5cfaa14459",
-      "verifiedTree": "08e37d6199d8fe99b7a4b94c4edb9520ce2dcbaf",
+      "workflowRun": 32151856152,
+      "codeCommit": "32140bdd1558c82f2b8bd7056ece8a6ef8ecada6",
+      "verifiedProposalHead": "28212082ca166d42c2d284ddf99f02ba85be6602",
+      "verifiedTree": "33396abc3bab32d99a71d93e149620d71c55b696",
       "treeMatchesMergedProduct": true,
       "linuxDesktop": {
-        "artifactId": 9323581824,
-        "sizeBytes": 131735092,
-        "providerSha256": "40a3e18d2f0288e7cda85ff3054500757684b8685d8b671c23abb4fd0f32b61c",
+        "artifactId": 9330120294,
+        "sizeBytes": 131745698,
+        "providerSha256": "fb6ac3df42f02d82fe667b87ff97d1b962c989b8c51a744f9fa9c6a4d309a49a",
         "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9323663241,
-        "sizeBytes": 151603454,
-        "providerSha256": "96bb4bd65fea0d66bacaf30de0894f67641f58b84fddf9df1e647b21b37c8b7d",
+        "artifactId": 9330366927,
+        "sizeBytes": 151614188,
+        "providerSha256": "e53b49ab635b9e083f094d265a3a354cfb4aba4693a002358a29904381842dde",
         "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9323575986,
-        "sizeBytes": 2178337,
-        "providerSha256": "540ad95f9c6a6920aa3ccec0541f78b3c8e58b19b6507cb1c074b668bf4a576e"
+        "artifactId": 9330112657,
+        "sizeBytes": 2179933,
+        "providerSha256": "6bdf0b2de16499da2d86a7e2e7fce4c7932c04e01a578f8d132d0ba40da4657b"
       },
       "windowsEvidence": {
-        "artifactId": 9323657031,
-        "sizeBytes": 4045543,
-        "providerSha256": "418cce9a8741471e7743ebf2b764704436c41179fe903466da264f4a54e096c7"
+        "artifactId": 9330359260,
+        "sizeBytes": 4037412,
+        "providerSha256": "233c5b6364c742654b1929d7352b5eee0b4e797cd902d0ed2c5cd8ae9a1d48b2"
       },
       "appiumEvidence": {
-        "artifactId": 9323607785,
-        "sizeBytes": 122305,
-        "providerSha256": "3fa9f524eed523e5f759b9644e080067e29c52f95009598a7e1ea5289f57cae7"
+        "artifactId": 9330131883,
+        "sizeBytes": 121692,
+        "providerSha256": "b889e971cce39bc04256628b02ce77575652d11fd608698860b7a7a8c5a3d2fd"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9323561223,
-        "sizeBytes": 20247,
-        "providerSha256": "c1caf1727bb2b1b201fe2cb8ccf27f8086877561ded1954329f5c6fabf29823a"
+        "artifactId": 9330066355,
+        "sizeBytes": 20248,
+        "providerSha256": "2516ddae4f4524353f188d5cad56b9c7b0e80f3c61dde1883a595e1ff67f6e42"
       },
       "lightpandaEvidence": {
-        "artifactId": 9323543343,
-        "sizeBytes": 11437,
-        "providerSha256": "5de60824de1e405ba3a3c122c126bd2d639d809190a4dbd4976e45ace240588d"
+        "artifactId": 9330047147,
+        "sizeBytes": 11451,
+        "providerSha256": "282bd767290d99a00d494fba7f17e14e16fd4496e02a3171ac80c9410b96dac6"
       },
-      "independentArtifactRedownloadHash": "provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; merged product tree equals verified proposal tree"
+      "serviceNetworkFaultEvidence": {
+        "artifactId": 9330056839,
+        "sizeBytes": 20057,
+        "providerSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7",
+        "downloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"
+      },
+      "independentArtifactRedownloadHash": "provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; service-network-fault evidence independently redownloaded and hash-matched; merged product tree equals verified proposal tree"
     },
     "artifactPublication": {
       "sourceCheckpoint": {
