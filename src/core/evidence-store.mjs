@@ -11,7 +11,7 @@ export function resolveEvidenceRoot(root) {
 
 function validateId(id) {
   const value = String(id || '');
-  if (!/^[A-Za-z0-9._-]+$/.test(value)) throw new Error('Invalid evidence id');
+  if (value === '.' || value === '..' || !/^[A-Za-z0-9._-]+$/.test(value)) throw new Error('Invalid evidence id');
   return value;
 }
 
