@@ -79,6 +79,7 @@ jobs:
           FERRUM_TAURI_ARTIFACTS: ${{ github.workspace }}\artifacts\tauri
           FERRUM_TAURI_FIXTURE_COMMIT: e4c2607cd60287a0ceb69458a0d69d0b676f39a6
           FERRUM_TAURI_DRIVER_VERSION: 2.0.6
+          FERRUM_TAURI_STARTUP_MS: 240000
         run: npm run smoke:tauri
       - uses: actions/upload-artifact@v7
         if: always()
