@@ -23,6 +23,8 @@
     "smoke:api-stateful": "node ./scripts/api-stateful-smoke.mjs",
     "smoke:service-network-fault": "node ./scripts/service-network-fault-smoke.mjs",
     "smoke:webdriver": "bash ./scripts/selenium-grid-smoke.sh",
+    "smoke:tauri": "node ./scripts/tauri-webdriver-smoke.mjs",
+    "smoke:tauri-embedded": "node ./scripts/tauri-embedded-webdriver-smoke.mjs",
     "smoke:github-wiki": "node ./scripts/github-wiki-bootstrap-smoke.mjs",
     "smoke:mcp-inspector": "node ./scripts/mcp-inspector-smoke.mjs",
     "smoke:electron": "node ./bin/ferrum.mjs test ./examples/self-test-electron.json --compact",
