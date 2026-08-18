@@ -224,7 +224,8 @@ export class StepEngine {
           ['console', step.minConsole],
           ['requests', step.minRequests],
           ['responses', step.minResponses],
-          ['interceptedResponses', step.minInterceptedResponses]
+          ['interceptedResponses', step.minInterceptedResponses],
+          ['closedWorkers', step.minClosedWorkers]
         ];
         for (const [field, minimum] of checks) {
           if (minimum != null && diagnostics[field] < Number(minimum)) {
