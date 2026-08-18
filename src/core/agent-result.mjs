@@ -3,6 +3,7 @@ export function compactRunResult(result) {
     id: result.id,
     name: result.name,
     status: result.status,
+    durationMs: result.durationMs ?? null,
     evidenceDir: result.evidenceDir,
     targetType: result.metadata?.targetType || null,
     browser: result.metadata?.browser || result.result?.browser || null,
