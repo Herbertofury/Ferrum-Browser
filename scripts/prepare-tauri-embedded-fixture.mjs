@@ -9,14 +9,16 @@ const capabilityPath = path.join(fixtureRoot, 'src-tauri', 'capabilities', 'defa
 const pluginVersion = process.env.FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION || '1.3.0';
 
 let cargo = await fs.readFile(cargoPath, 'utf8');
+const cargoEol = cargo.includes('\r\n') ? '\r\n' : '\n';
 if (!cargo.includes('tauri-plugin-wdio-webdriver')) {
-  cargo = `${cargo.trimEnd()}\n\n[target.'cfg(debug_assertions)'.dependencies]\ntauri-plugin-wdio-webdriver = "=${pluginVersion}"\n`;
+  cargo = `${cargo.trimEnd()}${cargoEol}${cargoEol}[target.'cfg(debug_assertions)'.dependencies]${cargoEol}tauri-plugin-wdio-webdriver = "=${pluginVersion}"${cargoEol}`;
   await fs.writeFile(cargoPath, cargo);
 }
 
 let lib = await fs.readFile(libPath, 'utf8');
 if (!lib.includes('tauri_plugin_wdio_webdriver::init()')) {
-  const needle = '    tauri::Builder::default()\n        .plugin(tauri_plugin_opener::init())';
+  const libEol = lib.includes('\r\n') ? '\r\n' : '\n';
+  const builderPattern = /    tauri::Builder::default\(\)\r?\n        \.plugin\(tauri_plugin_opener::init\(\)\)/;
   const replacement = [
     '    let builder = tauri::Builder::default();',
     '',
@@ -25,9 +27,9 @@ if (!lib.includes('tauri_plugin_wdio_webdriver::init()')) {
     '',
     '    builder',
     '        .plugin(tauri_plugin_opener::init())'
-  ].join('\n');
-  if (!lib.includes(needle)) throw new Error('Pinned Tauri fixture lib.rs no longer matches the expected builder shape');
-  lib = lib.replace(needle, replacement);
+  ].join(libEol);
+  if (!builderPattern.test(lib)) throw new Error('Pinned Tauri fixture lib.rs no longer matches the expected builder shape');
+  lib = lib.replace(builderPattern, replacement);
   await fs.writeFile(libPath, lib);
 }
 
@@ -35,7 +37,9 @@ const capability = JSON.parse(await fs.readFile(capabilityPath, 'utf8'));
 capability.permissions ??= [];
 if (!capability.permissions.includes('wdio-webdriver:default')) {
   capability.permissions.push('wdio-webdriver:default');
-  await fs.writeFile(capabilityPath, `${JSON.stringify(capability, null, 2)}\n`);
+  const capabilitySource = await fs.readFile(capabilityPath, 'utf8');
+  const capabilityEol = capabilitySource.includes('\r\n') ? '\r\n' : '\n';
+  await fs.writeFile(capabilityPath, `${JSON.stringify(capability, null, 2).replaceAll('\n', capabilityEol)}${capabilityEol}`);
 }
 
 const summary = {
