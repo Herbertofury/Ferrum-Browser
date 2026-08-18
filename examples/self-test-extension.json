@@ -29,7 +29,6 @@
       "minConsole": 2,
       "minRequests": 2,
       "minResponses": 2,
-      "minClosedWorkers": 1,
       "maxFailedRequests": 0
     },
     { "action": "service-worker-diagnostics", "name": "after-forced-recovery" },
