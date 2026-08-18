@@ -24,7 +24,7 @@ function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const proposal = entry?.proposal;
   const directVerifiedWorkflowRun =
-    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun;
+    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.latestFullGate ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun;
   const siblingProposalWorkflowRun = Number(proposal?.workflowRun ?? 0);
   const siblingProposalProof =
     verifiedProduct?.commit &&
@@ -258,6 +258,18 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       },
     }),
     null,
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      verifiedProduct: {
+        commit: 'latest-full-gate-product',
+        tree: 'latest-full-gate-tree',
+        latestFullGate: 55,
+        productCodeChangedThisRun: false,
+      },
+    }),
+    { commit: 'latest-full-gate-product', workflowRun: 55, verifiedAt: null },
   );
 });
 
