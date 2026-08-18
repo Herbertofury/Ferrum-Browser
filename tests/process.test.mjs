@@ -71,6 +71,18 @@ test('process runner stops readiness polling promptly when the child exits befor
   assert.ok(elapsed < 1200, `dead child should short-circuit the 2500ms readiness timeout; elapsed=${elapsed.toFixed(0)}ms`);
 });
 
+test('process runner reports spawn failures as structured evidence without an unhandled child error', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-spawn-error-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-spawn-error-test' }).init();
+  const command = `ferrum-command-that-does-not-exist-${process.pid}`;
+  const spec = { target: { command, args: [] }, timeouts: { stepMs: 5000 }, steps: [] };
+  await assert.rejects(runProcessTarget(spec, evidence), error => error?.code === 'ENOENT');
+  const processError = evidence.events.find(event => event.type === 'process-error');
+  assert.equal(processError?.code, 'ENOENT');
+  assert.match(processError?.message || '', new RegExp(command));
+  assert.equal(evidence.events.some(event => event.type === 'process-start'), false);
+});
+
 test('process runner can drive stdin without recording raw input in process-input evidence', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-stdin-'));
   const evidence = await new EvidenceWriter({ root, name: 'process-stdin-test' }).init();
