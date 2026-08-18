@@ -39,19 +39,24 @@ test('waitForLocatorText times out with the last observed text', async () => {
   assert.ok(calls > 1);
 });
 
-test('terminateExtensionServiceWorker closes only the exact extension service-worker target', async () => {
+test('terminateExtensionServiceWorker closes and confirms only the exact extension service-worker target', async () => {
   const page = { name: 'extension-popup' };
   const calls = [];
   let detached = false;
+  let targetReads = 0;
   const cdp = {
     async send(method, params) {
       calls.push({ method, params });
       if (method === 'Target.getTargets') {
+        targetReads += 1;
         return {
-          targetInfos: [
+          targetInfos: targetReads === 1 ? [
             { targetId: 'page-1', type: 'page', url: 'chrome-extension://abc/popup.html' },
             { targetId: 'other-worker', type: 'service_worker', url: 'chrome-extension://other/background.js' },
             { targetId: 'worker-abc', type: 'service_worker', url: 'chrome-extension://abc/background.js' }
+          ] : [
+            { targetId: 'page-1', type: 'page', url: 'chrome-extension://abc/popup.html' },
+            { targetId: 'other-worker', type: 'service_worker', url: 'chrome-extension://other/background.js' }
           ]
         };
       }
@@ -69,16 +74,19 @@ test('terminateExtensionServiceWorker closes only the exact extension service-wo
     }
   };
 
-  const result = await terminateExtensionServiceWorker(context, page, 'abc');
+  const result = await terminateExtensionServiceWorker(context, page, 'abc', { timeoutMs: 20, pollMs: 1 });
   assert.deepEqual(result, {
     extensionId: 'abc',
     targetId: 'worker-abc',
     url: 'chrome-extension://abc/background.js',
-    closed: true
+    closed: true,
+    confirmedBy: 'Target.getTargets',
+    confirmationAttempts: 1
   });
   assert.deepEqual(calls, [
     { method: 'Target.getTargets', params: undefined },
-    { method: 'Target.closeTarget', params: { targetId: 'worker-abc' } }
+    { method: 'Target.closeTarget', params: { targetId: 'worker-abc' } },
+    { method: 'Target.getTargets', params: undefined }
   ]);
   assert.equal(detached, true);
 });
@@ -107,6 +115,31 @@ test('terminateExtensionServiceWorker refuses ambiguous matching workers', async
   await assert.rejects(
     terminateExtensionServiceWorker(context, {}, 'abc'),
     /Refusing ambiguous service-worker termination for extension abc: 2 matching targets/
+  );
+  assert.equal(detached, true);
+});
+
+test('terminateExtensionServiceWorker fails if the closed target never disappears', async () => {
+  let detached = false;
+  const worker = { targetId: 'worker-abc', type: 'service_worker', url: 'chrome-extension://abc/background.js' };
+  const context = {
+    async newCDPSession() {
+      return {
+        async send(method) {
+          if (method === 'Target.getTargets') return { targetInfos: [worker] };
+          if (method === 'Target.closeTarget') return { success: true };
+          throw new Error(`unexpected CDP command ${method}`);
+        },
+        async detach() {
+          detached = true;
+        }
+      };
+    }
+  };
+
+  await assert.rejects(
+    terminateExtensionServiceWorker(context, {}, 'abc', { timeoutMs: 5, pollMs: 1 }),
+    /remained present after Target\.closeTarget within 5ms/
   );
   assert.equal(detached, true);
 });
