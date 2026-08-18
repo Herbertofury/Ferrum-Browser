@@ -3,7 +3,7 @@ name: Ferrum service fixture
 on:
   push:
     paths:
-      - 'scripts/testcontainers-service-smoke.mjs'
+      - 'scripts/disposable-service-smoke.mjs'
       - 'src/runners/process.mjs'
       - 'src/core/**'
       - 'bin/**'
@@ -11,7 +11,7 @@ on:
       - '.github/workflows/service-fixture.yml'
   pull_request:
     paths:
-      - 'scripts/testcontainers-service-smoke.mjs'
+      - 'scripts/disposable-service-smoke.mjs'
       - 'src/runners/process.mjs'
       - 'src/core/**'
       - 'bin/**'
@@ -31,8 +31,6 @@ jobs:
         with:
           node-version: 24
       - run: npm install --omit=dev --no-audit --no-fund
-      - name: Install pinned Testcontainers experiment client
-        run: npm install --no-save testcontainers@12.1.0 --no-audit --no-fund
       - name: Ferrum disposable local/container service parity smoke
         run: npm run smoke:service-fixture
       - uses: actions/upload-artifact@v7
