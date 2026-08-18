@@ -36,3 +36,28 @@ test('process runner can drive stdin without recording raw input in process-inpu
   assert.equal(Object.prototype.hasOwnProperty.call(inputEvent, 'value'), false);
   assert.equal(evidence.events.some(event => event.type === 'process-stdin-closed'), true);
 });
+
+test('process runner fails log assertions promptly with exit details after the child closes', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-early-exit-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-early-exit-test' }).init();
+  const spec = {
+    target: { command: process.execPath, args: ['-e', 'process.exit(17)'] },
+    timeouts: { stepMs: 5000 },
+    steps: [{ action: 'assert-log', text: 'ready' }]
+  };
+  const startedAt = performance.now();
+  await assert.rejects(runProcessTarget(spec, evidence), /Process exited before output contained expected text: ready \(code 17, signal none\)/);
+  assert.ok(performance.now() - startedAt < 3000, 'expected child exit to short-circuit the 5000ms log assertion timeout');
+});
+
+test('process runner checks final unterminated output before treating process close as a missing log', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-tail-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-tail-test' }).init();
+  const spec = {
+    target: { command: process.execPath, args: ['-e', "process.stdout.write('tail-ready')"] },
+    timeouts: { stepMs: 5000 },
+    steps: [{ action: 'assert-log', text: 'tail-ready' }, { action: 'wait-exit', code: 0 }]
+  };
+  const result = await runProcessTarget(spec, evidence);
+  assert.ok(result.logs >= 1);
+});
