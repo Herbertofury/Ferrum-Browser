@@ -5,15 +5,26 @@ import { spawnLogged, terminate, waitForExit } from '../core/process-utils.mjs';
 
 async function waitHealth(url, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
-  let last;
+  let last = null;
+  let attempts = 0;
   while (Date.now() < deadline) {
+    const remainingMs = Math.max(1, deadline - Date.now());
+    attempts += 1;
     try {
-      const response = await fetch(url);
-      if (response.ok) return { status: response.status };
-    } catch (error) { last = error; }
-    await new Promise(resolve => setTimeout(resolve, 200));
+      const response = await fetch(url, { signal: AbortSignal.timeout(remainingMs) });
+      if (response.ok) return { status: response.status, attempts };
+      last = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        last = null;
+        break;
+      }
+      last = error;
+    }
+    const waitMs = Math.min(200, Math.max(0, deadline - Date.now()));
+    if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
   }
-  throw new Error(`Health URL did not become ready: ${url}: ${last?.message || 'timeout'}`);
+  throw new Error(`Health URL did not become ready: ${url} after ${attempts} attempts: ${last?.message || 'timeout'}`);
 }
 
 async function waitForLog(lines, text, timeoutMs, getClosed) {

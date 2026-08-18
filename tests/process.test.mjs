@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { EvidenceWriter } from '../src/core/evidence.mjs';
@@ -12,6 +13,41 @@ test('process runner captures logs and exit code', async () => {
   const spec = { target: { command: process.execPath, args: ['-e', "console.log('ready')"] }, timeouts: { stepMs: 5000 }, steps: [{ action: 'assert-log', text: 'ready' }, { action: 'wait-exit', code: 0 }] };
   const result = await runProcessTarget(spec, evidence);
   assert.ok(result.logs >= 1);
+});
+
+test('process runner enforces startup deadline when a health request responds too late', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-health-deadline-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-health-deadline-test' }).init();
+  const server = http.createServer((_request, response) => {
+    setTimeout(() => {
+      response.writeHead(200, { 'content-type': 'text/plain' });
+      response.end('ok');
+    }, 650);
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  const spec = {
+    target: {
+      command: process.execPath,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      healthUrl: `http://127.0.0.1:${address.port}/health`
+    },
+    timeouts: { startupMs: 120, stepMs: 5000 },
+    steps: []
+  };
+  const startedAt = performance.now();
+  try {
+    await assert.rejects(
+      runProcessTarget(spec, evidence),
+      /Health URL did not become ready: .* after \d+ attempts: timeout/
+    );
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+  assert.ok(performance.now() - startedAt < 500, 'startup timeout should bound an individual slow health request');
 });
 
 test('process runner can drive stdin without recording raw input in process-input evidence', async () => {
