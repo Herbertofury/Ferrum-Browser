@@ -50,6 +50,27 @@ test('process runner enforces startup deadline when a health request responds to
   assert.ok(performance.now() - startedAt < 500, 'startup timeout should bound an individual slow health request');
 });
 
+test('process runner stops readiness polling promptly when the child exits before health is ready', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-health-exit-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-health-exit-test' }).init();
+  const spec = {
+    target: {
+      command: process.execPath,
+      args: ['-e', 'process.exit(23)'],
+      healthUrl: 'http://127.0.0.1:1/health'
+    },
+    timeouts: { startupMs: 2500, stepMs: 5000 },
+    steps: []
+  };
+  const startedAt = performance.now();
+  await assert.rejects(
+    runProcessTarget(spec, evidence),
+    /Process exited before health URL became ready: .* \(code 23, signal none\)/
+  );
+  const elapsed = performance.now() - startedAt;
+  assert.ok(elapsed < 1200, `dead child should short-circuit the 2500ms readiness timeout; elapsed=${elapsed.toFixed(0)}ms`);
+});
+
 test('process runner can drive stdin without recording raw input in process-input evidence', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-process-stdin-'));
   const evidence = await new EvidenceWriter({ root, name: 'process-stdin-test' }).init();
