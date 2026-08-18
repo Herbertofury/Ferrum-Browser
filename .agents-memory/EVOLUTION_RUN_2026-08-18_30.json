@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "evolution-run",
+  "runId": "2026-08-18-30",
+  "checkedAt": "2026-08-18T21:58:23Z",
+  "outcome": "NO_PROVEN_IMPROVEMENT_THIS_RUN",
+  "canonicalMainAtStart": "04cbc5ed45e6344821b5b9b45942aad59351ca00",
+  "verifiedProductCommit": "0e212da9effebdc7db1d09a7faea03679bd11cc3",
+  "deltaWatermark": ".agents-memory/EVOLUTION_RUN_2026-08-18_29.json",
+  "productChanges": [],
+  "activeProposal": {
+    "pr": 47,
+    "title": "Qualify real Tauri applications through Ferrum WebDriver",
+    "branch": "evolution/tauri-webdriver",
+    "proposalHead": "9f396e48fe9c4cb928051f62f0841a1994999987",
+    "proposalMergeRefObserved": "5d19656a6b7ee6e021da51e0ceee7c0649f70ad1",
+    "decision": "PROOF_INCOMPLETE_KEEP_OFF_MAIN",
+    "repair": {
+      "failureObservedOnPriorHead": "0bd6bd669412151b8374e09f31831c576f31bde7",
+      "failedWorkflowRun": 32190010984,
+      "rootCause": "Embedded Tauri fixture pinned tauri-build 2.6.0 while tauri 2.11.5 requires tauri-build ^2.6.3, causing Cargo resolver failure before build on Linux and Windows.",
+      "repairCommit": "9f396e48fe9c4cb928051f62f0841a1994999987",
+      "repairDetails": "Pin the temporary fixture to tauri-build 2.6.3 and explicitly resolve and print the coherent Tauri 2.11.5 runtime family before building."
+    },
+    "exactHeadRuns": {
+      "serviceNetworkFault": {"id": 32190132821, "status": "completed", "conclusion": "success"},
+      "statefulApi": {"id": 32190132817, "status": "completed", "conclusion": "success"},
+      "serviceFixture": {"id": 32190132789, "status": "queued-at-checkpoint"},
+      "ferrumCi": {"id": 32190132816, "status": "queued-at-checkpoint"},
+      "tauriWebDriver": {"id": 32190132803, "status": "running-at-checkpoint"}
+    },
+    "mandatoryMergeGate": "The exact repaired proposal must pass the full affected Ferrum CI surface plus embedded Tauri Linux and Windows real application launch, W3C session creation, real UI input/click, Rust greet IPC, screenshot/source capture, app/runtime identity and clean teardown. The direct tauri-driver path remains reference/diagnostic evidence and cannot substitute for mandatory cross-platform embedded proof."
+  },
+  "ecosystemRotation": "visual grounding, complete-screen parsing, screenshot fallback, GUI-agent benchmarks and computer-use reproducibility",
+  "researchConclusion": {
+    "topExperiment": "ScreenParse versus OmniParser on one fixed Ferrum-owned screenshot corpus before any optional visual fallback provider is integrated.",
+    "reason": "ScreenParse models complete visible-element parsing with locations, semantic types, text and hierarchy, which maps more naturally to Ferrum evidence than sparse coordinate grounding. OmniParser is the strongest active alternative and added a YOLOv9-E detector in July 2026.",
+    "secondaryTechnique": "Test UI-Venus-style bounded zoom/multiscale refinement only after a reproducible first-pass ambiguity exists.",
+    "benchmarkHarvest": "OSWorld-V2 immutable release/task/data/website/provider-image manifests are a strong reproducibility pattern for future Ferrum general-app benchmark packs.",
+    "guardrail": "Accessibility/native/WebDriver/CDP paths remain authoritative. Visual parsing is additive fallback or benchmark only, must retain the raw screenshot, and must expose uncertainty instead of inventing semantic identity."
+  },
+  "candidates": [
+    {
+      "project": "ScreenParse", "url": "https://github.com/Saidgurbuz/screenparse", "owner": "Saidgurbuz", "checkedDate": "2026-08-18", "head": "b294659b87fb75f3fd4964310fd2039d385749b3", "maintenanceFreshness": "active; head 2026-07-20; ICML 2026",
+      "purpose": "complete GUI screen parsing", "architecture": "screenshot parser returning visible elements, boxes, semantic types, text and hierarchy", "relevantFerrumCapability": "visual fallback evidence and semantic discovery", "featureToHarvest": "dense complete-screen structured representation",
+      "integrationMode": "isolated benchmark, then optional subprocess/provider only if proven", "expectedBenefit": "higher actionable-element recall on visually-only UIs", "dependencies": "upstream model/runtime stack kept outside Ferrum core initially", "platformCoverage": "screenshot-based web/desktop/mobile",
+      "compatibilityRisks": "startup/GPU or CPU cost, false positives, weaker identity than native semantics", "upstreamIssues": "research-grade packaging/lifecycle requires qualification", "benchmarkEvidence": "ICML 2026 paper plus released ScreenParse/Webshot/ScreenVLM assets",
+      "smallestExperiment": "fixed Ferrum web/Electron/native screenshots with known ground truth", "acceptanceTest": "material actionable-element recall with bounded median/p95 latency, memory and output size; raw screenshot retained; structured refs never overridden", "decision": "EXPERIMENT", "nextReviewTrigger": "after Tauri PR closes or a deterministic visually-only fixture exists"
+    },
+    {
+      "project": "Microsoft OmniParser", "url": "https://github.com/microsoft/OmniParser", "owner": "microsoft", "checkedDate": "2026-08-18", "head": "354021201345a96178360b28733573e27269f2de", "maintenanceFreshness": "active; head 2026-07-20 adds Hugging Face-backed YOLOv9-E detector",
+      "purpose": "vision-only GUI parsing", "architecture": "interactive-region detector plus caption/recognition pipeline", "relevantFerrumCapability": "optional screenshot grounding fallback", "featureToHarvest": "current detector path and structured element extraction",
+      "integrationMode": "benchmark against ScreenParse; isolated provider only if it wins", "expectedBenefit": "fast local element discovery where semantic trees are absent", "dependencies": "Python/model weights/inference stack", "platformCoverage": "screenshot-based web/desktop/mobile",
+      "compatibilityRisks": "model download, inference memory/startup, packaging and false grounding", "upstreamIssues": "pin exact model weights and avoid floating Hugging Face revisions", "benchmarkEvidence": "active widely-used parser with July 2026 detector update",
+      "smallestExperiment": "same fixed corpus and metrics as ScreenParse", "acceptanceTest": "equal or better recall/box accuracy with lower latency/resource cost, or a distinct useful capability; raw evidence retained", "decision": "EXPERIMENT", "nextReviewTrigger": "head-to-head ScreenParse benchmark"
+    },
+    {
+      "project": "UI-Venus 1.5", "url": "https://github.com/inclusionAI/UI-Venus", "owner": "inclusionAI", "checkedDate": "2026-08-18", "head": "192a9247ad1129279ba1d6c263d4c9e7ecef3644", "maintenanceFreshness": "2026 active 1.5 line",
+      "purpose": "screenshot-only GUI grounding/navigation", "architecture": "vision-language agent with zoom-in refinement, trajectory recording/replay and loop detection", "relevantFerrumCapability": "ambiguous visual fallback and recovery diagnostics", "featureToHarvest": "bounded zoom/multiscale refinement and loop detection concepts",
+      "integrationMode": "TRANSPLANT-IDEA/BENCHMARK, not its autonomous control loop", "expectedBenefit": "fewer dense-UI grounding misses", "dependencies": "large model/inference stack for direct benchmark", "platformCoverage": "GUI grounding plus Android framework",
+      "compatibilityRisks": "model nondeterminism and extra round trips", "upstreamIssues": "separate algorithmic benefit from model quality", "benchmarkEvidence": "2026 ScreenSpot-Pro/VenusBench/Android benchmark results; upstream reports ZoomIn gains",
+      "smallestExperiment": "one controlled ambiguous screenshot, single pass versus bounded zoom refinement", "acceptanceTest": "higher correct-target localization without exceeding latency/tool-call budget; deterministic paths remain preferred", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "after visual parser baseline exists"
+    },
+    {
+      "project": "OSWorld-V2", "url": "https://github.com/xlang-ai/OSWorld-V2", "owner": "xlang-ai", "checkedDate": "2026-08-18", "head": "bf715459289ea7ffa551d742d8f4ff80eb39d23c", "maintenanceFreshness": "very active; head 2026-08-18 adds Gemini agent support",
+      "purpose": "long-horizon real desktop computer-use benchmark", "architecture": "versioned tasks/environments/evaluators with immutable benchmark release manifests", "relevantFerrumCapability": "general-app benchmark reproducibility", "featureToHarvest": "pin code, websites, task/data assets, provider images and verification state per comparable run",
+      "integrationMode": "BENCHMARK/TRANSPLANT-IDEA", "expectedBenefit": "fair fresh-runtime comparisons and stale-release prevention", "dependencies": "heavy benchmark environments only for isolated workloads", "platformCoverage": "desktop computer-use environments",
+      "compatibilityRisks": "full benchmark too expensive/flaky for normal CI", "upstreamIssues": "keep imported subsets release-pinned and separate from deterministic regression gates", "benchmarkEvidence": "active OSWorld 2.0 release manifest contract and 108-task release",
+      "smallestExperiment": "audit one Ferrum benchmark pack for complete immutable release/task/data/runtime identity", "acceptanceTest": "fresh-runtime replay resolves the same manifest and marks mismatched provenance non-comparable", "decision": "BENCHMARK", "nextReviewTrigger": "general desktop benchmark expansion"
+    },
+    {
+      "project": "UI-TARS Desktop", "url": "https://github.com/bytedance/UI-TARS-desktop", "owner": "bytedance", "checkedDate": "2026-08-18", "head": "c2ad42e3eb9b27830db41a3e6f51ca7179d9b168", "maintenanceFreshness": "head 2026-07-01",
+      "purpose": "cross-platform native/browser GUI agent stack", "architecture": "separate model from screenshot/execute Operator interfaces with cancellation and event reporting", "relevantFerrumCapability": "future optional visual-provider contract", "featureToHarvest": "small Operator abstraction, AbortSignal cancellation and event/timing surfaces",
+      "integrationMode": "TRANSPLANT-IDEA/BENCHMARK", "expectedBenefit": "less one-off glue and clearer cancellation if a visual provider is ever added", "dependencies": "large JS/Electron/model ecosystem; avoid direct core dependency", "platformCoverage": "Windows, macOS, browser; mobile operator concepts",
+      "compatibilityRisks": "duplicate orchestration and model nondeterminism", "upstreamIssues": "remote operator retired; direct adoption is much broader than Ferrum needs", "benchmarkEvidence": "shipping native desktop application with local computer/browser operators",
+      "smallestExperiment": "compare its Operator contract to Ferrum adapter/evidence contracts before coding", "acceptanceTest": "only transplant if it materially reduces adapter complexity or cancellation ambiguity", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "visual provider contract work"
+    },
+    {
+      "project": "ShowUI-pi", "url": "https://github.com/showlab/showui-pi", "owner": "showlab", "checkedDate": "2026-08-18", "head": "1a6c6c8a7072652e6da056a8faabbe76f935db50", "maintenanceFreshness": "head 2026-04-22; CVPR 2026",
+      "purpose": "GUI drag-and-drop/dexterous visual actions", "architecture": "flow-based generative VLA with DEX drag benchmark", "relevantFerrumCapability": "future drag/gesture fallback benchmark", "featureToHarvest": "DEX benchmark task design and trajectory evaluation",
+      "integrationMode": "BENCHMARK", "expectedBenefit": "objective quality metric for non-click visual fallback", "dependencies": "LeRobot/model evaluation stack", "platformCoverage": "visual GUI drag tasks",
+      "compatibilityRisks": "research-grade and specialized; must not replace protocol-native actions", "upstreamIssues": "narrow capability", "benchmarkEvidence": "CVPR 2026 and released DEX/ScreenSpot-Pro evaluation",
+      "smallestExperiment": "tiny deterministic Ferrum drag fixture if such fallback becomes necessary", "acceptanceTest": "visual fallback adds capability only where structured drag is unavailable and retains full screenshot/trajectory evidence", "decision": "BENCHMARK", "nextReviewTrigger": "Ferrum drag/gesture fallback requirement"
+    },
+    {
+      "project": "UGround", "url": "https://github.com/OSU-NLP-Group/UGround", "owner": "OSU-NLP-Group", "checkedDate": "2026-08-18", "head": "3a9b9f2b607eefbfc93558c1f21e6f4049944bf1", "maintenanceFreshness": "head 2026-03-11; ICLR 2025 Oral project",
+      "purpose": "universal GUI visual grounding", "architecture": "grounding models plus cross-domain evaluation suite", "relevantFerrumCapability": "independent visual-fallback benchmark", "featureToHarvest": "cross-domain grounding evaluation methodology",
+      "integrationMode": "BENCHMARK", "expectedBenefit": "objective localization score across desktop/web/mobile UI images", "dependencies": "research model/evaluation stack", "platformCoverage": "desktop/web/mobile screenshots",
+      "compatibilityRisks": "benchmark distribution can differ from Ferrum-owned fixtures", "upstreamIssues": "less current than ScreenParse/OmniParser; keep as benchmark", "benchmarkEvidence": "ICLR 2025 Oral and released resources",
+      "smallestExperiment": "small release-pinned benchmark subset after primary parser comparison", "acceptanceTest": "repeatable localization metrics with exact model/dataset/version identity", "decision": "BENCHMARK", "nextReviewTrigger": "visual provider experiment starts"
+    },
+    {
+      "project": "Agent-S", "url": "https://github.com/simular-ai/Agent-S", "owner": "simular-ai", "checkedDate": "2026-08-18", "head": "bffdb59c60cbbb38c3a190b2e91da12039e4063c", "maintenanceFreshness": "head 2026-08-01",
+      "purpose": "cross-platform computer-use GUI workflows", "architecture": "model-driven GUI grounding/action framework with platform-specific computer interaction", "relevantFerrumCapability": "native visually-only fallback workflow ideas", "featureToHarvest": "action decomposition and recovery patterns",
+      "integrationMode": "WATCH/TRANSPLANT-IDEA", "expectedBenefit": "broader native task coverage only where deterministic adapters cannot operate", "dependencies": "Python/model/computer-control stack", "platformCoverage": "cross-platform desktop GUI",
+      "compatibilityRisks": "slower nondeterministic model-driven execution", "upstreamIssues": "requires workload-specific proof before any integration", "benchmarkEvidence": "active 2026 cross-platform GUI project",
+      "smallestExperiment": "one deterministic visually-only native fixture", "acceptanceTest": "new useful capability or recovery gain with raw evidence and bounded cost; never become default over structured adapters", "decision": "WATCH", "nextReviewTrigger": "visual baseline or material upstream release"
+    }
+  ],
+  "nextExperiments": [
+    "Finish PR #47 proof on exact repaired head 9f396e48fe9c4cb928051f62f0841a1994999987; merge only after full Ferrum CI plus embedded Tauri Linux and Windows acceptance pass.",
+    "Create one fixed Ferrum-owned visual benchmark corpus and compare ScreenParse b294659b... versus OmniParser 35402120... on recall, box accuracy, text/type correctness, median/p95 latency, startup, memory and output bytes while retaining every raw screenshot.",
+    "Only if that baseline exposes reproducible ambiguity, test bounded UI-Venus ZoomIn/multiscale refinement and count added model/tool round trips.",
+    "Audit general-app benchmark manifests against OSWorld-V2 immutable release/provenance requirements before importing external long-horizon tasks."
+  ],
+  "guardrails": [
+    "No viewport/item caps, reduced datasets, hidden evidence, weaker tests, synthetic substitution, stale caching or reduced target coverage.",
+    "Visual parsing is additive fallback/benchmark only and cannot override structured accessibility, native automation, WebDriver/CDP or raw screenshot evidence.",
+    "PR #47 stays off main until its exact final proposal proves real Tauri Linux and Windows end-to-end plus the full affected regression surface.",
+    "Research popularity is never implementation proof; identical-workload evidence remains mandatory."
+  ]
+}
