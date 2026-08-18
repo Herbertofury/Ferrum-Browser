@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "evolution-run",
+  "run": 19,
+  "checkedAt": "2026-08-18T10:10:21Z",
+  "base": {
+    "startMain": "2393bb430b2293d19b6a4f4e23185ecbfb14b2a1",
+    "previousWatermark": ".agents-memory/EVOLUTION_RUN_2026-08-18_18.json"
+  },
+  "verifiedProduct": {
+    "pr": 33,
+    "failureFirstHead": "a89bfa019d254fd54752d9460e282eb7f30292bb",
+    "failureFirstCi": 32123966986,
+    "failureFirstObservation": "Failure-first tests proved the hidden snapshot cap: runtime-native snapshot options received max=400 instead of undefined and a synthetic page with 450 qualifying elements returned 400; the other 82 unit tests passed.",
+    "proposalHead": "30f131939086c96ee0274583f4b07e2036d37878",
+    "proposalTree": "3421b002eadd3c9124bbcf57452768325fadb924",
+    "proposalCi": 32124761222,
+    "proposalConclusion": "success",
+    "testedMergeRef": "2613aa01a033fb7cbd8860a16205beece8097123",
+    "testedMergeRefTree": "3421b002eadd3c9124bbcf57452768325fadb924",
+    "productCommit": "c43c3d6be08ccf58253a56904289d0ee490b880d",
+    "productTree": "3421b002eadd3c9124bbcf57452768325fadb924",
+    "treeMatchesTestedProposal": true,
+    "change": "Generic Playwright-backed and runtime-native Lightpanda snapshots no longer impose Ferrum's implicit 400-element default ceiling. StepEngine passes no limit unless a caller explicitly supplies a positive max.",
+    "verification": {
+      "failureFirst": "reproduced",
+      "unitMcpEvidenceIntegrity": "success",
+      "linuxBrowserMv3WorkloadsElectronSourcePackaged": "success",
+      "windowsBrowserMatrixMv3WorkloadsElectronSourcePackaged": "success",
+      "seleniumGridWebDriver": "success",
+      "lightpanda": "success",
+      "androidAppium": "success"
+    },
+    "realRuntimeObservations": {
+      "lightpandaVersion": "0.3.7",
+      "completeQualifyingElements": 451,
+      "completeSnapshotDurationMs": 20.46905000000001,
+      "explicitLimit": 123,
+      "explicitlyLimitedElements": 123,
+      "limitedSnapshotDurationMs": 6.35333399999999,
+      "postSnapshotClickAndTextAssertion": "success",
+      "consoleErrors": 0
+    },
+    "artifacts": {
+      "windowsDesktop": {"id": 9320061474, "sizeBytes": 151599070, "sha256": "9031d9b611c3f98156222a9047dbc1bc71e45ad8781cdf5b24e89f13c156f6c6"},
+      "windowsEvidence": {"id": 9320054047, "sizeBytes": 4045768, "sha256": "eb55cf0cb8cdd370c5868bd9e6d28a77ab39f7b81b338c075a4f7b52a7bce922"},
+      "androidAppiumEvidence": {"id": 9319966832, "sizeBytes": 125004, "sha256": "143d5d75aee9af1d96905ff14013a0366e8a2781f90e9fa4deb5ca081116228b"},
+      "linuxDesktop": {"id": 9319933839, "sizeBytes": 131730780, "sha256": "870b1b96a984970376a8d8b7c9d16ae2f07da547e57208079b57c2e766a33d61"},
+      "linuxEvidence": {"id": 9319927479, "sizeBytes": 2179684, "sha256": "bfeaf04c7c7dc17103bc851af41d24c096d542095ee34937d1cf1847aa4a4fd1"},
+      "webdriverGridEvidence": {"id": 9319911928, "sizeBytes": 20242, "sha256": "54d990bcd725456179f60b8072f88818e68c1bb46206fa28e5087060108fd953"},
+      "lightpandaEvidence": {"id": 9319900165, "sizeBytes": 7791, "sha256": "52c807b55ad631c78490ac0d123a64dc3a9e511c42e7bf6cdbb92cad68d77dac"}
+    }
+  },
+  "ecosystemRotation": "native desktop accessibility/control, cross-OS computer-use harnesses, visual fallback, desktop benchmark workloads and evaluator architecture",
+  "candidates": [
+    {
+      "project": "trycua/cua", "url": "https://github.com/trycua/cua", "owner": "trycua", "checkedDate": "2026-08-18", "head": "3af8db7111fe409f0d02d26a4a018f0807358912", "maintenanceFreshness": "very active; main advanced 2026-08-17",
+      "purpose": "cross-platform computer-use infrastructure and benchmarks", "architecture": "shared CLI/MCP drivers and sandbox APIs across desktop/mobile environments plus Cua-Bench", "relevantFerrumCapability": "general native-app adapter contract and computer-use benchmark coverage", "harvest": "common driver/sandbox contract, background native control where supported, shared lifecycle and benchmark trajectories", "integrationMode": "optional subprocess/protocol adapter experiment plus benchmark import", "expectedBenefit": "broader native coverage behind one Ferrum lifecycle/evidence contract", "requiredDependencies": "external Cua runtime for isolated experiment", "platformCoverage": "Linux, macOS, Windows and Android represented upstream", "compatibilityRisks": "platform implementations differ in maturity; each host must be independently qualified", "upstreamIssues": "no blocking issue selected; platform claims require Ferrum runtime proof", "benchmarkOrProductionEvidence": "Cua-Bench integrates OSWorld, ScreenSpot, Windows Arena and custom environments", "smallestExperiment": "drive one deterministic native fixture through a temporary Cua adapter and compare launch/interact/restart/evidence/focus behavior", "acceptanceTest": "equal or higher task success/evidence, deterministic restart identity and no unintended focus/cursor interference", "decision": "EXPERIMENT", "nextReviewTrigger": "qualifying native desktop host/fixture becomes available"
+    },
+    {
+      "project": "lahfir/agent-desktop", "url": "https://github.com/lahfir/agent-desktop", "owner": "lahfir", "checkedDate": "2026-08-18", "head": "04f3d675b47859365da8ed0c55f906e7fd3d2d4b", "maintenanceFreshness": "active; 0.8.1 line and August 2026 activity",
+      "purpose": "agent-oriented native desktop automation over OS accessibility data", "architecture": "Rust CLI/FFI with accessibility snapshots, snapshot-scoped refs, progressive skeleton traversal, JSON errors, sessions and traces", "relevantFerrumCapability": "native semantic UI automation and token-efficient state navigation", "harvest": "snapshot epochs, optional derived progressive skeleton, recovery hints and CLI/FFI transport ideas", "integrationMode": "TRANSPLANT-IDEA plus optional adapter benchmark", "expectedBenefit": "lower context burden and fewer stale-target ambiguities while complete raw state remains available", "requiredDependencies": "none for concept transplant; upstream runtime only for benchmark", "platformCoverage": "CLI macOS-first; FFI/release packaging mentions macOS/Linux/Windows", "compatibilityRisks": "compact views must remain derived and cross-platform parity is not proven", "upstreamIssues": "delivery modes differ in platform maturity", "benchmarkOrProductionEvidence": "upstream documents accessibility control, qualified refs, sessions/traces and progressive traversal", "smallestExperiment": "complete snapshot plus optional derived skeleton on a native fixture, measuring bytes/calls/stale refs", "acceptanceTest": "raw complete state remains recoverable, task success unchanged and response burden materially lower", "decision": "EXPERIMENT", "nextReviewTrigger": "native desktop benchmark lane or upstream cross-platform maturity change"
+    },
+    {
+      "project": "microsoft/ppteval", "url": "https://github.com/microsoft/ppteval", "owner": "Microsoft", "checkedDate": "2026-08-18", "head": "1b8b55a29e48fdc65d423689b6f2370ad91beeea", "maintenanceFreshness": "current 2026 benchmark; inspected change 2026-07-08",
+      "purpose": "execution-grounded PowerPoint computer-use evaluation", "architecture": "isolated task workspaces, GUI/CLI execution, normalized artifact inspection and programmatic evaluators", "relevantFerrumCapability": "general-app benchmark packs and artifact acceptance", "harvest": "artifact-centric scoring, metadata normalization, workspace isolation and programmatic evaluators", "integrationMode": "BENCHMARK concept/task adaptation", "expectedBenefit": "measure professional-app outcomes rather than click-path success only", "requiredDependencies": "none for methodology; full benchmark needs its app/sandbox environment", "platformCoverage": "PowerPoint task environments with GUI and programmatic execution", "compatibilityRisks": "full environment is heavy for routine CI", "upstreamIssues": "no blocking issue selected", "benchmarkOrProductionEvidence": "ICML 2026 executable benchmark repository", "smallestExperiment": "adapt one document-editing task with normalized final-artifact assertions", "acceptanceTest": "deterministic artifact score across repeats with useful failure evidence", "decision": "BENCHMARK", "nextReviewTrigger": "general-app benchmark expansion"
+    },
+    {
+      "project": "HITsz-TMG/WindowsWorld", "url": "https://github.com/HITsz-TMG/WindowsWorld", "owner": "HITsz-TMG", "checkedDate": "2026-08-18", "head": "fbccd464f94fec9e284e139f97bf96d0b192f580", "maintenanceFreshness": "maintained 2026 benchmark; inspected change 2026-05-11",
+      "purpose": "Windows computer-use benchmark across real desktop applications", "architecture": "VM tasks with screenshot/accessibility/SOM observations and intermediate checkpoints", "relevantFerrumCapability": "native Windows workload qualification", "harvest": "intermediate scoring, mixed visual/accessibility observations and multi-app task design", "integrationMode": "BENCHMARK adaptation", "expectedBenefit": "objective native Windows adapter validation", "requiredDependencies": "Windows VM and benchmark apps for full suite", "platformCoverage": "Windows 10/11/Server upstream", "compatibilityRisks": "heavy VM/app image and external-version noise", "upstreamIssues": "no blocking issue selected", "benchmarkOrProductionEvidence": "upstream reports 181 tasks across 17 apps with multi-app/checkpoint evaluation", "smallestExperiment": "adapt one deterministic Windows task after a native Windows adapter qualifies", "acceptanceTest": "repeatable task score, restart recovery and complete evidence", "decision": "BENCHMARK", "nextReviewTrigger": "native Windows adapter qualifies"
+    },
+    {
+      "project": "JetAstra/MacAgentBench", "url": "https://github.com/JetAstra/MacAgentBench", "owner": "JetAstra", "checkedDate": "2026-08-18", "head": "65632d1479bfb3aa1d2d3e292628f94d1743808f", "maintenanceFreshness": "active 2026 benchmark; inspected change 2026-06-21",
+      "purpose": "macOS computer-use benchmark with deterministic fine-grained evaluation", "architecture": "macOS task harness with rule-based multi-checkpoint scoring across native apps", "relevantFerrumCapability": "future macOS acceptance", "harvest": "deterministic checkpoint evaluators and multi-app task decomposition", "integrationMode": "BENCHMARK watch", "expectedBenefit": "strong macOS qualification when real infrastructure exists", "requiredDependencies": "macOS host/VM and benchmark apps", "platformCoverage": "macOS; 25 apps represented upstream", "compatibilityRisks": "cannot be honestly qualified from Linux/Windows CI", "upstreamIssues": "no blocking issue selected", "benchmarkOrProductionEvidence": "upstream reports 676 tasks including 140 multi-app tasks", "smallestExperiment": "run a tiny pinned subset on a real macOS host", "acceptanceTest": "repeatable native macOS success/recovery/evidence with no synthetic substitute", "decision": "WATCH", "nextReviewTrigger": "real macOS test infrastructure is available"
+    },
+    {
+      "project": "mrwwk/DeskCraft", "url": "https://github.com/mrwwk/DeskCraft", "owner": "mrwwk", "checkedDate": "2026-08-18", "head": "a081f6462bd97a8d01f5f811f8f381a96181b6ff", "maintenanceFreshness": "active 2026 benchmark; inspected change 2026-07-21",
+      "purpose": "long-horizon Ubuntu desktop tasks focused on professional deliverables", "architecture": "OSWorld-derived provider infrastructure, executable app tasks, phase triggers and artifact verification", "relevantFerrumCapability": "general-app workloads beyond micro-interactions", "harvest": "delivery-oriented tasks and execution-based artifact verification", "integrationMode": "BENCHMARK adaptation", "expectedBenefit": "measure realistic multi-step app work and final deliverable correctness", "requiredDependencies": "Linux desktop apps/VM for upstream suite", "platformCoverage": "Ubuntu with 11 apps and multi-app workflows", "compatibilityRisks": "full suite is heavy and human triggers cannot become unattended CI dependencies", "upstreamIssues": "no blocking issue selected", "benchmarkOrProductionEvidence": "upstream reports 538 executable tasks including interactive/multi-app workflows", "smallestExperiment": "adapt one self-contained artifact-producing Ubuntu task", "acceptanceTest": "repeatable task plus artifact validity, recovery metrics and complete evidence", "decision": "BENCHMARK", "nextReviewTrigger": "general desktop benchmark expansion"
+    },
+    {
+      "project": "inclusionAI/AWorld", "url": "https://github.com/inclusionAI/AWorld", "owner": "inclusionAI", "checkedDate": "2026-08-18", "head": "4c4b6f08c1c078883cac1ce267f31bb014dea299", "maintenanceFreshness": "very active; main changed 2026-08-18",
+      "purpose": "agent harness with reusable skills, evaluators and build-evaluate-evolve loops", "architecture": "orchestrator plus specialized agents, shared skills/evaluators and CLI workflows", "relevantFerrumCapability": "agent-first verification recipes", "harvest": "reusable evaluator/skill contracts and explicit build-evaluate-evolve feedback", "integrationMode": "TRANSPLANT-IDEA", "expectedBenefit": "easier workload discovery/reuse without inflating MCP schemas", "requiredDependencies": "none for architecture transplant", "platformCoverage": "framework-level; skills vary", "compatibilityRisks": "whole multi-agent framework is too heavy as a Ferrum runtime dependency", "upstreamIssues": "no blocking issue selected", "benchmarkOrProductionEvidence": "current repository documents UI evaluation skills and evaluator-driven evolution recipes", "smallestExperiment": "represent one Ferrum workload as compact agent skill plus machine-readable evaluator", "acceptanceTest": "same proof with fewer setup/tool-discovery calls and no evidence loss", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "Ferrum skill/CLI benchmark or major upstream change"
+    },
+    {
+      "project": "xlang-ai/computer-agent-arena", "url": "https://github.com/xlang-ai/computer-agent-arena", "owner": "xlang-ai", "checkedDate": "2026-08-18", "head": "4536036e8d0a3de9a0de9829c09f4a5916f73013", "maintenanceFreshness": "2026 release; inspected update 2026-02-26",
+      "purpose": "human-centric live evaluation of computer-use agents", "architecture": "React frontend, Flask/Socket.IO backend, pluggable agent hub and Ubuntu/Windows VM pool with pairwise voting", "relevantFerrumCapability": "supplementary human-preference benchmark", "harvest": "pluggable agent adapter shape and side-by-side comparison methodology", "integrationMode": "WATCH / BENCHMARK reference", "expectedBenefit": "qualitative usability cross-check after deterministic benchmarks mature", "requiredDependencies": "substantial web/database/VM infrastructure", "platformCoverage": "Ubuntu and Windows live desktop environments", "compatibilityRisks": "human preference is nondeterministic and must never replace automated gates", "upstreamIssues": "no blocking issue selected", "benchmarkOrProductionEvidence": "ICLR 2026 platform with live side-by-side desktop agent evaluation", "smallestExperiment": "defer until Ferrum has competing native-agent surfaces", "acceptanceTest": "human preference remains supplementary to deterministic pass/fail", "decision": "WATCH", "nextReviewTrigger": "competing Ferrum native-agent surfaces exist"
+    },
+    {
+      "project": "showlab/WorldGUI", "url": "https://github.com/showlab/WorldGUI", "owner": "showlab", "checkedDate": "2026-08-18", "head": "2117f0a87bcd3b1f330d3727a7ec0643930e7d90", "maintenanceFreshness": "older than leading candidates; inspected change 2025-07-27",
+      "purpose": "GUI-agent research with planning/critique/step validation", "architecture": "planner/actor/critic style model-driven GUI execution", "relevantFerrumCapability": "pre/post action validation and visual fallback", "harvest": "explicit per-step validation as a recoverability hypothesis", "integrationMode": "TRANSPLANT-IDEA / WATCH", "expectedBenefit": "catch visual-fallback mis-actions earlier", "requiredDependencies": "none for concept transplant", "platformCoverage": "research GUI environments", "compatibilityRisks": "model critique is slow/nondeterministic and must not gate structured adapters", "upstreamIssues": "maintenance freshness trails top candidates", "benchmarkOrProductionEvidence": "published GUI research implementation", "smallestExperiment": "controlled visual-fallback task with and without deterministic post-action validation", "acceptanceTest": "higher recovery without making model critique a structured-path default", "decision": "WATCH", "nextReviewTrigger": "visual fallback has a concrete recovery defect"
+    },
+    {
+      "project": "bytedance/UI-TARS", "url": "https://github.com/bytedance/UI-TARS", "owner": "ByteDance", "checkedDate": "2026-08-18", "head": "582f3a7ea5d285ee8ed9e2e84048d1ab01453c49", "maintenanceFreshness": "useful research reference; inspected commit 2025-09-05",
+      "purpose": "visual GUI grounding and computer-use research", "architecture": "vision-language grounding/action model and benchmark tooling", "relevantFerrumCapability": "screenshot fallback where structured protocols are unavailable", "harvest": "visual grounding benchmark tasks and screenshot-based localization", "integrationMode": "BENCHMARK / WATCH", "expectedBenefit": "quantify visual fallback without weakening deterministic paths", "requiredDependencies": "model/runtime only for isolated benchmark", "platformCoverage": "visual GUI tasks across computer-use environments", "compatibilityRisks": "slower, nondeterministic and less current than structured/native choices", "upstreamIssues": "staleness is primary concern", "benchmarkOrProductionEvidence": "established GUI-grounding research implementation", "smallestExperiment": "benchmark screenshot-only fallback on a task with a known structured solution", "acceptanceTest": "fallback adds reach only when structured control is unavailable and never silently replaces it", "decision": "WATCH", "nextReviewTrigger": "new upstream release or a concrete visual-only Ferrum target"
+    }
+  ],
+  "challengePass": {
+    "result": "NO SECOND PROVEN CHANGE",
+    "reason": "Native desktop adapters and compact-state ideas require new real-platform or identical-workload experiments. Shipping one now would be speculative; the snapshot-cap fix is the only material change that crossed the proof gate."
+  },
+  "nextExperiments": [
+    "Benchmark snapshot-scoped ref epochs plus optional progressive skeleton/delta as derived output while retaining the complete uncapped raw snapshot; measure bytes, tool calls, stale-target failures and task success.",
+    "Prototype a temporary Cua Driver/Sandbox native-app adapter on a deterministic real desktop fixture when a qualifying host exists; compare lifecycle, evidence and focus/cursor side effects.",
+    "Adapt a compact DeskCraft/PPT-Eval/WindowsWorld-style task subset with deterministic intermediate and final-artifact checks.",
+    "Evaluate MacAgentBench only on real qualifying macOS infrastructure."
+  ],
+  "guardrails": [
+    "Complete browser snapshots remain default: no hidden count cap, viewport-only processing, culling, deferred off-screen omission, fidelity reduction or stale cache.",
+    "Explicit positive snapshot max is caller opt-in and is never injected by StepEngine.",
+    "Compact skeleton/delta ideas remain derived views while complete raw evidence stays available.",
+    "New native/visual adapters remain additive until real-runtime parity and measurable benefit are proven per platform.",
+    "Synthetic benchmarks never replace Linux, Windows browser/MV3, packaged desktop, Lightpanda, Selenium Grid or Android/Appium gates."
+  ],
+  "publication": {
+    "githubPath": ".agents-memory/EVOLUTION_RUN_2026-08-18_19.json",
+    "googleDriveFolder": "Ferrum Browser",
+    "verification": "GitHub and Drive copies are independently re-read after publication; Git blob identity and Drive export SHA-256 are recorded during closeout."
+  }
+}
