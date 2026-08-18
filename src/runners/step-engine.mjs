@@ -29,6 +29,61 @@ export async function waitForLocatorText(locator, expected, timeoutMs, { pollMs 
   throw new Error(`Expected text not found within ${timeoutMs}ms: ${expected}; last text: ${JSON.stringify(lastText.slice(0, 300))}`);
 }
 
+export async function terminateExtensionServiceWorker(context, page, extensionId, { timeoutMs = 3000, pollMs = 25 } = {}) {
+  if (!extensionId) throw new Error('terminate-service-worker requires an extension target');
+  if (typeof context?.newCDPSession !== 'function') {
+    throw new Error('terminate-service-worker requires Chromium CDP access');
+  }
+
+  const cdp = await context.newCDPSession(page);
+  try {
+    const { targetInfos = [] } = await cdp.send('Target.getTargets');
+    const extensionPrefix = `chrome-extension://${extensionId}/`;
+    const matches = targetInfos.filter(target => target.type === 'service_worker' && String(target.url || '').startsWith(extensionPrefix));
+    if (!matches.length) {
+      throw new Error(`No service_worker target found for loaded extension ${extensionId}`);
+    }
+    if (matches.length > 1) {
+      throw new Error(`Refusing ambiguous service-worker termination for extension ${extensionId}: ${matches.length} matching targets`);
+    }
+
+    const target = matches[0];
+    const response = await cdp.send('Target.closeTarget', { targetId: target.targetId });
+    if (response?.success === false) {
+      throw new Error(`Chrome refused to close extension service-worker target ${target.targetId}`);
+    }
+
+    const budgetMs = Math.max(1, Number(timeoutMs) || 1);
+    const deadline = Date.now() + budgetMs;
+    let confirmationAttempts = 0;
+    while (true) {
+      const current = await cdp.send('Target.getTargets');
+      confirmationAttempts += 1;
+      const stillPresent = (current?.targetInfos || []).some(candidate => candidate.targetId === target.targetId);
+      if (!stillPresent) {
+        return {
+          extensionId,
+          targetId: target.targetId,
+          url: target.url,
+          closed: true,
+          confirmedBy: 'Target.getTargets',
+          confirmationAttempts
+        };
+      }
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await new Promise(resolve => setTimeout(resolve, Math.min(Math.max(1, Number(pollMs) || 1), remaining)));
+    }
+    throw new Error(`Extension service-worker target ${target.targetId} remained present after Target.closeTarget within ${budgetMs}ms`);
+  } finally {
+    try {
+      await cdp.detach?.();
+    } catch {
+      // The target may disappear while the CDP session is detaching; termination evidence remains authoritative.
+    }
+  }
+}
+
 export class StepEngine {
   constructor({ evidence, session, page, extensionId = null, extensionManifest = null, timeoutMs = 30000, onRestart = null }) {
     this.evidence = evidence;
@@ -101,6 +156,14 @@ export class StepEngine {
         await setOffline.call(this.session.context, offline);
         this.evidence.record('network-state', { engine: this.session.engine || null, offline });
         return { offline };
+      }
+      case 'terminate-service-worker': {
+        const result = await terminateExtensionServiceWorker(this.session?.context, this.page, this.extensionId, {
+          timeoutMs: step.timeoutMs || Math.min(this.timeoutMs, 5000),
+          pollMs: step.pollMs || 25
+        });
+        this.evidence.record('service-worker-termination', result);
+        return result;
       }
       case 'snapshot': {
         const snapshot = await snapshotPage(this.page, { interactiveOnly: step.interactiveOnly ?? false, max: step.max || 400 });
@@ -181,7 +244,8 @@ export class StepEngine {
           ['console', step.minConsole],
           ['requests', step.minRequests],
           ['responses', step.minResponses],
-          ['interceptedResponses', step.minInterceptedResponses]
+          ['interceptedResponses', step.minInterceptedResponses],
+          ['closedWorkers', step.minClosedWorkers]
         ];
         for (const [field, minimum] of checks) {
           if (minimum != null && diagnostics[field] < Number(minimum)) {
