@@ -1,0 +1,76 @@
+name: Perfetto Trace Compatibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/core/evidence.mjs'
+      - 'src/core/evidence-store.mjs'
+      - 'src/core/redact.mjs'
+      - 'tests/evidence-trace.test.mjs'
+      - '.github/workflows/perfetto-trace.yml'
+  pull_request:
+    paths:
+      - 'src/core/evidence.mjs'
+      - 'src/core/evidence-store.mjs'
+      - 'src/core/redact.mjs'
+      - 'tests/evidence-trace.test.mjs'
+      - '.github/workflows/perfetto-trace.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  perfetto-trace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Produce Ferrum evidence trace
+        shell: bash
+        run: |
+          rm -rf /tmp/ferrum-perfetto
+          node ./bin/ferrum.mjs test ./examples/process-app.json --artifacts /tmp/ferrum-perfetto --compact > /tmp/ferrum-perfetto-run.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const run = JSON.parse(fs.readFileSync('/tmp/ferrum-perfetto-run.json', 'utf8'));
+          const trace = path.join(run.evidenceDir, 'trace-event.json');
+          const result = path.join(run.evidenceDir, 'result.json');
+          if (!fs.existsSync(trace) || !fs.existsSync(result)) process.exit(1);
+          fs.appendFileSync(process.env.GITHUB_ENV, `FERRUM_TRACE=${trace}\nFERRUM_RESULT=${result}\n`);
+          NODE
+      - name: Query trace with pinned Perfetto
+        shell: bash
+        run: |
+          python3 -m pip install --disable-pip-version-check --quiet 'perfetto==0.57.2'
+          python3 - <<'PY'
+          import json
+          import os
+          from collections import Counter
+          from perfetto.trace_processor import TraceProcessor
+
+          with open(os.environ['FERRUM_RESULT'], encoding='utf-8') as fh:
+              result = json.load(fh)
+          expected = [event['type'] for event in result['events']]
+
+          with TraceProcessor(trace=os.environ['FERRUM_TRACE']) as tp:
+              rows = list(tp.query("SELECT name, ts FROM slice WHERE category = 'ferrum' ORDER BY ts, id"))
+
+          observed = [row.name for row in rows]
+          if Counter(observed) != Counter(expected) or len(observed) != len(expected):
+              raise SystemExit(f'Perfetto event mismatch: expected={expected!r} observed={observed!r}')
+          timestamps = [row.ts for row in rows]
+          if timestamps != sorted(timestamps):
+              raise SystemExit(f'Perfetto timestamps are not monotonic: {timestamps!r}')
+          print(json.dumps({
+              'perfettoPackage': '0.57.2',
+              'evidenceEvents': len(expected),
+              'perfettoSlices': len(observed),
+              'firstEvent': observed[0] if observed else None,
+              'lastEvent': observed[-1] if observed else None
+          }, sort_keys=True))
+          PY
