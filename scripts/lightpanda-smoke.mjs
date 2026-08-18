@@ -3,6 +3,7 @@ import { runSpec } from '../src/core/runner.mjs';
 
 const fillerButtons = Array.from({ length: 450 }, (_, index) => `<button data-index="${index}">Button ${index}</button>`).join('');
 const expectedCompleteElements = 451;
+const expectedMutatedElements = 452;
 const explicitLimit = 123;
 
 const server = http.createServer((req, res) => {
@@ -21,7 +22,12 @@ try {
       { action: 'open', url: `http://127.0.0.1:${port}/` },
       { action: 'snapshot', name: 'lightpanda-complete', interactiveOnly: true },
       { action: 'snapshot', name: 'lightpanda-limited', interactiveOnly: true, max: explicitLimit },
-      { action: 'click', selector: '#go' },
+      {
+        action: 'evaluate',
+        script: `(()=>{const button=document.createElement('button');button.id='inserted';button.textContent='Inserted later';button.onclick=()=>document.querySelector('#out').textContent='wrong';document.querySelector('#go').before(button);return true})()`
+      },
+      { action: 'snapshot', name: 'lightpanda-mutated', interactiveOnly: true },
+      { action: 'click', ref: 'e1' },
       { action: 'assert-text', selector: '#out', text: 'passed' },
       { action: 'assert-console-clean' }
     ]
@@ -33,6 +39,9 @@ try {
   }
   if (snapshots[1]?.output?.elements !== explicitLimit) {
     throw new Error(`Lightpanda explicit snapshot limit expected ${explicitLimit} elements, got ${snapshots[1]?.output?.elements ?? 'missing'}`);
+  }
+  if (snapshots[2]?.output?.elements !== expectedMutatedElements) {
+    throw new Error(`Lightpanda mutated snapshot expected ${expectedMutatedElements} elements, got ${snapshots[2]?.output?.elements ?? 'missing'}`);
   }
 
   console.log(JSON.stringify(result, null, 2));

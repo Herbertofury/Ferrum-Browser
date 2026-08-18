@@ -1,9 +1,11 @@
 const REF_ATTR = 'data-ferrum-ref';
 const DEFAULT_FALLBACK_PROBE_MS = 1000;
+const NEXT_REF_BY_PAGE = new WeakMap();
 
 export async function snapshotPage(page, { interactiveOnly = false, max } = {}) {
   if (typeof page.ferrumSnapshot === 'function') return await page.ferrumSnapshot({ interactiveOnly, max });
-  return await page.evaluate(({ interactiveOnly, max, attr }) => {
+  const nextStart = NEXT_REF_BY_PAGE.get(page) ?? 1;
+  const captured = await page.evaluate(({ interactiveOnly, max, attr, nextStart }) => {
     const requestedMax = Number(max);
     const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? Math.floor(requestedMax) : null;
     const visible = el => {
@@ -15,7 +17,8 @@ export async function snapshotPage(page, { interactiveOnly = false, max } = {}) 
     const all = [...document.querySelectorAll(interactiveOnly ? interactiveSelector : 'body *')];
     const refOwners = new Map();
     const reservedRefs = new Set();
-    let next = 1;
+    const requestedNext = Number(nextStart);
+    let next = Number.isSafeInteger(requestedNext) && requestedNext > 0 ? requestedNext : 1;
     for (const el of document.querySelectorAll(`[${attr}]`)) {
       const ref = el.getAttribute(attr);
       const match = /^e(\d+)$/.exec(ref || '');
@@ -53,8 +56,11 @@ export async function snapshotPage(page, { interactiveOnly = false, max } = {}) 
       });
       if (limit != null && results.length >= limit) break;
     }
-    return { url: location.href, title: document.title, elements: results };
-  }, { interactiveOnly, max, attr: REF_ATTR });
+    return { url: location.href, title: document.title, elements: results, nextRef: next };
+  }, { interactiveOnly, max, attr: REF_ATTR, nextStart });
+  if (Number.isSafeInteger(captured?.nextRef) && captured.nextRef > 0) NEXT_REF_BY_PAGE.set(page, captured.nextRef);
+  const { nextRef: _nextRef, ...snapshot } = captured;
+  return snapshot;
 }
 
 export function locatorForRef(page, ref) {

@@ -177,3 +177,58 @@ test('snapshotPage returns every qualifying element by default while preserving 
     }
   }
 });
+
+test('snapshotPage never reassigns a retired ref to a different element in the same page session', async () => {
+  const previous = {
+    document: globalThis.document,
+    getComputedStyle: globalThis.getComputedStyle,
+    HTMLAnchorElement: globalThis.HTMLAnchorElement,
+    location: globalThis.location
+  };
+
+  const elements = [];
+  const makeElement = name => {
+    const attributes = new Map();
+    return {
+      tagName: 'BUTTON',
+      innerText: name,
+      disabled: false,
+      checked: false,
+      getAttribute: key => attributes.get(key) ?? null,
+      setAttribute: (key, value) => attributes.set(key, value),
+      matches: selector => selector.includes('button'),
+      getBoundingClientRect: () => ({ width: 100, height: 24 })
+    };
+  };
+
+  const first = makeElement('First');
+  const retired = makeElement('Retired');
+  elements.push(first, retired);
+
+  globalThis.document = {
+    title: 'Ref lifetime',
+    querySelectorAll: () => elements
+  };
+  globalThis.getComputedStyle = () => ({ visibility: 'visible', display: 'block' });
+  globalThis.HTMLAnchorElement = class HTMLAnchorElement {};
+  globalThis.location = { href: 'https://example.test/ref-lifetime' };
+
+  const page = { evaluate: async (fn, args) => fn(args) };
+
+  try {
+    const initial = await snapshotPage(page, { interactiveOnly: true });
+    assert.deepEqual(initial.elements.map(element => element.ref), ['e1', 'e2']);
+
+    elements.splice(elements.indexOf(retired), 1);
+    elements.push(makeElement('Replacement'));
+    const updated = await snapshotPage(page, { interactiveOnly: true });
+
+    assert.equal(updated.elements.find(element => element.name === 'First').ref, 'e1');
+    assert.equal(updated.elements.find(element => element.name === 'Replacement').ref, 'e3', 'a retired ref must never silently target a different element');
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete globalThis[key];
+      else globalThis[key] = value;
+    }
+  }
+});
