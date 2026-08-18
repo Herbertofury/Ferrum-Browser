@@ -43,10 +43,20 @@ function normalizeVerifiedCheckpoint(entry) {
     };
   }
 
+  const product = entry?.product;
+  const proposalWorkflowRun = Number(entry?.proposal?.workflowRun ?? 0);
+  if (product?.commit && product?.treeMatchesVerifiedProposal === true && Number.isSafeInteger(proposalWorkflowRun) && proposalWorkflowRun > 0) {
+    return {
+      commit: product.commit,
+      workflowRun: proposalWorkflowRun,
+      checkedAt: entry?.checkedAt ?? null,
+    };
+  }
+
   return null;
 }
 
-test('checkpoint normalization recognizes verifiedProduct and improvement evolution schemas', () => {
+test('checkpoint normalization recognizes verified product evolution schemas', () => {
   assert.deepEqual(
     normalizeVerifiedCheckpoint({
       checkedAt: '2026-08-17T20:27:14Z',
@@ -69,6 +79,15 @@ test('checkpoint normalization recognizes verifiedProduct and improvement evolut
       verifiedProduct: { commit: 'ci-run-product', ciRun: 44 },
     }),
     { commit: 'ci-run-product', workflowRun: 44, checkedAt: '2026-08-17T22:10:29Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-18T00:01:10Z',
+      proposal: { workflowRun: 45 },
+      product: { commit: 'tree-matched-product', treeMatchesVerifiedProposal: true },
+    }),
+    { commit: 'tree-matched-product', workflowRun: 45, checkedAt: '2026-08-18T00:01:10Z' },
   );
 });
 
@@ -114,15 +133,18 @@ test('STATUS points at the newest verified Ferrum product checkpoint', async () 
 test('package manifest matches verified toolchain or an explicit Stack candidate', async () => {
   const status = await readJson(path.join(memoryDir, 'STATUS.json'));
   const packageJson = await readJson(path.join(repoRoot, 'package.json'));
+  const candidate = await readOptionalJson(path.join(memoryDir, 'STACK_CANDIDATE.json'));
   const actualToolchain = {
     playwright: packageJson.dependencies.playwright,
     electron: packageJson.devDependencies.electron,
     electronPackager: packageJson.devDependencies['@electron/packager'],
   };
 
-  if (JSON.stringify(actualToolchain) === JSON.stringify(status.verifiedToolchain)) return;
+  if (JSON.stringify(actualToolchain) === JSON.stringify(status.verifiedToolchain)) {
+    assert.equal(candidate, null, 'verified package toolchain must not retain a verification-in-progress Stack candidate marker');
+    return;
+  }
 
-  const candidate = await readOptionalJson(path.join(memoryDir, 'STACK_CANDIDATE.json'));
   assert.ok(candidate, 'unverified package toolchain drift requires .agents-memory/STACK_CANDIDATE.json');
   assert.equal(candidate.schemaVersion, 1);
   assert.equal(candidate.projectId, 'ferrum-browser');
