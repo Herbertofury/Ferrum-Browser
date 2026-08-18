@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { ensureDir, safeName, timestampId } from './paths.mjs';
 import { redactSensitive } from './redact.mjs';
 import { writeEvidenceManifest } from './evidence-store.mjs';
@@ -21,6 +22,10 @@ function summarizeEvents(events) {
   return { eventCounts, diagnosticErrorCount: diagnosticErrors.length };
 }
 
+function elapsedMs(startedAt) {
+  return Math.max(0, Number((performance.now() - startedAt).toFixed(3)));
+}
+
 export class EvidenceWriter {
   constructor({ root, name, metadata = {}, redactValues = [] }) {
     this.root = path.resolve(root || 'artifacts');
@@ -31,6 +36,7 @@ export class EvidenceWriter {
     this.redactValues = [...new Set((redactValues || []).map(value => String(value)).filter(Boolean))];
     this.metadata = redactSensitive(metadata, null, this.redactValues);
     this.startedAt = new Date().toISOString();
+    this.monotonicStartedAt = performance.now();
   }
 
   async init() {
@@ -41,7 +47,12 @@ export class EvidenceWriter {
   }
 
   record(type, data = {}) {
-    const event = { at: new Date().toISOString(), type, ...redactSensitive(data, null, this.redactValues) };
+    const event = {
+      at: new Date().toISOString(),
+      type,
+      ...redactSensitive(data, null, this.redactValues),
+      elapsedMs: elapsedMs(this.monotonicStartedAt)
+    };
     this.events.push(event);
     return event;
   }
@@ -69,6 +80,7 @@ export class EvidenceWriter {
 
   async finalize(summary = {}) {
     const endedAt = new Date().toISOString();
+    const durationMs = elapsedMs(this.monotonicStartedAt);
     const compact = summarizeEvents(this.events);
     const result = redactSensitive({
       schemaVersion: 1,
@@ -79,6 +91,7 @@ export class EvidenceWriter {
       evidenceDir: this.dir,
       metadata: this.metadata,
       ...summary,
+      durationMs,
       summary: compact,
       events: this.events
     }, null, this.redactValues);
@@ -90,6 +103,7 @@ export class EvidenceWriter {
       status: result.status,
       startedAt: result.startedAt,
       endedAt: result.endedAt,
+      durationMs: result.durationMs,
       evidenceDir: result.evidenceDir,
       metadata: result.metadata,
       engine: result.result?.engine || null,
