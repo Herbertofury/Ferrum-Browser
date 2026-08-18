@@ -11,17 +11,31 @@ export async function snapshotPage(page, { interactiveOnly = false, max = 400 } 
     };
     const interactiveSelector = 'a[href],button,input,textarea,select,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]';
     const all = [...document.querySelectorAll(interactiveOnly ? interactiveSelector : 'body *')];
-    const results = [];
+    const refOwners = new Map();
+    const reservedRefs = new Set();
     let next = 1;
+    for (const el of document.querySelectorAll(`[${attr}]`)) {
+      const ref = el.getAttribute(attr);
+      const match = /^e(\d+)$/.exec(ref || '');
+      if (!match) continue;
+      if (!refOwners.has(ref)) refOwners.set(ref, el);
+      reservedRefs.add(ref);
+      next = Math.max(next, Number(match[1]) + 1);
+    }
+    const results = [];
     for (const el of all) {
       if (!visible(el)) continue;
       const interactive = el.matches(interactiveSelector);
       const text = (el.innerText || el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('alt') || el.getAttribute('placeholder') || '').trim().replace(/\s+/g, ' ').slice(0, 180);
       if (!interactive && !text) continue;
       let ref = el.getAttribute(attr);
-      if (!ref) {
-        ref = `e${next++}`;
+      if (!/^e\d+$/.test(ref || '') || refOwners.get(ref) !== el) {
+        do {
+          ref = `e${next++}`;
+        } while (reservedRefs.has(ref));
         el.setAttribute(attr, ref);
+        refOwners.set(ref, el);
+        reservedRefs.add(ref);
       }
       results.push({
         ref,
