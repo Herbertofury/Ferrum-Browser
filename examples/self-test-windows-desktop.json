@@ -45,11 +45,19 @@
       "equals": true
     },
     {
-      "action": "find-all",
-      "using": "tag name",
-      "value": "Button",
-      "min": 2,
-      "max": 2
+      "action": "find",
+      "using": "accessibility id",
+      "value": "ToggleButton",
+      "as": "toggle"
+    },
+    {
+      "action": "click",
+      "element": "toggle"
+    },
+    {
+      "action": "assert-visible",
+      "using": "accessibility id",
+      "value": "DetailsText"
     },
     {
       "action": "assert-visible",
