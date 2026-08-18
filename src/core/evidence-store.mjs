@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const MANIFEST_NAME = 'evidence-manifest.json';
+const LIST_EVIDENCE_CONCURRENCY = 32;
 
 export function resolveEvidenceRoot(root) {
   return path.resolve(root || 'artifacts');
@@ -114,16 +115,29 @@ export async function listEvidence({ root } = {}) {
   let entries;
   try { entries = await fs.readdir(base, { withFileTypes: true }); }
   catch (error) { if (error?.code === 'ENOENT') return []; throw error; }
-  const results = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const dir = path.join(base, entry.name);
-    let summary;
-    try { summary = await readJson(path.join(dir, 'agent-summary.json')); }
-    catch { continue; }
-    results.push({ ...summary, id: entry.name });
-  }
-  return results.sort((a, b) => String(b.endedAt || b.startedAt || '').localeCompare(String(a.endedAt || a.startedAt || '')));
+
+  const directories = entries.filter(entry => entry.isDirectory());
+  const results = new Array(directories.length);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (true) {
+      const index = cursor++;
+      if (index >= directories.length) return;
+      const entry = directories[index];
+      const dir = path.join(base, entry.name);
+      try {
+        const summary = await readJson(path.join(dir, 'agent-summary.json'));
+        results[index] = { ...summary, id: entry.name };
+      } catch {}
+    }
+  };
+
+  const workerCount = Math.min(LIST_EVIDENCE_CONCURRENCY, directories.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results
+    .filter(Boolean)
+    .sort((a, b) => String(b.endedAt || b.startedAt || '').localeCompare(String(a.endedAt || a.startedAt || '')));
 }
 
 export async function readEvidence(id, { root } = {}) {
