@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { compactRunResult } from '../src/core/agent-result.mjs';
+import { compactRunResult, compactSuiteResult } from '../src/core/agent-result.mjs';
 import { EvidenceWriter } from '../src/core/evidence.mjs';
 
 test('evidence records monotonic elapsed time and direct run duration for agents', async () => {
@@ -30,4 +30,15 @@ test('evidence records monotonic elapsed time and direct run duration for agents
 
   const compact = compactRunResult(result);
   assert.equal(compact.durationMs, result.durationMs);
+
+  const suiteDurationMs = result.durationMs + 100;
+  const suite = compactSuiteResult({
+    status: 'passed',
+    workers: 1,
+    total: 1,
+    passed: 1,
+    failed: 0,
+    results: [{ status: 'passed', specPath: 'timing.json', durationMs: suiteDurationMs, result }]
+  });
+  assert.equal(suite.results[0].durationMs, suiteDurationMs);
 });
