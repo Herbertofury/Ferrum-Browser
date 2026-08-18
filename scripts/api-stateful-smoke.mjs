@@ -304,7 +304,6 @@ async function runSchemathesis(origin, runNumber) {
     '--seed', String(seed),
     '--generation-deterministic',
     '--max-examples', String(maxExamples),
-    '--generation-database', 'none',
     '--report', 'ndjson',
     '--report-ndjson-path', `/app/reports/${reportName}`,
     '--output-sanitize', 'true',
