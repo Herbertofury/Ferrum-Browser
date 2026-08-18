@@ -32,7 +32,9 @@ jobs:
           node-version: 24
       - run: npm install --omit=dev --no-audit --no-fund
       - name: Ferrum fixed-seed stateful OpenAPI planted-defect benchmark
-        run: npm run smoke:api-stateful
+        run: |
+          umask 000
+          npm run smoke:api-stateful
       - uses: actions/upload-artifact@v7
         if: always()
         with:
