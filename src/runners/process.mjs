@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnLogged, terminate, waitForExit } from '../core/process-utils.mjs';
 
@@ -36,12 +38,110 @@ async function writeStdin(child, text) {
   });
 }
 
+function isNodeCommand(command) {
+  const name = path.basename(String(command || '')).toLowerCase();
+  return name === 'node' || name === 'node.exe';
+}
+
+function validateNodeDiagnosticArgs(args) {
+  const conflicting = args.find(arg => /^(?:--(?:no-)?report-|--diagnostic-report-)/.test(String(arg)));
+  if (conflicting) {
+    throw new Error(`process target nodeDiagnosticReport owns Node report flags; remove conflicting argument: ${conflicting}`);
+  }
+}
+
+function sanitizeLibuvHandles(handles) {
+  if (!Array.isArray(handles)) return null;
+  return handles.map(handle => ({
+    type: handle?.type ?? null,
+    is_active: handle?.is_active ?? null,
+    is_referenced: handle?.is_referenced ?? null,
+    fd: handle?.fd ?? null,
+    writeQueueSize: handle?.writeQueueSize ?? null,
+    readable: handle?.readable ?? null,
+    writable: handle?.writable ?? null,
+    sendBufferSize: handle?.sendBufferSize ?? null,
+    recvBufferSize: handle?.recvBufferSize ?? null
+  }));
+}
+
+function sanitizeNodeDiagnosticReport(report) {
+  const header = report?.header || {};
+  return {
+    schemaVersion: 1,
+    header: {
+      reportVersion: header.reportVersion ?? null,
+      event: header.event ?? null,
+      trigger: header.trigger ?? null,
+      dumpEventTime: header.dumpEventTime ?? null,
+      dumpEventTimeStamp: header.dumpEventTimeStamp ?? null,
+      processId: header.processId ?? null,
+      nodejsVersion: header.nodejsVersion ?? null,
+      wordSize: header.wordSize ?? null,
+      arch: header.arch ?? null,
+      platform: header.platform ?? null,
+      componentVersions: header.componentVersions ?? null
+    },
+    javascriptStack: report?.javascriptStack || null,
+    nativeStack: report?.nativeStack || null,
+    javascriptHeap: report?.javascriptHeap || null,
+    resourceUsage: report?.resourceUsage || null,
+    uvthreadResourceUsage: report?.uvthreadResourceUsage || null,
+    libuv: sanitizeLibuvHandles(report?.libuv)
+  };
+}
+
+async function collectNodeDiagnosticReports(tempDir, evidence) {
+  if (!tempDir) return [];
+  const retained = [];
+  try {
+    const names = (await fs.readdir(tempDir)).filter(name => name.endsWith('.json')).sort();
+    for (const name of names) {
+      try {
+        const raw = JSON.parse(await fs.readFile(path.join(tempDir, name), 'utf8'));
+        const report = sanitizeNodeDiagnosticReport(raw);
+        const target = await evidence.writeJson(path.join('node-reports', name), report);
+        const relative = path.relative(evidence.dir, target).replaceAll('\\', '/');
+        evidence.record('node-diagnostic-report', {
+          path: relative,
+          event: report.header.event,
+          trigger: report.header.trigger,
+          processId: report.header.processId
+        });
+        retained.push(relative);
+      } catch (error) {
+        evidence.record('node-diagnostic-report-error', { file: name, message: error.message });
+      }
+    }
+    return retained;
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 export async function runProcessTarget(spec, evidence) {
   const command = spec.target.command;
   if (!command) throw new Error('process target requires target.command');
-  const args = spec.target.args || [];
+  const nodeDiagnosticReport = Boolean(spec.target.nodeDiagnosticReport);
+  if (nodeDiagnosticReport && !isNodeCommand(command)) {
+    throw new Error('process target nodeDiagnosticReport requires target.command to be node or node.exe');
+  }
+  const originalArgs = spec.target.args || [];
+  if (nodeDiagnosticReport) validateNodeDiagnosticArgs(originalArgs);
+  let nodeReportDir = null;
+  if (nodeDiagnosticReport) nodeReportDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-node-report-'));
+  const args = nodeDiagnosticReport ? [
+    '--report-uncaught-exception',
+    '--report-on-fatalerror',
+    '--report-exclude-env',
+    '--report-exclude-network',
+    '--report-compact',
+    `--report-directory=${nodeReportDir}`,
+    ...originalArgs
+  ] : originalArgs;
   const lines = [];
   let closed = null;
+  let outcome = null;
   const child = spawnLogged(command, args, {
     cwd: spec.target.cwd || process.cwd(),
     env: { ...process.env, ...(spec.target.env || {}) },
@@ -52,7 +152,7 @@ export async function runProcessTarget(spec, evidence) {
     evidence.record('process-log', line);
   });
   child.once('close', (code, signal) => { closed = { code, signal }; });
-  evidence.record('process-start', { command, args, pid: child.pid });
+  evidence.record('process-start', { command, args: originalArgs, pid: child.pid, nodeDiagnosticReport });
   try {
     if (spec.target.healthUrl) await waitHealth(spec.target.healthUrl, spec.timeouts?.startupMs || 30000);
     for (const [index, step] of spec.steps.entries()) {
@@ -76,9 +176,12 @@ export async function runProcessTarget(spec, evidence) {
         throw new Error(`Unsupported process step ${index}: ${step.action}`);
       }
     }
-    return { pid: child.pid, logs: lines.length, running: child.exitCode === null };
+    outcome = { pid: child.pid, logs: lines.length, running: child.exitCode === null, nodeReports: 0 };
+    return outcome;
   } finally {
     await terminate(child).catch(() => {});
+    const reports = await collectNodeDiagnosticReports(nodeReportDir, evidence);
+    if (outcome) outcome.nodeReports = reports.length;
     await evidence.writeText('process.log', lines.map(line => `[${line.source}] ${line.text}`).join('\n') + '\n');
   }
 }

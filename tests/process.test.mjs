@@ -61,3 +61,53 @@ test('process runner checks final unterminated output before treating process cl
   const result = await runProcessTarget(spec, evidence);
   assert.ok(result.logs >= 1);
 });
+
+test('process runner captures a secret-safe structured Node diagnostic report on uncaught exception', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-node-report-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-node-report-test' }).init();
+  const secret = 'ferrum-report-secret-value';
+  const spec = {
+    target: {
+      command: process.execPath,
+      args: ['-e', "throw new Error('ferrum-node-diagnostic-boom')"],
+      env: { FERRUM_NODE_REPORT_SECRET: secret },
+      nodeDiagnosticReport: true
+    },
+    timeouts: { stepMs: 5000 },
+    steps: [{ action: 'wait-exit', code: 1 }]
+  };
+  const result = await runProcessTarget(spec, evidence);
+  assert.equal(result.nodeReports, 1);
+  const reportEvent = evidence.events.find(event => event.type === 'node-diagnostic-report');
+  assert.ok(reportEvent?.path, 'expected node-diagnostic-report evidence');
+  const report = JSON.parse(await fs.readFile(path.join(evidence.dir, reportEvent.path), 'utf8'));
+  const serialized = JSON.stringify(report);
+  assert.equal(report.schemaVersion, 1);
+  assert.equal(String(report.header.event).toLowerCase(), 'exception');
+  assert.equal(report.header.processId, reportEvent.processId);
+  assert.ok(Array.isArray(report.javascriptStack?.stack));
+  assert.ok(report.javascriptStack.stack.some(line => line.includes('ferrum-node-diagnostic-boom')));
+  assert.equal(Object.prototype.hasOwnProperty.call(report, 'environmentVariables'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(report.header, 'networkInterfaces'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(report.header, 'commandLine'), false);
+  assert.equal(serialized.includes('localEndpoint'), false);
+  assert.equal(serialized.includes('remoteEndpoint'), false);
+  assert.equal(serialized.includes(secret), false);
+});
+
+test('process runner keeps diagnostic report safety flags Ferrum-owned', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-node-report-flags-'));
+  const evidence = await new EvidenceWriter({ root, name: 'process-node-report-flags-test' }).init();
+  const spec = {
+    target: {
+      command: process.execPath,
+      args: ['--report-directory=elsewhere', '-e', 'process.exit(0)'],
+      nodeDiagnosticReport: true
+    },
+    steps: []
+  };
+  await assert.rejects(
+    runProcessTarget(spec, evidence),
+    /nodeDiagnosticReport owns Node report flags; remove conflicting argument: --report-directory=elsewhere/
+  );
+});
