@@ -3,34 +3,73 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnLogged, terminate, waitForExit } from '../core/process-utils.mjs';
 
-async function waitHealth(url, timeoutMs) {
+function healthTerminalError(url, terminal) {
+  if (terminal?.type === 'error') {
+    return new Error(`Process failed before health URL became ready: ${url}: ${terminal.error?.message || 'spawn error'}`);
+  }
+  const code = terminal?.code == null ? 'none' : terminal.code;
+  const signal = terminal?.signal || 'none';
+  return new Error(`Process exited before health URL became ready: ${url} (code ${code}, signal ${signal})`);
+}
+
+async function waitHealth(url, timeoutMs, terminalPromise, getTerminal) {
   const deadline = Date.now() + timeoutMs;
   let last = null;
   let attempts = 0;
+  const terminalOutcome = terminalPromise?.then(terminal => ({ type: 'terminal', terminal }));
   while (Date.now() < deadline) {
+    const existingTerminal = getTerminal?.();
+    if (existingTerminal) throw healthTerminalError(url, existingTerminal);
     const remainingMs = Math.max(1, deadline - Date.now());
     attempts += 1;
-    try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(remainingMs) });
-      if (response.ok) return { status: response.status, attempts };
-      last = new Error(`HTTP ${response.status}`);
-    } catch (error) {
-      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+    const requestAbort = new AbortController();
+    const requestSignal = AbortSignal.any([AbortSignal.timeout(remainingMs), requestAbort.signal]);
+    const requestOutcome = fetch(url, { signal: requestSignal }).then(
+      response => ({ type: 'response', response }),
+      error => ({ type: 'error', error })
+    );
+    const outcome = terminalOutcome
+      ? await Promise.race([requestOutcome, terminalOutcome])
+      : await requestOutcome;
+    if (outcome.type === 'terminal') {
+      requestAbort.abort();
+      await requestOutcome;
+      throw healthTerminalError(url, outcome.terminal);
+    }
+    if (outcome.type === 'response') {
+      if (outcome.response.ok) return { status: outcome.response.status, attempts };
+      last = new Error(`HTTP ${outcome.response.status}`);
+    } else {
+      const terminal = getTerminal?.();
+      if (terminal) throw healthTerminalError(url, terminal);
+      if (outcome.error?.name === 'TimeoutError' || outcome.error?.name === 'AbortError') {
         last = null;
         break;
       }
-      last = error;
+      last = outcome.error;
     }
     const waitMs = Math.min(200, Math.max(0, deadline - Date.now()));
-    if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+    if (waitMs > 0) {
+      if (terminalOutcome) {
+        const waitOutcome = await Promise.race([
+          new Promise(resolve => setTimeout(() => resolve(null), waitMs)),
+          terminalOutcome
+        ]);
+        if (waitOutcome?.type === 'terminal') throw healthTerminalError(url, waitOutcome.terminal);
+      } else {
+        await new Promise(resolve => setTimeout(resolve, waitMs));
+      }
+    }
   }
   throw new Error(`Health URL did not become ready: ${url} after ${attempts} attempts: ${last?.message || 'timeout'}`);
 }
 
-async function waitForLog(lines, text, timeoutMs, getClosed) {
+async function waitForLog(lines, text, timeoutMs, getClosed, getSpawnError) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (lines.some(line => line.text.includes(text))) return true;
+    const spawnError = getSpawnError?.();
+    if (spawnError) throw new Error(`Process failed before output contained expected text: ${text}: ${spawnError.message}`);
     const closed = getClosed?.();
     if (closed) {
       const code = closed.code == null ? 'none' : closed.code;
@@ -130,6 +169,47 @@ async function collectNodeDiagnosticReports(tempDir, evidence) {
   }
 }
 
+function observeProcessLifecycle(child, evidence) {
+  let terminal = null;
+  let spawnError = null;
+  let spawned = false;
+  let resolveTerminal;
+  let resolveSpawn;
+  let rejectSpawn;
+  const terminalPromise = new Promise(resolve => { resolveTerminal = resolve; });
+  const spawnPromise = new Promise((resolve, reject) => {
+    resolveSpawn = resolve;
+    rejectSpawn = reject;
+  });
+  child.once('spawn', () => {
+    spawned = true;
+    resolveSpawn();
+  });
+  child.on('error', error => {
+    evidence.record('process-error', { message: error.message, code: error.code ?? null });
+    if (!spawned && !spawnError) {
+      spawnError = error;
+      terminal = { type: 'error', error };
+      rejectSpawn(error);
+      resolveTerminal(terminal);
+    }
+  });
+  child.once('close', (code, signal) => {
+    const closed = { type: 'close', code, signal };
+    if (!terminal) {
+      terminal = closed;
+      resolveTerminal(closed);
+    }
+  });
+  return {
+    spawnPromise,
+    terminalPromise,
+    getTerminal: () => terminal,
+    getClosed: () => terminal?.type === 'close' ? { code: terminal.code, signal: terminal.signal } : null,
+    getSpawnError: () => spawnError
+  };
+}
+
 export async function runProcessTarget(spec, evidence) {
   const command = spec.target.command;
   if (!command) throw new Error('process target requires target.command');
@@ -151,7 +231,6 @@ export async function runProcessTarget(spec, evidence) {
     ...originalArgs
   ] : originalArgs;
   const lines = [];
-  let closed = null;
   let outcome = null;
   const child = spawnLogged(command, args, {
     cwd: spec.target.cwd || process.cwd(),
@@ -162,17 +241,33 @@ export async function runProcessTarget(spec, evidence) {
     lines.push(line);
     evidence.record('process-log', line);
   });
-  child.once('close', (code, signal) => { closed = { code, signal }; });
-  evidence.record('process-start', { command, args: originalArgs, pid: child.pid, nodeDiagnosticReport });
+  const lifecycle = observeProcessLifecycle(child, evidence);
   try {
-    if (spec.target.healthUrl) await waitHealth(spec.target.healthUrl, spec.timeouts?.startupMs || 30000);
+    await lifecycle.spawnPromise;
+    evidence.record('process-start', { command, args: originalArgs, pid: child.pid, nodeDiagnosticReport });
+    if (spec.target.healthUrl) {
+      await waitHealth(
+        spec.target.healthUrl,
+        spec.timeouts?.startupMs || 30000,
+        lifecycle.terminalPromise,
+        lifecycle.getTerminal
+      );
+    }
     for (const [index, step] of spec.steps.entries()) {
       if (step.action === 'wait-exit') {
+        const spawnError = lifecycle.getSpawnError();
+        if (spawnError) throw spawnError;
         const exit = await waitForExit(child, step.timeoutMs || spec.timeouts?.stepMs || 30000);
         if (step.code != null && exit.code !== step.code) throw new Error(`Expected exit code ${step.code}, got ${exit.code}`);
         evidence.record('process-exit', exit);
       } else if (step.action === 'assert-log') {
-        await waitForLog(lines, String(step.text), step.timeoutMs || spec.timeouts?.stepMs || 5000, () => closed);
+        await waitForLog(
+          lines,
+          String(step.text),
+          step.timeoutMs || spec.timeouts?.stepMs || 5000,
+          lifecycle.getClosed,
+          lifecycle.getSpawnError
+        );
       } else if (step.action === 'write-stdin') {
         const payload = String(step.text ?? step.value ?? '') + (step.newline ? '\n' : '');
         await writeStdin(child, payload);
@@ -190,7 +285,7 @@ export async function runProcessTarget(spec, evidence) {
     outcome = { pid: child.pid, logs: lines.length, running: child.exitCode === null, nodeReports: 0 };
     return outcome;
   } finally {
-    await terminate(child).catch(() => {});
+    if (child.pid) await terminate(child).catch(() => {});
     const reports = await collectNodeDiagnosticReports(nodeReportDir, evidence);
     if (outcome) outcome.nodeReports = reports.length;
     await evidence.writeText('process.log', lines.map(line => `[${line.source}] ${line.text}`).join('\n') + '\n');
