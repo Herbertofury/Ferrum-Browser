@@ -11,80 +11,36 @@
     "stepMs": 15000
   },
   "steps": [
-    {
-      "action": "extension-page",
-      "path": "popup.html"
-    },
-    {
-      "action": "snapshot",
-      "name": "popup",
-      "interactiveOnly": true
-    },
-    {
-      "action": "click",
-      "selector": "#ping"
-    },
-    {
-      "action": "assert-text",
-      "selector": "#out",
-      "text": "ok:"
-    },
-    {
-      "action": "assert-service-worker"
-    },
+    { "action": "extension-page", "path": "popup.html" },
+    { "action": "snapshot", "name": "popup", "interactiveOnly": true },
+    { "action": "click", "selector": "#ping" },
+    { "action": "assert-text", "selector": "#out", "text": "ok:" },
+    { "action": "assert-service-worker" },
+    { "action": "assert-service-worker-diagnostics", "minWorkers": 1, "minConsole": 1, "minRequests": 1, "minResponses": 1, "maxFailedRequests": 0 },
+    { "action": "service-worker-diagnostics", "name": "before-forced-termination" },
+    { "action": "evaluate", "script": "document.querySelector('#out').textContent = 'pending-after-worker-termination'" },
+    { "action": "terminate-service-worker" },
+    { "action": "click", "selector": "#ping" },
+    { "action": "assert-text", "selector": "#out", "text": "ok:" },
+    { "action": "assert-service-worker" },
     {
       "action": "assert-service-worker-diagnostics",
       "minWorkers": 1,
-      "minConsole": 1,
-      "minRequests": 1,
-      "minResponses": 1,
+      "minConsole": 2,
+      "minRequests": 2,
+      "minResponses": 2,
       "maxFailedRequests": 0
     },
-    {
-      "action": "service-worker-diagnostics",
-      "name": "before-restart"
-    },
-    {
-      "action": "screenshot",
-      "name": "popup-before-restart"
-    },
-    {
-      "action": "restart"
-    },
-    {
-      "action": "assert-service-worker"
-    },
-    {
-      "action": "extension-page",
-      "path": "popup.html"
-    },
-    {
-      "action": "click",
-      "selector": "#ping"
-    },
-    {
-      "action": "assert-text",
-      "selector": "#out",
-      "text": "ok:"
-    },
-    {
-      "action": "assert-service-worker-diagnostics",
-      "minWorkers": 1,
-      "minConsole": 1,
-      "minRequests": 1,
-      "minResponses": 1,
-      "maxFailedRequests": 0
-    },
-    {
-      "action": "service-worker-diagnostics",
-      "name": "after-restart"
-    },
-    {
-      "action": "screenshot",
-      "name": "popup-after-restart"
-    },
-    {
-      "action": "assert-console-clean"
-    }
+    { "action": "service-worker-diagnostics", "name": "after-forced-recovery" },
+    { "action": "screenshot", "name": "popup-before-restart" },
+    { "action": "restart" },
+    { "action": "assert-service-worker" },
+    { "action": "extension-page", "path": "popup.html" },
+    { "action": "click", "selector": "#ping" },
+    { "action": "assert-text", "selector": "#out", "text": "ok:" },
+    { "action": "assert-service-worker-diagnostics", "minWorkers": 1, "minConsole": 1, "minRequests": 1, "minResponses": 1, "maxFailedRequests": 0 },
+    { "action": "service-worker-diagnostics", "name": "after-restart" },
+    { "action": "screenshot", "name": "popup-after-restart" },
+    { "action": "assert-console-clean" }
   ]
 }
