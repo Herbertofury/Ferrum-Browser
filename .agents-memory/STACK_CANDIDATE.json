@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "stack-candidate",
+  "state": "verification-in-progress",
+  "baseMain": "72222b4e6f034eaeff811f24c3fcafd8b5b7447d",
+  "baseVerifiedToolchain": {
+    "playwright": "1.63.0-alpha-2026-08-01",
+    "electron": "43.4.0",
+    "electronPackager": "20.3.0"
+  },
+  "proposedToolchain": {
+    "playwright": "1.63.0-alpha-2026-08-03",
+    "electron": "43.4.0",
+    "electronPackager": "20.3.0"
+  },
+  "upstream": {
+    "playwrightMainVersion": "1.63.0-next",
+    "canary": "1.63.0-alpha-2026-08-03",
+    "canaryDocs": "https://playwright.dev/docs/canary-releases",
+    "npmVersions": "https://www.npmjs.com/package/playwright?activeTab=versions"
+  },
+  "acceptance": "Full Ferrum CI on the exact proposal head without reducing any existing unit, syntax, MCP, evidence-integrity, WebDriver, Linux, Windows browser/MV3/workload, Electron, packaged-desktop, Lightpanda, Appium, or publication gate."
+}
