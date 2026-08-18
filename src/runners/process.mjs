@@ -43,6 +43,21 @@ function isNodeCommand(command) {
   return name === 'node' || name === 'node.exe';
 }
 
+function sanitizeLibuvHandles(handles) {
+  if (!Array.isArray(handles)) return null;
+  return handles.map(handle => ({
+    type: handle?.type ?? null,
+    is_active: handle?.is_active ?? null,
+    is_referenced: handle?.is_referenced ?? null,
+    fd: handle?.fd ?? null,
+    writeQueueSize: handle?.writeQueueSize ?? null,
+    readable: handle?.readable ?? null,
+    writable: handle?.writable ?? null,
+    sendBufferSize: handle?.sendBufferSize ?? null,
+    recvBufferSize: handle?.recvBufferSize ?? null
+  }));
+}
+
 function sanitizeNodeDiagnosticReport(report) {
   const header = report?.header || {};
   return {
@@ -65,7 +80,7 @@ function sanitizeNodeDiagnosticReport(report) {
     javascriptHeap: report?.javascriptHeap || null,
     resourceUsage: report?.resourceUsage || null,
     uvthreadResourceUsage: report?.uvthreadResourceUsage || null,
-    libuv: report?.libuv || null
+    libuv: sanitizeLibuvHandles(report?.libuv)
   };
 }
 
