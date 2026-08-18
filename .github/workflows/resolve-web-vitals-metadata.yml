@@ -38,3 +38,5 @@ jobs:
           name: web-vitals-6.1.0-registry-metadata
           path: web-vitals-6.1.0-registry.json
           if-no-files-found: error
+
+# PR synchronization intentionally triggers authoritative metadata resolution.
