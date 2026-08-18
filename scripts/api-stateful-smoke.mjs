@@ -286,9 +286,11 @@ function plantedReproduction(output) {
   assert.match(commands[0], /curl -X POST .*\/items$/, `Unexpected first reproducer operation: ${commands[0]}`);
   const linked = commands[1].match(/^curl -X GET .*\/items\/(\d+)$/);
   assert.ok(linked, `Could not extract linked item id from: ${commands[1]}`);
+  const linkedId = Number(linked[1]);
+  assert.ok(Number.isSafeInteger(linkedId) && linkedId >= 1, `Schemathesis emitted an invalid run-local linked item id: ${linked[1]}`);
   return {
     commands,
-    linkedId: Number(linked[1]),
+    linkedId,
     operations: ['POST /items', 'GET /items/{created-id}']
   };
 }
@@ -415,11 +417,11 @@ try {
   await resetService(origin);
   const directReplay = await replayMinimizedSequence(origin);
   assert.deepEqual(directReplay.operations, first.reproduction.operations, 'Direct replay did not match the minimized operation sequence');
-  assert.equal(directReplay.linkedId, first.reproduction.linkedId, 'Direct replay did not reproduce the minimized linked resource id');
+  assert.equal(directReplay.status, 500, 'Direct semantic replay did not reproduce the planted server error');
+  assert.equal(directReplay.marker, 'planted-state-corruption', 'Direct semantic replay did not reproduce the planted failure marker');
   await resetService(origin);
   const second = await runSchemathesis(origin, 2);
   assert.deepEqual(second.reproduction.operations, first.reproduction.operations, 'Minimized stateful operation sequence changed between runs');
-  assert.equal(second.reproduction.linkedId, first.reproduction.linkedId, 'Minimized linked resource id changed between runs');
 
   const cleanupStarted = performance.now();
   const removed = await run('docker', ['rm', '-f', containerId], { timeoutMs: 15000 });
@@ -439,6 +441,11 @@ try {
     ferrumBaseline,
     minimizedOperationSequence: first.reproduction.operations,
     firstGeneratedReproduction: first.reproduction.commands,
+    runLocalLinkedIds: {
+      firstGenerated: first.reproduction.linkedId,
+      directReplay: directReplay.linkedId,
+      secondGenerated: second.reproduction.linkedId
+    },
     directReplay,
     schemathesis: {
       image: schemathesisImage,
@@ -467,6 +474,7 @@ try {
       stateOnlyDefectFound: true,
       minimizedOperationSequenceStable: true,
       directSemanticReplayPassed: true,
+      runLocalResourceIdsNotTreatedAsDeterministic: true,
       structuredNdjsonRetained: true,
       exactExternalRuntimeIdentityRetained: true,
       explicitCleanupProof: true
