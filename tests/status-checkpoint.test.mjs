@@ -129,6 +129,65 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
     }),
     { commit: 'tree-matched-product', workflowRun: 48, verifiedAt: '2026-08-18T00:01:10Z' },
   );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      verifiedImprovement: {
+        productCommit: 'verified-improvement-product',
+        productTree: 'verified-improvement-tree',
+        proposalTree: 'verified-improvement-tree',
+        treeMatchesVerifiedProposal: true,
+        proposalCiRun: 49,
+        proposalCiConclusion: 'success',
+      },
+    }),
+    { commit: 'verified-improvement-product', workflowRun: 49, verifiedAt: null },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      proposal: {
+        workflowRun: 50,
+        workflowConclusion: 'success',
+        treeSha: 'nested-proposal-tree',
+      },
+      verifiedProduct: {
+        commit: 'nested-proposal-product',
+        treeSha: 'nested-proposal-tree',
+        verifiedAt: '2026-08-18T08:04:43Z',
+      },
+    }),
+    { commit: 'nested-proposal-product', workflowRun: 50, verifiedAt: '2026-08-18T08:04:43Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      proposal: {
+        workflowRun: 51,
+        workflowConclusion: 'success',
+        treeSha: 'proposal-tree',
+      },
+      verifiedProduct: {
+        commit: 'tree-mismatch-product',
+        treeSha: 'different-tree',
+      },
+    }),
+    null,
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      verifiedImprovement: {
+        productCommit: 'failed-improvement-product',
+        productTree: 'same-tree',
+        proposalTree: 'same-tree',
+        treeMatchesVerifiedProposal: true,
+        proposalCiRun: 52,
+        proposalCiConclusion: 'failure',
+      },
+    }),
+    null,
+  );
 });
 
 test('STATUS points at the newest verified Ferrum product checkpoint', async () => {
