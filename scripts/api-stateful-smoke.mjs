@@ -12,7 +12,6 @@ const artifactsRoot = path.join(repoRoot, 'artifacts', 'api-stateful');
 const ferrumArtifactsRoot = path.join(artifactsRoot, 'ferrum');
 const schemathesisImage = 'ghcr.io/schemathesis/schemathesis:4.24.2';
 const serviceImage = 'node:24-alpine';
-const seed = 424242;
 const maxExamples = 20;
 
 const serverSource = String.raw`
@@ -301,7 +300,6 @@ async function runSchemathesis(origin, runNumber) {
     'run',
     '--phases', 'stateful',
     '--checks', 'not_a_server_error,status_code_conformance',
-    '--seed', String(seed),
     '--generation-deterministic',
     '--max-examples', String(maxExamples),
     '--report', 'ndjson',
@@ -319,7 +317,7 @@ async function runSchemathesis(origin, runNumber) {
   assert.equal(result.code, 1, `Schemathesis run ${runNumber} should detect the planted defect, got ${result.code}: ${result.stderr || result.stdout}`);
   const output = `${result.stdout}\n${result.stderr}`;
   assert.match(output, /Server error/i, `Schemathesis run ${runNumber} did not classify the planted HTTP 500 as a server error`);
-  assert.match(output, new RegExp(`Seed:\\s+${seed}`), `Schemathesis run ${runNumber} did not report the fixed seed`);
+  assert.match(output, /Seed:\s+not used in the deterministic mode/i, `Schemathesis run ${runNumber} did not confirm deterministic generation`);
   assert.match(output, /API Links:\s+1 covered/i, `Schemathesis run ${runNumber} did not exercise the OpenAPI link`);
   const reproduction = plantedReproduction(output);
   const reportText = await fs.readFile(reportPath, 'utf8');
@@ -356,7 +354,7 @@ try {
   assert.match(`${schemathesisVersion.stdout}\n${schemathesisVersion.stderr}`, /4\.24\.2/, 'Unexpected Schemathesis version');
   const help = await run('docker', ['run', '--rm', schemathesisImage, 'run', '--help'], { timeoutMs: 30000 });
   assert.equal(help.code, 0, `Schemathesis run --help failed: ${help.stderr || help.stdout}`);
-  for (const option of ['--phases', '--seed', '--generation-deterministic', '--max-examples', '--report-ndjson-path']) {
+  for (const option of ['--phases', '--generation-deterministic', '--max-examples', '--report-ndjson-path']) {
     assert.ok(`${help.stdout}\n${help.stderr}`.includes(option), `Schemathesis 4.24.2 is missing required option ${option}`);
   }
   const schemathesisImageId = await run('docker', ['image', 'inspect', '--format={{.Id}}', schemathesisImage]);
@@ -387,8 +385,8 @@ try {
   const first = await runSchemathesis(origin, 1);
   await resetService(origin);
   const second = await runSchemathesis(origin, 2);
-  assert.deepEqual(second.reproduction.commands, first.reproduction.commands, 'Fixed-seed minimized reproduction commands changed between runs');
-  assert.equal(second.reproduction.linkedId, first.reproduction.linkedId, 'Fixed-seed linked resource id changed between runs');
+  assert.deepEqual(second.reproduction.commands, first.reproduction.commands, 'Deterministic minimized reproduction commands changed between runs');
+  assert.equal(second.reproduction.linkedId, first.reproduction.linkedId, 'Deterministic linked resource id changed between runs');
 
   const cleanupStarted = performance.now();
   const removed = await run('docker', ['rm', '-f', containerId], { timeoutMs: 15000 });
@@ -403,7 +401,7 @@ try {
     status: 'passed',
     benchmark: 'stateful-openapi-planted-defect',
     plantedDefect: 'OpenAPI-linked GET of a created resource returns HTTP 500 while a guessed unknown id correctly returns 404',
-    seed,
+    generationMode: 'deterministic',
     maxExamples,
     ferrumBaseline,
     deterministicMinimizedReproduction: first.reproduction,
@@ -432,7 +430,7 @@ try {
       ferrumBaselineEvidenceRetained: true,
       openApiLinkExercised: true,
       stateOnlyDefectFound: true,
-      fixedSeedMinimizedReproducerStable: true,
+      deterministicMinimizedReproducerStable: true,
       structuredNdjsonRetained: true,
       exactExternalRuntimeIdentityRetained: true,
       explicitCleanupProof: true
