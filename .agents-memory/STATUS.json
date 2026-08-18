@@ -4,11 +4,11 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "3878969425e4af9f50b21f9e555dc3f5c647e96d",
-  "verifiedWorkflowRun": 32104799699,
-  "verifiedAt": "2026-08-18T06:02:24Z",
+  "verifiedCodeCommit": "0fbb31d4ea97791e047df25d23c674dc14d4bbec",
+  "verifiedWorkflowRun": 32114007691,
+  "verifiedAt": "2026-08-18T08:04:43Z",
   "verifiedToolchain": {
-    "playwright": "1.63.0-alpha-2026-08-01",
+    "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
     "electronPackager": "20.3.0"
   },
@@ -39,7 +39,13 @@
         "deterministic Chromium offline/recovery network-state control",
         "secret-safe recursive evidence redaction for templated and remote credentials",
         "evidence ID containment rejects dot and dot-dot traversal aliases at the shared validation boundary",
-        "bounded-parallel evidence history scans return every finalized run while skipping incomplete and malformed entries"
+        "bounded-parallel evidence history scans return every finalized run while skipping incomplete and malformed entries",
+        "exact MV3 service-worker target termination, CDP disappearance confirmation and on-demand recovery",
+        "process log assertions fail promptly after child close while preserving final unterminated output",
+        "secret-safe structured Node diagnostic report capture on real uncaught exceptions",
+        "process health requests use the remaining startup deadline and expose final status/error diagnostics",
+        "remote WebDriver lookup remains inside the existing step deadline and exposes final count diagnostics",
+        "monotonic per-event elapsed time and direct run duration for compact agent results"
       ]
     },
     "linux": {
@@ -106,6 +112,8 @@
       "mcp": "doctor, run, suite, browser-matrix, benchmark, workload-pack, Spaces, durable-evidence and GitHub Wiki probe/bootstrap tools",
       "mcpInspectorCompatibility": "passed",
       "compactResults": true,
+      "monotonicEventElapsedMs": true,
+      "directRunDurationMs": true,
       "fullEvidencePreservedOnDisk": true
     },
     "evidenceIntegrity": {
@@ -131,47 +139,47 @@
       "evidence": ["before-save screenshot", "after-save screenshot", "Git remote availability probe"]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32104799699,
-      "codeCommit": "3878969425e4af9f50b21f9e555dc3f5c647e96d",
-      "verifiedProposalHead": "953fe679ab48274e6de615ce7d2aa41523beb421",
-      "verifiedTree": "c788055c77909b419e4904337ce538dfe880ac2b",
+      "workflowRun": 32114007691,
+      "codeCommit": "0fbb31d4ea97791e047df25d23c674dc14d4bbec",
+      "verifiedProposalHead": "36d65391000aadbc3634eb0aed16c4bdcfc022c6",
+      "verifiedTree": "f59e485b976d09b08741411f014ab3afab0b97e7",
       "treeMatchesMergedProduct": true,
       "linuxDesktop": {
-        "artifactId": 9312816785,
-        "sizeBytes": 131790206,
-        "providerSha256": "4613587caea6a7f80b96a0a50c447edbc5a606c868bd2d699a352c4f8c3b0f68",
+        "artifactId": 9316048611,
+        "sizeBytes": 131728363,
+        "providerSha256": "041212311db2cd052a3f01c8854513594d868f92948416fc8447651470707278",
         "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9312866988,
-        "sizeBytes": 151659547,
-        "providerSha256": "30e5489ba0c7f6dd9405a43a9d963b440612cb00691675983bec82ba51fca4e5",
+        "artifactId": 9316130042,
+        "sizeBytes": 151596647,
+        "providerSha256": "934ccbc9e6a9aed546a607a62ac7817cb215f5db1fb120d7e79e7ad6cc1ba587",
         "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9312813526,
-        "sizeBytes": 2179744,
-        "providerSha256": "9a135390fdde4e56781b5057c52a1ec4c377e2ffb4453bd184d2f633d706db1d"
+        "artifactId": 9316043096,
+        "sizeBytes": 2169248,
+        "providerSha256": "a1061c39568fbcc8301cfd0dfedb93cffd2b2946207ab43127c9e89a129cf466"
       },
       "windowsEvidence": {
-        "artifactId": 9312861903,
-        "sizeBytes": 3940860,
-        "providerSha256": "4d68ac920af4783af9de19bc456c65e7a0c6c2bf925629a54234bd2a15335c42"
+        "artifactId": 9316123292,
+        "sizeBytes": 3980074,
+        "providerSha256": "5a89cbe0b5168e916bc2e26af09380fc504e8830ef3f489f8a5166cdf2a5f100"
       },
       "appiumEvidence": {
-        "artifactId": 9312895884,
-        "sizeBytes": 121810,
-        "providerSha256": "fc04bce0d3525cd78e7c26512599b2f102bad68a26901b2e020470a8d632c19a"
+        "artifactId": 9316068851,
+        "sizeBytes": 125542,
+        "providerSha256": "5503e41e1333ef626fd7706b11ca694e912d64ae385e810666383960e588d7bf"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9312838552,
-        "sizeBytes": 20013,
-        "providerSha256": "35b4e1107ea1509995f802be6d14de1754f3b9649d125883d45f59d97e2b6946"
+        "artifactId": 9316020309,
+        "sizeBytes": 20257,
+        "providerSha256": "cbbcb39188584c42a45468b99285615529db602d1b099ecd59d2b1671c8dbd42"
       },
       "lightpandaEvidence": {
-        "artifactId": 9312822660,
-        "sizeBytes": 3657,
-        "providerSha256": "4160569c39f0e1dff0d41d866e824637c440bf0dd5699e3601a22d3edc488906"
+        "artifactId": 9316003722,
+        "sizeBytes": 3743,
+        "providerSha256": "23c8a392ff46e277f09d9b2848a09272fb694fa7b7499ee641db20afd2762c91"
       },
       "independentArtifactRedownloadHash": "provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; merged product tree equals verified proposal tree"
     },
@@ -231,6 +239,7 @@
   "verifiedCapabilities": [
     "full Playwright Chromium web and unpacked MV3 correctness lane",
     "exact extension inventory/runtime identity, service-worker diagnostics and browser restart proof",
+    "exact MV3 service-worker target termination with CDP disappearance confirmation and on-demand same-browser recovery",
     "Chrome, Edge, Brave and Opera GX additive real-browser compatibility matrix",
     "killable per-browser matrix worker processes with bounded launch/startup-page/trace/context teardown",
     "Lightpanda 0.3.7 direct-CDP fast lane",
@@ -239,17 +248,21 @@
     "explicit first/nth deterministic locator disambiguation",
     "bounded asynchronous text assertions that wait for expected state and preserve final observed text on failure",
     "deterministic Chromium network offline -> failed request -> online recovery control with evidence",
-    "provider-neutral remote WebDriver endpoint qualified against real Selenium Grid with bounded visible-state convergence",
+    "provider-neutral remote WebDriver endpoint qualified against real Selenium Grid with bounded visible-state convergence and bounded final lookup diagnostics",
     "durable disk-backed evidence replay after Workbench restart",
     "CLI and MCP durable evidence inspection and SHA-256 integrity verification",
     "independent MCP Inspector compatibility smoke",
     "content-addressed evidence manifests with missing/changed/unexpected payload detection",
     "evidence run IDs reject dot and dot-dot traversal aliases before path resolution",
     "bounded-parallel evidence history summary scans retain every finalized run without caps, pagination shortcuts, or cache staleness",
+    "monotonic evidence event elapsedMs and direct run durationMs exposed to compact CLI/MCP results while raw ISO timestamps remain preserved",
     "bounded suites and reproducible median/p95 benchmarks",
     "production workload-pack orchestration with setup/build evidence and explicit variables",
     "grounded production packs for Herbertofury/Gamesync and Herbertofury/GameSync-Next",
     "generic process/service runner with interactive stdin write and close controls",
+    "process log assertions stop promptly after child close with exit/signal diagnostics and still inspect final unterminated output",
+    "secret-safe structured Node diagnostic reports for real uncaught process failures",
+    "process health requests are bounded by remaining startup budget and preserve final status/error diagnostics",
     "real Electron application runner with worker-process containment",
     "replay-capable Electron Workbench on Linux and Windows",
     "native Linux and Windows Ferrum desktop packaging with fresh packaged-executable acceptance",
@@ -257,7 +270,7 @@
     "bounded constrained Appium find-all convergence within the existing step budget while preserving attempt/count diagnostics",
     "GitHub Wiki Git-remote probe and real-browser first-page bootstrap with persistent authenticated Spaces, idempotency and private false-404 protection",
     "secret-safe evidence boundary for templated environment/variable credentials and remote provider capabilities",
-    "Playwright 1.63.0-alpha-2026-08-01 qualified across Ferrum's complete existing real-runtime acceptance surface"
+    "Playwright 1.63.0-alpha-2026-08-17 qualified across Ferrum's complete existing real-runtime acceptance surface"
   ],
   "implementedButNotRuntimeQualifiedYet": [],
   "incidentsResolved": [
@@ -280,7 +293,12 @@
     "A merged and fully verified Stack candidate could leave STATUS stale and retain a verification-in-progress marker; promotion now updates the verified toolchain/product identity and tests reject stale candidate markers.",
     "Resolved ENV/VAR credentials and remote Appium/provider values could enter durable evidence; Ferrum now recursively redacts sensitive keys, credential-bearing URLs, bearer tokens and tracked sensitive substitutions at evidence boundaries while preserving real runtime inputs.",
     "Evidence IDs '.' and '..' could collapse evidence paths to the evidence root or its parent; the shared validation boundary now rejects both aliases while preserving the existing accepted ID character set.",
-    "Evidence history summary reads were serialized; the verified implementation now uses a bounded 32-worker async pool while preserving the complete finalized run set, malformed/incomplete skip behavior, and chronological ordering."
+    "Evidence history summary reads were serialized; the verified implementation now uses a bounded 32-worker async pool while preserving the complete finalized run set, malformed/incomplete skip behavior, and chronological ordering.",
+    "Chromium accepted extension service-worker termination before Playwright reliably emitted worker-close; Ferrum now proves the exact service-worker target disappeared through CDP before declaring termination complete.",
+    "Process assert-log could consume the full remaining timeout after a child had already closed; Ferrum now fails promptly with exit/signal diagnostics after checking final output.",
+    "Opaque Node process crashes lacked structured secret-safe runtime context; optional Ferrum-owned Node diagnostic reports now retain useful crash/stack/resource evidence while excluding raw environment/network data.",
+    "Process health checks and final WebDriver lookups could overrun their enclosing deadline via a fresh per-request timeout; they now use the remaining bounded budget and report attempts/final state.",
+    "Evidence timelines exposed wall-clock timestamps but required agents to derive run-relative timing; events now include monotonic elapsedMs and finalized/compact results expose direct durationMs without hiding raw evidence."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in an earlier Windows evidence bundle because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
@@ -302,8 +320,10 @@
     "Use this verified Ferrum checkpoint as the mandatory acceptance layer for applicable GameSync changes.",
     "Use the verified GitHub Wiki bootstrap when a new repository needs its first wiki page before source-controlled wiki Git synchronization can begin.",
     "Extend the grounded GameSync workload packs with change-specific real workflows when a GameSync feature changes; never substitute the generic baseline for affected-feature verification.",
-    "Force-terminate the MV3 extension service worker inside a live Chromium session and prove on-demand worker recovery without relying only on full browser restart.",
-    "Benchmark optional transport-level latency/reset fault injection only if it adds capability beyond deterministic Chromium offline control without complicating normal runs.",
+    "Run the Perfetto same-workload correlation differential using Ferrum's monotonic event timeline and retain Perfetto only if queryable trace evidence adds actionable signal at bounded cost.",
+    "Run bounded failure-only strace diagnostics on a controlled opaque process failure before considering deeper bpftrace instrumentation.",
+    "Run the nsjail isolation parity experiment before heavier gVisor/Kata isolation, proving restrictions and complete output/evidence/restart/cleanup parity.",
+    "Run rr deterministic record/replay only after a controlled intermittent Linux process failure fixture is available.",
     "Preserve all current browser, desktop, replay, Spaces, WebDriver, Appium, GitHub Wiki, diagnostics, evidence and packaging gates when improving Ferrum further."
   ],
   "blockers": []
