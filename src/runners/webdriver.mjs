@@ -111,16 +111,26 @@ export class WebDriverClient {
   async find(using, value, { timeoutMs = this.timeoutMs, index = 0 } = {}) {
     const deadline = Date.now() + timeoutMs;
     let lastCount = 0;
+    let lastError = null;
     while (Date.now() < deadline) {
       const remainingMs = Math.max(1, deadline - Date.now());
-      const elements = await this.findAll(using, value, { timeoutMs: Math.min(this.timeoutMs, remainingMs) });
-      lastCount = elements.length;
-      const id = elementId(elements[Number(index) || 0]);
-      if (id) return id;
+      try {
+        const elements = await this.findAll(using, value, { timeoutMs: Math.min(this.timeoutMs, remainingMs) });
+        lastCount = elements.length;
+        const id = elementId(elements[Number(index) || 0]);
+        if (id) return id;
+      } catch (error) {
+        if (error?.name === 'TimeoutError' || error?.name === 'AbortError' || Date.now() >= deadline) {
+          lastError = error;
+          break;
+        }
+        throw error;
+      }
       const waitMs = Math.min(250, Math.max(0, deadline - Date.now()));
       if (waitMs > 0) await sleep(waitMs);
     }
-    throw new Error(`WebDriver element not found using ${using}=${value} at index ${index}; last count ${lastCount}`);
+    const requestDetail = lastError ? `; last request error: ${lastError.message}` : '';
+    throw new Error(`WebDriver element not found using ${using}=${value} at index ${index}; last count ${lastCount}${requestDetail}`);
   }
 }
 
