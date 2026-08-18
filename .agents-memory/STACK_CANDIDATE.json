@@ -10,15 +10,18 @@
     "electronPackager": "20.3.0"
   },
   "proposedToolchain": {
-    "playwright": "1.63.0-alpha-2026-08-03",
+    "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
     "electronPackager": "20.3.0"
   },
   "upstream": {
     "playwrightMainVersion": "1.63.0-next",
-    "canary": "1.63.0-alpha-2026-08-03",
+    "playwrightHead": "51023b427acf92ed3f416fd10d8efd7a47184f6b",
+    "canary": "1.63.0-alpha-2026-08-17",
+    "canaryEvidenceCommit": "5f50181ab9898064119f2f2d853bb9f6c6623038",
     "canaryDocs": "https://playwright.dev/docs/canary-releases",
-    "npmVersions": "https://www.npmjs.com/package/playwright?activeTab=versions"
+    "registryEvidence": "https://registry.npmjs.org/playwright/-/playwright-1.63.0-alpha-2026-08-17.tgz"
   },
+  "supersedesProposal": "1.63.0-alpha-2026-08-03",
   "acceptance": "Full Ferrum CI on the exact proposal head without reducing any existing unit, syntax, MCP, evidence-integrity, WebDriver, Linux, Windows browser/MV3/workload, Electron, packaged-desktop, Lightpanda, Appium, or publication gate."
 }
