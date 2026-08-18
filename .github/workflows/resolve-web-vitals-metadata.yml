@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - automation/resolve-web-vitals-6-1-0-metadata-20260818
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
