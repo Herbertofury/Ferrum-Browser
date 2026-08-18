@@ -42,7 +42,39 @@
     },
     {
       "action": "service-worker-diagnostics",
-      "name": "before-restart"
+      "name": "before-forced-termination"
+    },
+    {
+      "action": "evaluate",
+      "script": "document.querySelector('#out').textContent = 'pending-after-worker-termination'"
+    },
+    {
+      "action": "terminate-service-worker"
+    },
+    {
+      "action": "click",
+      "selector": "#ping"
+    },
+    {
+      "action": "assert-text",
+      "selector": "#out",
+      "text": "ok:"
+    },
+    {
+      "action": "assert-service-worker"
+    },
+    {
+      "action": "assert-service-worker-diagnostics",
+      "minWorkers": 2,
+      "minConsole": 2,
+      "minRequests": 2,
+      "minResponses": 2,
+      "minClosedWorkers": 1,
+      "maxFailedRequests": 0
+    },
+    {
+      "action": "service-worker-diagnostics",
+      "name": "after-forced-recovery"
     },
     {
       "action": "screenshot",
