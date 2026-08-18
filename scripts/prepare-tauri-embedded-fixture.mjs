@@ -6,7 +6,7 @@ const cargoPath = path.join(fixtureRoot, 'src-tauri', 'Cargo.toml');
 const libPath = path.join(fixtureRoot, 'src-tauri', 'src', 'lib.rs');
 const capabilityPath = path.join(fixtureRoot, 'src-tauri', 'capabilities', 'default.json');
 
-const pluginVersion = process.env.FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION || '1.0.0';
+const pluginVersion = process.env.FERRUM_TAURI_EMBEDDED_PLUGIN_VERSION || '1.3.0';
 
 let cargo = await fs.readFile(cargoPath, 'utf8');
 if (!cargo.includes('tauri-plugin-wdio-webdriver')) {
