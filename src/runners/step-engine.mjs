@@ -166,7 +166,7 @@ export class StepEngine {
         return result;
       }
       case 'snapshot': {
-        const snapshot = await snapshotPage(this.page, { interactiveOnly: step.interactiveOnly ?? false, max: step.max || 400 });
+        const snapshot = await snapshotPage(this.page, { interactiveOnly: step.interactiveOnly ?? false, max: step.max });
         if (step.name) await this.evidence.writeJson(`snapshots/${step.name}.json`, snapshot);
         return { elements: snapshot.elements.length, url: snapshot.url };
       }
