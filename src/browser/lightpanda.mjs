@@ -123,6 +123,7 @@ class LightpandaPage {
     this.sessionId = sessionId;
     this.evidence = evidence;
     this._url = 'about:blank';
+    this._nextFerrumRef = 1;
     this.keyboard = {
       press: async key => {
         const parts = String(key).split('+');
@@ -223,13 +224,26 @@ class LightpandaPage {
   }
 
   async ferrumSnapshot({ interactiveOnly = false, max } = {}) {
-    return await this.evaluate(({ interactiveOnly, max }) => {
+    const snapshot = await this.evaluate(({ interactiveOnly, max, nextStart }) => {
       const requestedMax = Number(max);
       const limit = Number.isFinite(requestedMax) && requestedMax > 0 ? Math.floor(requestedMax) : null;
       const interactiveSelector = 'a[href],button,input,textarea,select,summary,[role="button"],[role="link"],[contenteditable="true"],[tabindex]';
       const all = [...document.querySelectorAll(interactiveOnly ? interactiveSelector : 'body *')];
+      const refOwners = new Map();
+      const reservedRefs = new Set();
+      const requestedNext = Number(nextStart);
+      let next = Number.isSafeInteger(requestedNext) && requestedNext > 0 ? requestedNext : 1;
+      for (const element of document.querySelectorAll('[data-ferrum-ref]')) {
+        const ref = element.getAttribute('data-ferrum-ref');
+        const match = /^e(\d+)$/.exec(ref || '');
+        if (!match) continue;
+        const numeric = Number(match[1]);
+        if (!Number.isSafeInteger(numeric) || numeric < 1) continue;
+        if (!refOwners.has(ref)) refOwners.set(ref, element);
+        reservedRefs.add(ref);
+        next = Math.max(next, numeric + 1);
+      }
       const results = [];
-      let next = 1;
       for (const element of all) {
         if (element.hidden) continue;
         const style = getComputedStyle(element);
@@ -238,9 +252,13 @@ class LightpandaPage {
         const text = (element.innerText || element.textContent || element.getAttribute('aria-label') || element.getAttribute('title') || element.getAttribute('alt') || element.getAttribute('placeholder') || '').trim().replace(/\s+/g, ' ').slice(0, 180);
         if (!interactive && !text) continue;
         let ref = element.getAttribute('data-ferrum-ref');
-        if (!ref) {
-          ref = `e${next++}`;
+        if (!/^e\d+$/.test(ref || '') || refOwners.get(ref) !== element) {
+          do {
+            ref = `e${next++}`;
+          } while (reservedRefs.has(ref));
           element.setAttribute('data-ferrum-ref', ref);
+          refOwners.set(ref, element);
+          reservedRefs.add(ref);
         }
         results.push({
           ref,
@@ -254,8 +272,11 @@ class LightpandaPage {
         });
         if (limit != null && results.length >= limit) break;
       }
-      return { url: location.href, title: document.title, elements: results };
-    }, { interactiveOnly, max });
+      return { url: location.href, title: document.title, elements: results, nextRef: next };
+    }, { interactiveOnly, max, nextStart: this._nextFerrumRef });
+    if (Number.isSafeInteger(snapshot?.nextRef) && snapshot.nextRef > 0) this._nextFerrumRef = snapshot.nextRef;
+    const { nextRef: _nextRef, ...result } = snapshot;
+    return result;
   }
 
   async screenshot() {
