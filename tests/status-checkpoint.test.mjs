@@ -22,8 +22,20 @@ async function readOptionalJson(file) {
 
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
+  const proposal = entry?.proposal;
+  const directVerifiedWorkflowRun =
+    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun;
+  const siblingProposalWorkflowRun = Number(proposal?.workflowRun ?? 0);
+  const siblingProposalProof =
+    verifiedProduct?.commit &&
+    typeof verifiedProduct?.treeSha === 'string' && verifiedProduct.treeSha.length > 0 &&
+    typeof proposal?.treeSha === 'string' && proposal.treeSha.length > 0 &&
+    verifiedProduct.treeSha === proposal.treeSha &&
+    String(proposal?.workflowConclusion ?? '').toLowerCase() === 'success' &&
+    Number.isSafeInteger(siblingProposalWorkflowRun) &&
+    siblingProposalWorkflowRun > 0;
   const verifiedWorkflowRun = Number(
-    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun ?? 0
+    directVerifiedWorkflowRun ?? (siblingProposalProof ? siblingProposalWorkflowRun : 0)
   );
   const mergedProof = String(verifiedProduct?.proposalConclusion ?? verifiedProduct?.ci ?? '').toLowerCase();
   const verifiedCommit = verifiedProduct?.commit ?? (
@@ -38,6 +50,25 @@ function normalizeVerifiedCheckpoint(entry) {
       commit: verifiedCommit,
       workflowRun: verifiedWorkflowRun,
       verifiedAt: verifiedProduct?.verifiedAt ?? null,
+    };
+  }
+
+  const verifiedImprovement = entry?.verifiedImprovement;
+  const verifiedImprovementWorkflowRun = Number(verifiedImprovement?.proposalCiRun ?? 0);
+  const verifiedImprovementProof =
+    verifiedImprovement?.productCommit &&
+    verifiedImprovement?.treeMatchesVerifiedProposal === true &&
+    typeof verifiedImprovement?.productTree === 'string' && verifiedImprovement.productTree.length > 0 &&
+    typeof verifiedImprovement?.proposalTree === 'string' && verifiedImprovement.proposalTree.length > 0 &&
+    verifiedImprovement.productTree === verifiedImprovement.proposalTree &&
+    String(verifiedImprovement?.proposalCiConclusion ?? '').toLowerCase() === 'success' &&
+    Number.isSafeInteger(verifiedImprovementWorkflowRun) &&
+    verifiedImprovementWorkflowRun > 0;
+  if (verifiedImprovementProof) {
+    return {
+      commit: verifiedImprovement.productCommit,
+      workflowRun: verifiedImprovementWorkflowRun,
+      verifiedAt: verifiedImprovement?.verifiedAt ?? null,
     };
   }
 
@@ -128,6 +159,65 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       product: { commit: 'tree-matched-product', treeMatchesVerifiedProposal: true, verifiedAt: '2026-08-18T00:01:10Z' },
     }),
     { commit: 'tree-matched-product', workflowRun: 48, verifiedAt: '2026-08-18T00:01:10Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      verifiedImprovement: {
+        productCommit: 'verified-improvement-product',
+        productTree: 'verified-improvement-tree',
+        proposalTree: 'verified-improvement-tree',
+        treeMatchesVerifiedProposal: true,
+        proposalCiRun: 49,
+        proposalCiConclusion: 'success',
+      },
+    }),
+    { commit: 'verified-improvement-product', workflowRun: 49, verifiedAt: null },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      proposal: {
+        workflowRun: 50,
+        workflowConclusion: 'success',
+        treeSha: 'nested-proposal-tree',
+      },
+      verifiedProduct: {
+        commit: 'nested-proposal-product',
+        treeSha: 'nested-proposal-tree',
+        verifiedAt: '2026-08-18T08:04:43Z',
+      },
+    }),
+    { commit: 'nested-proposal-product', workflowRun: 50, verifiedAt: '2026-08-18T08:04:43Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      proposal: {
+        workflowRun: 51,
+        workflowConclusion: 'success',
+        treeSha: 'proposal-tree',
+      },
+      verifiedProduct: {
+        commit: 'tree-mismatch-product',
+        treeSha: 'different-tree',
+      },
+    }),
+    null,
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      verifiedImprovement: {
+        productCommit: 'failed-improvement-product',
+        productTree: 'same-tree',
+        proposalTree: 'same-tree',
+        treeMatchesVerifiedProposal: true,
+        proposalCiRun: 52,
+        proposalCiConclusion: 'failure',
+      },
+    }),
+    null,
   );
 });
 
