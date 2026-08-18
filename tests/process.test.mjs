@@ -81,6 +81,7 @@ test('process runner captures a secret-safe structured Node diagnostic report on
   const reportEvent = evidence.events.find(event => event.type === 'node-diagnostic-report');
   assert.ok(reportEvent?.path, 'expected node-diagnostic-report evidence');
   const report = JSON.parse(await fs.readFile(path.join(evidence.dir, reportEvent.path), 'utf8'));
+  const serialized = JSON.stringify(report);
   assert.equal(report.schemaVersion, 1);
   assert.equal(String(report.header.event).toLowerCase(), 'exception');
   assert.equal(report.header.processId, reportEvent.processId);
@@ -89,5 +90,7 @@ test('process runner captures a secret-safe structured Node diagnostic report on
   assert.equal(Object.prototype.hasOwnProperty.call(report, 'environmentVariables'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(report.header, 'networkInterfaces'), false);
   assert.equal(Object.prototype.hasOwnProperty.call(report.header, 'commandLine'), false);
-  assert.equal(JSON.stringify(report).includes(secret), false);
+  assert.equal(serialized.includes('localEndpoint'), false);
+  assert.equal(serialized.includes('remoteEndpoint'), false);
+  assert.equal(serialized.includes(secret), false);
 });
