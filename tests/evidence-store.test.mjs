@@ -30,6 +30,33 @@ test('evidence history lists finalized runs and reads every retained file', asyn
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
+test('evidence history bounded parallel scan returns every finalized run and skips incomplete entries', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-list-'));
+  const count = 96;
+  try {
+    await Promise.all(Array.from({ length: count }, async (_, index) => {
+      const id = `run-${String(index).padStart(3, '0')}`;
+      const dir = path.join(root, id);
+      await fs.mkdir(dir);
+      await fs.writeFile(path.join(dir, 'agent-summary.json'), JSON.stringify({
+        id,
+        status: index % 2 ? 'passed' : 'failed',
+        endedAt: new Date(Date.UTC(2026, 7, 18, 0, 0, index)).toISOString()
+      }));
+    }));
+    await fs.mkdir(path.join(root, 'incomplete-run'));
+    await fs.mkdir(path.join(root, 'malformed-run'));
+    await fs.writeFile(path.join(root, 'malformed-run', 'agent-summary.json'), '{', 'utf8');
+
+    const list = await listEvidence({ root });
+    assert.equal(list.length, count);
+    assert.equal(new Set(list.map(item => item.id)).size, count);
+    assert.equal(list[0].id, `run-${String(count - 1).padStart(3, '0')}`);
+    assert.equal(list.at(-1).id, 'run-000');
+    assert.ok(list.every(item => /^run-\d{3}$/.test(item.id)));
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
 test('finalized evidence gets a content-addressed manifest that detects tampering', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-integrity-'));
   try {
