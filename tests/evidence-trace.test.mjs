@@ -16,7 +16,8 @@ test('finalized evidence emits a complete redacted Chrome Trace Event sidecar', 
 
     const first = evidence.record('process-start', {
       pid: 123,
-      token: 'top-secret-value'
+      token: 'top-secret-value',
+      wallClockAt: 'forged-value'
     });
     await new Promise(resolve => setTimeout(resolve, 5));
     const second = evidence.record('process-http-response', {
