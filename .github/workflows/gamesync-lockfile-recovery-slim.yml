@@ -1,0 +1,102 @@
+name: GameSync lockfile recovery on ubuntu-slim
+
+# Additive recovery lane for authoritative npm lockfile regeneration while the
+# standard hosted VM pool is not dispatching. This never mutates GameSync refs.
+# Candidate branches are resolved at checkout time and rechecked before evidence
+# is accepted so worker branch movement cannot silently stale the generated lock.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    name: lockfile-${{ matrix.name }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gamesync-idb-keyval
+            repository: Herbertofury/Gamesync
+            branch: automation/stack-idb-keyval-6-3
+          - name: next-vite
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-vite-8-2
+          - name: next-test-toolchain
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-test-toolchain-1-62
+          - name: next-ui-runtime
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-ui-runtime-r185
+          - name: next-typescript7
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-typescript-7
+          - name: next-desktop-runtime
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-desktop-runtime-2-21
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Set FERRUM_GAMESYNC_READ_TOKEN or GH_PAT with read access to both private GameSync repositories.'
+            exit 2
+          fi
+
+      - name: Check out current candidate branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact Node 26.7.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Regenerate and verify authoritative lock graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_HEAD="$(git rev-parse HEAD)"
+          test "$(node --version)" = "v26.7.0"
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
+          git diff --check -- package-lock.json
+          git fetch origin "${{ matrix.branch }}" --depth=1
+          if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
+            echo '::error::Candidate branch advanced during lock generation; refusing stale evidence.'
+            exit 3
+          fi
+          mkdir -p "output/${{ matrix.name }}"
+          cp package-lock.json "output/${{ matrix.name }}/package-lock.json"
+          git diff -- package-lock.json > "output/${{ matrix.name }}/package-lock.patch"
+          sha256sum package-lock.json > "output/${{ matrix.name }}/package-lock.sha256"
+          printf '%s\n' '${{ matrix.repository }}' > "output/${{ matrix.name }}/repository.txt"
+          printf '%s\n' '${{ matrix.branch }}' > "output/${{ matrix.name }}/source-branch.txt"
+          printf '%s\n' "$SOURCE_HEAD" > "output/${{ matrix.name }}/source-head.txt"
+          node --version > "output/${{ matrix.name }}/node-version.txt"
+          npm --version > "output/${{ matrix.name }}/npm-version.txt"
+
+      - name: Upload regenerated lock graph
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: repaired-lock-slim-${{ matrix.name }}
+          path: output/${{ matrix.name }}
+          if-no-files-found: warn
