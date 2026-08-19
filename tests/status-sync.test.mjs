@@ -11,6 +11,14 @@ function git(args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
 
+function ensureMainHistoryForProvenance() {
+  if (git(['rev-parse', '--is-shallow-repository']) !== 'true') return;
+  execFileSync('git', ['fetch', '--no-tags', '--unshallow', 'origin', 'main'], {
+    cwd: root,
+    stdio: 'ignore',
+  });
+}
+
 function successful(value) {
   const normalized = String(value ?? '').trim().toLowerCase();
   return normalized === 'success' || normalized === 'all success' || normalized === 'passed';
@@ -42,6 +50,7 @@ function candidateFrom(record, filename) {
 }
 
 test('STATUS points at the newest fully verified exact-tree evolution product', async () => {
+  ensureMainHistoryForProvenance();
   const status = JSON.parse(await fs.readFile(path.join(memoryDir, 'STATUS.json'), 'utf8'));
   const names = (await fs.readdir(memoryDir)).filter((name) => /^EVOLUTION_RUN_.*\.json$/u.test(name)).sort();
   const candidates = [];
