@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - run: npm test
       - name: Syntax check all modules
         run: find src scripts -name '*.mjs' -print0 | xargs -0 -n1 node --check
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - if: runner.os == 'Linux'
         run: npx playwright install --with-deps chromium
       - if: runner.os != 'Linux'
@@ -225,7 +225,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: Install alternate browser
         shell: powershell
         run: |
@@ -251,7 +251,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: Ferrum real remote WebDriver smoke against Selenium Grid
         run: npm run smoke:webdriver
       - uses: actions/upload-artifact@v7
@@ -272,7 +272,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: Install verified Lightpanda release
         shell: bash
         run: |
@@ -306,7 +306,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: Install pinned Appium Android stack
         shell: bash
         run: |
