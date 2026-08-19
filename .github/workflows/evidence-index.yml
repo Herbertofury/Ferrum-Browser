@@ -116,7 +116,7 @@ jobs:
             "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
       - name: Upload exact-byte evidence index
         id: upload-index
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ferrum-evidence-index-${{ steps.target.outputs.run_id }}.json
           path: ${{ steps.build-index.outputs.path }}
