@@ -38,7 +38,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Install Ferrum runtime dependencies
-        run: npm install --omit=dev --no-audit --no-fund
+        run: npm ci --omit=dev --no-audit --no-fund
       - name: Install pinned Appium Windows stack
         shell: powershell
         run: |
