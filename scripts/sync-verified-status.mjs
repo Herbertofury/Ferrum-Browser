@@ -24,6 +24,15 @@ function firstDefined(...values) {
   return values.find((value) => value !== undefined && value !== null && value !== '');
 }
 
+function latestIsoTimestamp(...values) {
+  const candidates = values
+    .filter(Boolean)
+    .map((value) => ({ value: String(value), time: Date.parse(String(value)) }))
+    .filter(({ time }) => Number.isFinite(time))
+    .sort((a, b) => a.time - b.time);
+  return candidates.at(-1)?.value ?? null;
+}
+
 function normalizeCandidate(record, filename) {
   const shapes = [
     ['improvement', record.improvement],
@@ -259,7 +268,7 @@ archivePriorVerifiedCheckpoint(status, selected);
 
 status.verifiedCodeCommit = selected.product;
 status.verifiedWorkflowRun = selected.workflowRun;
-status.verifiedAt = run.updated_at ?? selected.checkedAt ?? status.verifiedAt;
+status.verifiedAt = latestIsoTimestamp(run.updated_at, selected.checkedAt, status.verifiedAt);
 status.verifiedToolchain = withoutUndefined(toolchain);
 
 const latestBuildArtifacts = withoutUndefined({
@@ -323,6 +332,7 @@ console.log(JSON.stringify({
   evolutionRun: selected.run,
   verifiedCodeCommit: status.verifiedCodeCommit,
   verifiedWorkflowRun: status.verifiedWorkflowRun,
+  verifiedAt: status.verifiedAt,
   verifiedTree: status.verified.latestBuildArtifacts.verifiedTree,
   artifactCount: [...artifacts.values()].length,
   companionWorkflowCount: Object.keys(companionWorkflows).length,
