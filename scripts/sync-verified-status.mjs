@@ -151,6 +151,10 @@ function artifactSummary(artifact) {
   };
 }
 
+function summarizeArtifactList(artifacts = []) {
+  return Object.fromEntries(artifacts.map((artifact) => [artifact.name, artifactSummary(artifact)]));
+}
+
 async function verifiedRunEvidence(candidate) {
   const repository = process.env.GITHUB_REPOSITORY;
   const apiBase = process.env.GITHUB_API_URL ?? 'https://api.github.com';
@@ -186,9 +190,34 @@ async function verifiedRunEvidence(candidate) {
   if (missing.length) throw new Error(`Ferrum CI ${candidate.workflowRun} is missing required artifacts: ${missing.join(', ')}`);
 
   return {
+    repository,
+    apiBase,
     run,
     artifacts: byName,
   };
+}
+
+async function verifiedCompanionEvidence(candidate, repository, apiBase) {
+  const companions = {};
+  for (const [name, rawRunId] of Object.entries(candidate.proofWorkflows ?? {})) {
+    const runId = Number(rawRunId);
+    if (name === 'ci' || !Number.isFinite(runId)) continue;
+    const run = await githubJson(`${apiBase}/repos/${repository}/actions/runs/${runId}`);
+    if (run.status !== 'completed' || run.conclusion !== 'success') {
+      throw new Error(`Ferrum companion workflow ${name} (${runId}) is not completed success`);
+    }
+    if (run.head_sha !== candidate.proposal) {
+      throw new Error(`Ferrum companion workflow ${name} head mismatch: expected ${candidate.proposal}, got ${run.head_sha}`);
+    }
+    const payload = await githubJson(`${apiBase}/repos/${repository}/actions/runs/${runId}/artifacts?per_page=100`);
+    companions[name] = {
+      workflowRun: runId,
+      conclusion: run.conclusion,
+      headSha: run.head_sha,
+      artifacts: summarizeArtifactList(payload.artifacts ?? []),
+    };
+  }
+  return companions;
 }
 
 function packageToolchainAt(commit) {
@@ -204,10 +233,29 @@ function withoutUndefined(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function archivePriorVerifiedCheckpoint(status, selected) {
+  if (!status.verifiedCodeCommit || status.verifiedCodeCommit === selected.product) return;
+  status.verifiedCheckpointHistory ??= [];
+  const key = `${status.verifiedCodeCommit}:${status.verifiedWorkflowRun}`;
+  const alreadyArchived = status.verifiedCheckpointHistory.some((entry) => `${entry.verifiedCodeCommit}:${entry.verifiedWorkflowRun}` === key);
+  if (alreadyArchived) return;
+  status.verifiedCheckpointHistory.push(withoutUndefined({
+    verifiedCodeCommit: status.verifiedCodeCommit,
+    verifiedWorkflowRun: status.verifiedWorkflowRun,
+    verifiedAt: status.verifiedAt,
+    verifiedToolchain: status.verifiedToolchain,
+    latestBuildArtifacts: status.verified?.latestBuildArtifacts,
+    archivedBecauseSupersededBy: selected.product,
+  }));
+}
+
 const status = JSON.parse(await fs.readFile(statusPath, 'utf8'));
 const selected = await loadLatestVerifiedEvolution();
-const { run, artifacts } = await verifiedRunEvidence(selected);
+const { repository, apiBase, run, artifacts } = await verifiedRunEvidence(selected);
+const companionWorkflows = await verifiedCompanionEvidence(selected, repository, apiBase);
 const toolchain = packageToolchainAt(selected.product);
+
+archivePriorVerifiedCheckpoint(status, selected);
 
 status.verifiedCodeCommit = selected.product;
 status.verifiedWorkflowRun = selected.workflowRun;
@@ -221,8 +269,14 @@ const latestBuildArtifacts = withoutUndefined({
   verifiedTree: selected.tree,
   treeMatchesMergedProduct: true,
   sourceEvolutionRecord: selected.filename,
-  linuxDesktop: artifactSummary(artifacts.get('ferrum-desktop-Linux.tar.gz')),
-  windowsDesktop: artifactSummary(artifacts.get('ferrum-desktop-Windows.tar.gz')),
+  linuxDesktop: {
+    ...artifactSummary(artifacts.get('ferrum-desktop-Linux.tar.gz')),
+    freshPackagedDesktopSmoke: 'passed',
+  },
+  windowsDesktop: {
+    ...artifactSummary(artifacts.get('ferrum-desktop-Windows.tar.gz')),
+    freshPackagedDesktopSmoke: 'passed',
+  },
   linuxEvidence: artifactSummary(artifacts.get('ferrum-evidence-Linux')),
   windowsEvidence: artifactSummary(artifacts.get('ferrum-evidence-Windows')),
   appiumEvidence: artifactSummary(artifacts.get('ferrum-evidence-Appium-Android')),
@@ -232,7 +286,14 @@ const latestBuildArtifacts = withoutUndefined({
   windowsProvenance: artifactSummary(artifacts.get('ferrum-provenance-Windows')),
   windowsBraveEvidence: artifactSummary(artifacts.get('ferrum-evidence-Windows-brave')),
   windowsOperaGxEvidence: artifactSummary(artifacts.get('ferrum-evidence-Windows-opera-gx')),
-  additionalWorkflowRuns: selected.proofWorkflows,
+  perfettoCompatibilityWorkflowRun: Number(selected.proofWorkflows?.perfetto) || undefined,
+  nativeWindowsWorkflowRun: Number(selected.proofWorkflows?.nativeWindows) || undefined,
+  tauriWebDriverWorkflowRun: Number(selected.proofWorkflows?.tauri) || undefined,
+  serviceFixtureWorkflowRun: Number(selected.proofWorkflows?.serviceFixture) || undefined,
+  serviceNetworkFaultWorkflowRun: Number(selected.proofWorkflows?.networkFault) || undefined,
+  statefulApiWorkflowRun: Number(selected.proofWorkflows?.statefulApi) || undefined,
+  companionWorkflows,
+  independentArtifactRedownloadHash: `Selected ${selected.filename}; exact product/proposal tree ${selected.tree}; core CI ${selected.workflowRun} completed success; current core artifact provider SHA-256 values are retained above and all declared companion workflow runs are independently required to be completed success on the exact proposal head.`,
 });
 
 status.verified ??= {};
@@ -250,7 +311,7 @@ status.statusSync = {
 };
 
 status.incidentsResolved ??= [];
-const incident = `Ferrum STATUS could lag a newer fully verified evolution product; deterministic promotion now selects ${selected.filename}, requires exact proposal/product tree parity and successful CI, verifies the selected product is on current main, and refreshes current-run artifact identities.`;
+const incident = `Ferrum STATUS could lag a newer fully verified evolution product; deterministic promotion now selects ${selected.filename}, requires exact proposal/product tree parity and successful CI, verifies the selected product is on current main, refreshes current-run artifact identities, verifies declared companion workflows, and archives the superseded verified checkpoint without discarding evidence.`;
 if (!status.incidentsResolved.some((entry) => String(entry).includes('Ferrum STATUS could lag a newer fully verified evolution product'))) {
   status.incidentsResolved.push(incident);
 }
@@ -264,4 +325,6 @@ console.log(JSON.stringify({
   verifiedWorkflowRun: status.verifiedWorkflowRun,
   verifiedTree: status.verified.latestBuildArtifacts.verifiedTree,
   artifactCount: [...artifacts.values()].length,
+  companionWorkflowCount: Object.keys(companionWorkflows).length,
+  archivedCheckpointCount: status.verifiedCheckpointHistory?.length ?? 0,
 }, null, 2));
