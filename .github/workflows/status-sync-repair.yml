@@ -80,8 +80,24 @@ jobs:
             echo "STATUS is already synchronized."
             exit 0
           fi
+
           git config user.name "GameSync Lead Gate"
           git config user.email "actions@users.noreply.github.com"
           git add .agents-memory/STATUS.json
           git commit -m "Synchronize verified Ferrum STATUS"
-          git push origin "HEAD:${BRANCH_NAME}"
+
+          if git push origin "HEAD:${BRANCH_NAME}"; then
+            exit 0
+          fi
+
+          echo "Branch advanced while STATUS verification was running; checking whether the remote already contains the same synchronized STATUS."
+          git fetch origin "${BRANCH_NAME}"
+          remote_status="$RUNNER_TEMP/remote-status.json"
+          git show "origin/${BRANCH_NAME}:.agents-memory/STATUS.json" > "$remote_status"
+          if cmp -s .agents-memory/STATUS.json "$remote_status"; then
+            echo "Remote branch already contains the exact synchronized STATUS bytes; treating the concurrent update as successful convergence."
+            exit 0
+          fi
+
+          echo "Remote branch advanced with different STATUS bytes. Failing closed so the new exact head is re-evaluated." >&2
+          exit 1
