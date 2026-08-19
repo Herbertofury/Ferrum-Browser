@@ -1,0 +1,90 @@
+name: Run 38 npm lockfile experiment
+
+on:
+  push:
+    branches:
+      - evolution/run38-npm-lock-ci
+    paths:
+      - '.github/workflows/run38-generate-lock.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: evolution/run38-npm-lock-ci
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Pin current npm for lock generation
+        run: |
+          npm install --global npm@11.17.0 --no-audit --no-fund
+          test "$(npm --version)" = "11.17.0"
+      - name: Generate deterministic dependency lock
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Convert repository CI installs to frozen installs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          pattern = re.compile(r'^(\s*-\s+run:\s+)npm install(?P<omit> --omit=dev)? --no-audit --no-fund\s*$', re.MULTILINE)
+          changed = []
+          replacements = 0
+          for path in sorted(Path('.github/workflows').glob('*.yml')):
+              if path.name == 'run38-generate-lock.yml':
+                  continue
+              text = path.read_text(encoding='utf-8')
+              updated, count = pattern.subn(lambda m: f"{m.group(1)}npm ci{m.group('omit') or ''} --no-audit --no-fund", text)
+              if count:
+                  path.write_text(updated, encoding='utf-8')
+                  changed.append(str(path))
+                  replacements += count
+          if replacements < 1:
+              raise SystemExit('no repository npm install steps were converted')
+          print(f'converted {replacements} repository install steps across {len(changed)} workflows')
+          print('\n'.join(changed))
+          PY
+          if grep -R -n -E '^\s*-\s*run:\s*npm install( |$)' .github/workflows --include='*.yml' --exclude='run38-generate-lock.yml'; then
+            echo 'unconverted repository npm install step remains' >&2
+            exit 1
+          fi
+      - name: Validate lockfile and frozen clean install
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          if (lock.lockfileVersion !== 3) throw new Error(`unexpected lockfileVersion ${lock.lockfileVersion}`);
+          const root = lock.packages?.[''];
+          if (!root) throw new Error('lockfile root package entry missing');
+          for (const field of ['dependencies', 'devDependencies']) {
+            const expected = pkg[field] || {};
+            const actual = root[field] || {};
+            if (JSON.stringify(expected) !== JSON.stringify(actual)) {
+              throw new Error(`${field} does not match package.json`);
+            }
+          }
+          NODE
+          rm -rf node_modules
+          npm ci --no-audit --no-fund
+          npm test
+          git diff --check
+      - name: Commit generated lock and frozen CI changes
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json .github/workflows
+          git reset .github/workflows/run38-generate-lock.yml
+          git diff --cached --exit-code && { echo 'expected generated changes are missing' >&2; exit 1; } || true
+          git commit -m 'Add deterministic npm lockfile and frozen CI installs'
+          git push origin HEAD:evolution/run38-npm-lock-ci
