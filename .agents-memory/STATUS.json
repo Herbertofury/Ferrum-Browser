@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "f9f7f7689c2711896cc7ac57dae29760b4f130cc",
-  "verifiedWorkflowRun": 32208809141,
-  "verifiedAt": "2026-08-19T02:35:00Z",
+  "verifiedCodeCommit": "17b5260d6f18710e45f6b4e154ca77da5c2bbb82",
+  "verifiedWorkflowRun": 32211204897,
+  "verifiedAt": "2026-08-19T03:20:13Z",
   "verifiedToolchain": {
     "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
@@ -49,7 +49,8 @@
         "process HTTP requests retain complete response evidence before status/text assertion failure",
         "process HTTP transport failures converge on authoritative child-exit attribution within the existing bounded request budget",
         "finalized evidence emits a complete secret-redacted Perfetto/Chrome Trace Event sidecar with monotonic event timestamps and authoritative wall-clock metadata",
-        "stable-ref snapshot delta generation retains complete named snapshots, produces additive compact deltas, preserves exact changed-state accounting, and invalidates refs across restart"
+        "stable-ref snapshot delta generation retains complete named snapshots, produces additive compact deltas, preserves exact changed-state accounting, and invalidates refs across restart",
+        "exact-run cross-job evidence index requires the complete successful Ferrum artifact surface, exact source/run identity, provider SHA-256 digests and verified desktop attestation linkage"
       ]
     },
     "linux": {
@@ -144,7 +145,8 @@
       "processHttpRequest": true,
       "traceEventSidecar": true,
       "snapshotDeltaArtifacts": true,
-      "fullEvidencePreservedOnDisk": true
+      "fullEvidencePreservedOnDisk": true,
+      "crossJobEvidenceIndex": true
     },
     "evidenceIntegrity": {
       "status": "passed",
@@ -153,7 +155,8 @@
       "cliVerification": "passed",
       "mcpVerification": "passed",
       "tamperDetection": "passed",
-      "legacyBundles": "reported as unverifiable rather than false success"
+      "legacyBundles": "reported as unverifiable rather than false success",
+      "workflowEvidenceIndex": "passed"
     },
     "githubWikiAutomation": {
       "status": "passed",
@@ -179,54 +182,54 @@
       ]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32208809141,
-      "codeCommit": "f9f7f7689c2711896cc7ac57dae29760b4f130cc",
-      "verifiedProposalHead": "70fc4920c31f8eae587edf2f6b9e3ec2435160b0",
-      "verifiedTree": "6bff0ac4ad4272cd946fbc8d981b305d0b71f685",
+      "workflowRun": 32211204897,
+      "codeCommit": "17b5260d6f18710e45f6b4e154ca77da5c2bbb82",
+      "verifiedProposalHead": "2e4ec3e0f867189dc2495c0fdb0b2d56be17d562",
+      "verifiedTree": "3561dfc8b8b3392ef3ec75f3a6de0d30802e34b2",
       "treeMatchesMergedProduct": true,
       "perfettoCompatibilityWorkflowRun": 32155315736,
       "linuxDesktop": {
-        "artifactId": 9350065653,
-        "sizeBytes": 145016162,
-        "providerSha256": "dfc5f9fcdd95f8c9681747979d7c3d4211714275088d8deb6c72822c440a9c24",
+        "artifactId": 9350973979,
+        "sizeBytes": 145016986,
+        "providerSha256": "ce9934efe7d2b770179bb203a9fb81b7d0b4a955b0a10bf137eeffbb737201fd",
         "freshPackagedDesktopSmoke": "passed",
-        "attestationId": 41511647,
+        "attestationId": 41517425,
         "localProviderRedownloadDigestEqual": true,
         "ghAttestationVerify": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9350056674,
-        "sizeBytes": 166254073,
-        "providerSha256": "f0bcba8bdbbab00e4c834d7d7723a06551bd463e6ea2681f66502c5908f561ed",
+        "artifactId": 9350848915,
+        "sizeBytes": 166258587,
+        "providerSha256": "87c98724b06dccd670892e4a8937cc06f3551f7046148ccc97219a3da19f5855",
         "freshPackagedDesktopSmoke": "passed",
-        "attestationId": 41511597,
+        "attestationId": 41516810,
         "localProviderRedownloadDigestEqual": true,
         "ghAttestationVerify": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9350064585,
-        "sizeBytes": 2258558,
-        "providerSha256": "ef0e3a6d17f9f9fa6b317db168dac36b1352c26556c9dba0854ba6530ff24648"
+        "artifactId": 9350973177,
+        "sizeBytes": 2252244,
+        "providerSha256": "30ee69727d6ec4591d1673d2815a9cd8d45747e59fde86fd2cde41ce8de2d4ec"
       },
       "windowsEvidence": {
-        "artifactId": 9350055850,
-        "sizeBytes": 1922233,
-        "providerSha256": "7cbffcff61a56be0456406ca226d6bf0d2590b79534d1bef7f6edd4faeabfba6"
+        "artifactId": 9350847780,
+        "sizeBytes": 1920427,
+        "providerSha256": "23e64673c3863e6b7933af97e50de3527ec2ced60751c0e8db01ef6529fc8c45"
       },
       "appiumEvidence": {
-        "artifactId": 9350063840,
-        "sizeBytes": 124054,
-        "providerSha256": "5b7e151294a3bf0076f19a1a5cbe81316e133d4474bd64fe7556ba6d49fce111"
+        "artifactId": 9350847926,
+        "sizeBytes": 126363,
+        "providerSha256": "238cb0ed0a90b3ee53324a7d7ff73def870a3fd8d80ca608e6e83e396757fc0e"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9350034635,
-        "sizeBytes": 23377,
-        "providerSha256": "c1efa59b6e00cdeb5a32ba3108df12d46950dee779b13820f5e98fb3ff5ba395"
+        "artifactId": 9350816434,
+        "sizeBytes": 23403,
+        "providerSha256": "71bab69aee554078bb32236435e4e19f51faf67b4d578ce40723063da88b0fd3"
       },
       "lightpandaEvidence": {
-        "artifactId": 9350015546,
-        "sizeBytes": 13072,
-        "providerSha256": "ec767edc2e192cad2d0b19a7be710694f1a97453365c36ecd9f89cf6ef65d3c7"
+        "artifactId": 9350806272,
+        "sizeBytes": 13027,
+        "providerSha256": "5388868eed3a1cdcf3fe05380956af2f2171d5a9c8f56d87e9d367335d3aa64e"
       },
       "serviceNetworkFaultEvidence": {
         "artifactId": 9330056839,
@@ -234,18 +237,40 @@
         "providerSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7",
         "downloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"
       },
-      "independentArtifactRedownloadHash": "run-36 Linux/Windows producer SHA-256 equals provider digest, immutable artifact-ID redownload digest, and independently verified GitHub attestation; full severe CI passed and merged product tree equals exact tested proposal tree",
+      "independentArtifactRedownloadHash": "run-37 exact-head Linux/Windows producer SHA-256 equals provider digest and verified attestation linkage; the exact-run cross-job evidence index independently redownloaded to the provider SHA-256, contains all 11 required current-run artifacts, and merged product tree equals the exact tested proposal tree",
       "tauriWebDriverWorkflowRun": 32194473469,
       "nativeWindowsWorkflowRun": 32199800977,
       "linuxProvenance": {
-        "artifactId": 9350071068,
-        "sizeBytes": 8345,
-        "providerSha256": "1084b28c79430a16adbcc2990711968d90a5348a048ffe534a73f0d1b98fbd41"
+        "artifactId": 9350977444,
+        "sizeBytes": 8324,
+        "providerSha256": "1015b44e94824449c3ba6ac0d20adc8b7dab21fd9d8a874076d440f9a949eeeb"
       },
       "windowsProvenance": {
-        "artifactId": 9350060690,
-        "sizeBytes": 8485,
-        "providerSha256": "b9a7652e9b2af05fdecdbcd6636f5e0430128254a55fa0a3f2ab39240cf2dbdb"
+        "artifactId": 9350855192,
+        "sizeBytes": 8391,
+        "providerSha256": "1c63240cf6aa9dbbea4c9d562a9077060fbc2ba75ec536568bcd187a7c9ad245"
+      },
+      "windowsBraveEvidence": {
+        "artifactId": 9350835662,
+        "sizeBytes": 31799,
+        "providerSha256": "87234e434953e83e3efc8daecad01c3062e303d5844f870adc7ad2f1b1c446c1"
+      },
+      "windowsOperaGxEvidence": {
+        "artifactId": 9350842154,
+        "sizeBytes": 3435282,
+        "providerSha256": "7502ac96a0a47cd0613d4060685eff57036c8cd8adb20f6cc80ba64ed0d6ca33"
+      },
+      "evidenceIndex": {
+        "workflowRun": 32211204902,
+        "targetFerrumCiRun": 32211204897,
+        "artifactId": 9350979798,
+        "sizeBytes": 5368,
+        "providerSha256": "3be2e85975c3e68f8f0753ee4d04398183d1475b4dde11ac27ee941c57fbbd3e",
+        "artifactCount": 11,
+        "totalIndexedBytes": 319094833,
+        "missingRequiredArtifacts": [],
+        "verifiedAttestationCount": 2,
+        "providerDigestMatchesDownloadedBytes": true
       }
     },
     "artifactPublication": {
@@ -343,7 +368,8 @@
     "native Windows WPF/UIA qualification through both appium-desktop-driver and NovaWindows WebDriver providers",
     "parallel Brave and Opera GX Windows acceptance jobs while retaining Chromium/Chrome/Edge full-gate coverage",
     "producer-owned portable desktop tar transport with exact file-digest round-trip, runnable extracted-package proof, raw artifact upload and provider digest equality",
-    "exact-byte GitHub artifact attestation with immutable artifact-ID redownload and independent gh attestation verify on Linux and Windows"
+    "exact-byte GitHub artifact attestation with immutable artifact-ID redownload and independent gh attestation verify on Linux and Windows",
+    "exact-run cross-job evidence index binding CI source/run identity to every required current-run artifact ID, provider SHA-256, size and verified Linux/Windows desktop attestation identity without replacing raw evidence"
   ],
   "implementedButNotRuntimeQualifiedYet": [],
   "incidentsResolved": [
@@ -402,7 +428,11 @@
     "Compare nsjail against bubblewrap for an identical unprivileged Linux process fixture, proving filesystem/network restrictions plus full Ferrum output/evidence/cleanup parity before considering either adapter.",
     "Run rr deterministic record/replay only after a controlled intermittent Linux process failure fixture is available.",
     "Run bounded failure-only strace 7.1 diagnostics on a controlled opaque process failure before considering deeper bpftrace instrumentation.",
-    "Preserve all current browser, desktop, replay, Spaces, WebDriver, Appium, GitHub Wiki, diagnostics, evidence and packaging gates when improving Ferrum further."
+    "Preserve all current browser, desktop, replay, Spaces, WebDriver, Appium, GitHub Wiki, diagnostics, evidence and packaging gates when improving Ferrum further.",
+    "Commit and review a package-lock.json, then prove npm ci reproduces the same dependency tree and full Linux/Windows Ferrum acceptance surface before enabling any dependency cache.",
+    "Only after lockfile/npm-ci proof, benchmark cache-off, cold-cache and warm-cache setup-node/actions-cache paths with repeated median/p95 setup timing plus artifact/evidence parity and explicit invalidation checks.",
+    "Run the same process/service workload unisolated versus strict Sandlock, requiring active fail-closed filesystem/network restrictions, complete Ferrum evidence/cleanup parity and acceptable median/p95 overhead; use nsjail as a comparator if results remain unclear.",
+    "Evaluate offline GitHub attestation bundles only when a concrete offline or provider-neutral verification need exists; do not duplicate the existing online provenance system speculatively."
   ],
   "blockers": []
 }
