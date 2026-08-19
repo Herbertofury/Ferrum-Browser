@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "run": 40,
+  "checkedAt": "2026-08-19T08:53:30Z",
+  "state": "VERIFIED",
+  "finalVerifiedProduct": {
+    "product": "94e58b90956fc48eef2ba5692f7832b9151c5a5d",
+    "commit": "94e58b90956fc48eef2ba5692f7832b9151c5a5d",
+    "proposal": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+    "proposalHead": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+    "tree": "8c90a80017e5f1a42144e746e2d8569e3c02a666",
+    "workflowRun": 32225418161,
+    "workflow": 32225418161,
+    "workflowConclusion": "success",
+    "treeParity": true,
+    "verifiedAt": "2026-08-19T08:53:30Z",
+    "proof": {
+      "conclusion": "all success",
+      "workflows": {
+        "ci": 32225418161,
+        "evidenceIndex": 32225418041,
+        "nativeWindows": 32225418124,
+        "tauri": 32225418142,
+        "perfetto": 32225418159,
+        "statefulApi": 32225418036,
+        "serviceFixture": 32225418351,
+        "networkFault": 32225418059
+      }
+    }
+  },
+  "verification": {
+    "source": "live GitHub Actions revalidation during GameSync lead gate",
+    "allDeclaredWorkflowsCompletedSuccess": true,
+    "testedProposalTreeMatchesMergedMainTree": true,
+    "currentMainAtVerification": "94e58b90956fc48eef2ba5692f7832b9151c5a5d"
+  }
+}

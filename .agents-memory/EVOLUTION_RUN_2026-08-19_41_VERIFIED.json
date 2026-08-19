@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "run": 41,
+  "checkedAt": "2026-08-19T13:49:44Z",
+  "state": "VERIFIED",
+  "finalVerifiedProduct": {
+    "product": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34",
+    "commit": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34",
+    "proposal": "1b525897549800ce71cc4111652b45372ea1c7c6",
+    "proposalHead": "1b525897549800ce71cc4111652b45372ea1c7c6",
+    "tree": "ca28ba1cd950f7750d0edf8145962850db8f3fd0",
+    "workflowRun": 32240882943,
+    "workflow": 32240882943,
+    "workflowConclusion": "success",
+    "treeParity": true,
+    "verifiedAt": "2026-08-19T13:49:44Z",
+    "proof": {
+      "conclusion": "all success",
+      "workflows": {
+        "ci": 32240882943,
+        "evidenceIndex": 32240882985,
+        "nativeWindows": 32240882984,
+        "tauri": 32240882950,
+        "perfetto": 32240882921,
+        "statefulApi": 32240882942,
+        "serviceFixture": 32240882952,
+        "networkFault": 32240882922
+      }
+    }
+  },
+  "verification": {
+    "source": "live GitHub Actions revalidation during GameSync lead gate",
+    "allDeclaredWorkflowsCompletedSuccess": true,
+    "testedProposalTreeMatchesMergedMainTree": true,
+    "currentMainAtVerification": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34",
+    "scope": "immutable external GitHub Action SHA pinning across Ferrum workflows; no runtime target, evidence, browser, mobile, desktop, or test coverage removed"
+  }
+}
