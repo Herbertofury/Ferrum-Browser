@@ -12,6 +12,8 @@ import { createSpace, listSpaces } from '../core/spaces.mjs';
 import { listEvidence, readEvidence, verifyEvidence } from '../core/evidence-store.mjs';
 import { bootstrapGithubWiki, probeGithubWiki } from '../integrations/github-wiki.mjs';
 
+const LEGACY_PROTOCOL_VERSION = '2025-06-18';
+
 const commonRunProperties = {
   headless: { type: 'boolean' },
   engine: { type: 'string' },
@@ -77,7 +79,11 @@ export async function startMcpStdio() {
     const reply = { jsonrpc: '2.0', id: req.id };
     try {
       if (req.method === 'initialize') {
-        reply.result = { protocolVersion: req.params?.protocolVersion || '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: 'ferrum', version: FERRUM_VERSION } };
+        const requestedVersion = req.params?.protocolVersion;
+        const protocolVersion = requestedVersion === LEGACY_PROTOCOL_VERSION
+          ? requestedVersion
+          : LEGACY_PROTOCOL_VERSION;
+        reply.result = { protocolVersion, capabilities: { tools: {} }, serverInfo: { name: 'ferrum', version: FERRUM_VERSION } };
       } else if (req.method === 'tools/list') {
         reply.result = { tools };
       } else if (req.method === 'tools/call') {
