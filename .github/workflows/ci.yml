@@ -129,6 +129,7 @@ jobs:
           name: ferrum-desktop-${{ runner.os }}
           path: dist/
           if-no-files-found: error
+          compression-level: 1
 
   windows-alt-browsers:
     strategy:
