@@ -1,0 +1,255 @@
+name: GameSync cross-repo recovery acceptance
+
+# Exact cross-repository recovery harness for blocked GameSync proposal verification.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile-repair:
+    name: lockfile-${{ matrix.name }}
+    runs-on: ubuntu-latest
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gamesync-idb-keyval
+            repository: Herbertofury/Gamesync
+            ref: 3bf322c09c2e4d5af9d3947739f40aa0e2ea4bc8
+          - name: next-vite
+            repository: Herbertofury/GameSync-Next
+            ref: 03e77c36c8348a774013ac69524027f95f3f0944
+          - name: next-test-toolchain
+            repository: Herbertofury/GameSync-Next
+            ref: 0a2e258317b0886a146198991d99d62b75a3b547
+          - name: next-ui-runtime
+            repository: Herbertofury/GameSync-Next
+            ref: c4b212adaf5ac66711fb0fcfa787f61d845f9c43
+          - name: next-typescript7
+            repository: Herbertofury/GameSync-Next
+            ref: 473ee7cac07e280b46775774338f75750fa7e5f3
+          - name: next-desktop-runtime
+            repository: Herbertofury/GameSync-Next
+            ref: 311273d299418b52eb3f931f35d19e0952b1fa60
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Private cross-repository checkout requires repository secret FERRUM_GAMESYNC_READ_TOKEN (preferred) or GH_PAT with read access to Herbertofury/Gamesync and Herbertofury/GameSync-Next.'
+            exit 2
+          fi
+
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          path: candidate
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact Node 26.7.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+
+      - name: Verify exact candidate identity
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+          test "$(node --version)" = "v26.7.0"
+
+      - name: Regenerate authoritative npm lock graph
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
+          git diff --check -- package-lock.json
+          mkdir -p ../output/${{ matrix.name }}
+          cp package-lock.json ../output/${{ matrix.name }}/package-lock.json
+          git diff -- package-lock.json > ../output/${{ matrix.name }}/package-lock.patch
+          sha256sum package-lock.json > ../output/${{ matrix.name }}/package-lock.sha256
+          printf '%s\n' '${{ matrix.repository }}' > ../output/${{ matrix.name }}/repository.txt
+          printf '%s\n' '${{ matrix.ref }}' > ../output/${{ matrix.name }}/source-head.txt
+          npm --version > ../output/${{ matrix.name }}/npm-version.txt
+
+      - name: Upload regenerated lock graph
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: repaired-lock-${{ matrix.name }}
+          path: output/${{ matrix.name }}
+          if-no-files-found: warn
+
+  standalone-vite-linux-ferrum:
+    runs-on: ubuntu-latest
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+    steps:
+      - name: Check out Ferrum recovery harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Private cross-repository checkout requires repository secret FERRUM_GAMESYNC_READ_TOKEN (preferred) or GH_PAT with read access to Herbertofury/Gamesync and Herbertofury/GameSync-Next.'
+            exit 2
+          fi
+
+      - name: Check out exact Gamesync Vite candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/Gamesync
+          ref: 8178577420ba9c540883c4dbac4634ed087f7788
+          path: candidate
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact candidate Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+
+      - name: Verify and build exact Gamesync candidate
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "8178577420ba9c540883c4dbac4634ed087f7788"
+          test "$(node --version)" = "v26.7.0"
+          git fetch origin main
+          test "$(git merge-base HEAD origin/main)" = "$(git rev-parse origin/main)"
+          npm ci
+          npm audit --audit-level=critical
+          npm run build
+          npm run test:bounty
+          git diff --check origin/main...HEAD
+
+      - name: Start deterministic GameSync content target
+        shell: bash
+        run: |
+          mkdir -p output
+          node -e "const http=require('http');const s=http.createServer((_q,r)=>{r.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});r.end('<!doctype html><html><body><main><h1>GameSync cross-repo Ferrum probe</h1></main></body></html>')});s.listen(8765,'127.0.0.1');setInterval(()=>{},2147483647)" > output/gamesync-site.log 2>&1 &
+
+      - name: Set up verified Ferrum Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Ferrum harness and install Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v24.19.0"
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: Exercise exact Gamesync candidate in Ferrum
+        shell: bash
+        run: |
+          set -euo pipefail
+          node bin/ferrum.mjs test candidate/scripts/stack/ferrum-stack-smoke.json --headless --artifacts output/gamesync-vite-ferrum | tee output/gamesync-vite-ferrum-run.json
+          test -n "$(find output/gamesync-vite-ferrum -name extension-inventory.json -print -quit)"
+          test -n "$(find output/gamesync-vite-ferrum -name result.json -print -quit)"
+
+      - name: Upload exact-build Ferrum evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gamesync-vite-crossrepo-ferrum
+          path: |
+            output/gamesync-vite-ferrum/
+            output/gamesync-vite-ferrum-run.json
+            output/gamesync-site.log
+          if-no-files-found: error
+
+  standalone-vite-opera:
+    runs-on: windows-latest
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+    steps:
+      - name: Require private GameSync read token
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CROSS_REPO_TOKEN)) {
+            throw 'Private cross-repository checkout requires repository secret FERRUM_GAMESYNC_READ_TOKEN (preferred) or GH_PAT with read access to Herbertofury/Gamesync and Herbertofury/GameSync-Next.'
+          }
+
+      - name: Check out exact Gamesync Vite candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/Gamesync
+          ref: 8178577420ba9c540883c4dbac4634ed087f7788
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact Node 26.7.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+
+      - name: Build exact candidate
+        shell: pwsh
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne '8178577420ba9c540883c4dbac4634ed087f7788') { throw 'Unexpected Gamesync candidate head' }
+          if ((node --version).Trim() -ne 'v26.7.0') { throw 'Unexpected Node version' }
+          npm ci
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install Opera GX
+        shell: pwsh
+        run: |
+          winget install --exact --id Opera.OperaGX --accept-source-agreements --accept-package-agreements --silent --disable-interactivity
+          $candidates = @(
+            "$env:LOCALAPPDATA\Programs\Opera GX\opera.exe",
+            "$env:LOCALAPPDATA\Programs\Opera GX\launcher.exe",
+            "$env:ProgramFiles\Opera GX\opera.exe",
+            "$env:ProgramFiles\Opera GX\launcher.exe"
+          )
+          $opera = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $opera) {
+            $opera = Get-ChildItem -Path $env:LOCALAPPDATA -Filter opera.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $opera) { throw 'Opera GX executable was not found after installation' }
+          "OPERA_GX_EXE=$opera" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Exercise fresh and restarted candidate in Opera GX
+        shell: pwsh
+        run: |
+          node scripts/verify-stack-opera-smoke.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload Opera evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gamesync-vite-crossrepo-opera
+          path: output
+          if-no-files-found: warn
