@@ -126,16 +126,24 @@ function normalizeVerifiedCheckpoint(entry) {
   }
 
   const finalVerifiedProduct = entry?.finalVerifiedProduct;
-  const finalVerifiedWorkflowRun = Number(finalVerifiedProduct?.workflow ?? 0);
-  const finalVerifiedProductProof =
+  const finalVerifiedWorkflowRun = Number(finalVerifiedProduct?.workflowRun ?? finalVerifiedProduct?.workflow ?? 0);
+  const finalVerifiedModernProof =
+    finalVerifiedProduct?.product &&
+    typeof finalVerifiedProduct?.tree === 'string' && finalVerifiedProduct.tree.length > 0 &&
+    typeof finalVerifiedProduct?.proposal === 'string' && finalVerifiedProduct.proposal.length > 0 &&
+    finalVerifiedProduct?.treeParity === true &&
+    isSuccess(finalVerifiedProduct?.workflowConclusion ?? finalVerifiedProduct?.proof?.conclusion) &&
+    Number.isSafeInteger(finalVerifiedWorkflowRun) &&
+    finalVerifiedWorkflowRun > 0;
+  const finalVerifiedLegacyProof =
     finalVerifiedProduct?.commit &&
     typeof finalVerifiedProduct?.tree === 'string' && finalVerifiedProduct.tree.length > 0 &&
     typeof finalVerifiedProduct?.proposalHead === 'string' && finalVerifiedProduct.proposalHead.length > 0 &&
     Number.isSafeInteger(finalVerifiedWorkflowRun) &&
     finalVerifiedWorkflowRun > 0;
-  if (finalVerifiedProductProof) {
+  if (finalVerifiedModernProof || finalVerifiedLegacyProof) {
     return {
-      commit: finalVerifiedProduct.commit,
+      commit: finalVerifiedProduct.product ?? finalVerifiedProduct.commit,
       workflowRun: finalVerifiedWorkflowRun,
       verifiedAt: finalVerifiedProduct?.verifiedAt ?? entry?.checkedAt ?? null,
     };
@@ -311,6 +319,36 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       },
     }),
     { commit: 'final-product', workflowRun: 53, verifiedAt: '2026-08-18T17:25:18Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-19T08:53:30Z',
+      finalVerifiedProduct: {
+        product: 'run40-product',
+        proposal: 'run40-proposal',
+        tree: 'run40-tree',
+        workflowRun: 54,
+        workflowConclusion: 'success',
+        treeParity: true,
+        proof: { conclusion: 'all success', workflows: { ci: 54 } },
+      },
+    }),
+    { commit: 'run40-product', workflowRun: 54, verifiedAt: '2026-08-19T08:53:30Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      finalVerifiedProduct: {
+        product: 'unproven-run40-product',
+        proposal: 'run40-proposal',
+        tree: 'run40-tree',
+        workflowRun: 54,
+        workflowConclusion: 'failure',
+        treeParity: true,
+      },
+    }),
+    null,
   );
 
   assert.deepEqual(
