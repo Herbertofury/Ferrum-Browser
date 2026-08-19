@@ -70,13 +70,25 @@ jobs:
             for (const tag of ['latest', 'next', 'beta', 'rc', 'canary', 'alpha']) {
               const version = distTags?.[tag];
               if (!version) continue;
-              const immutable = npmView([`${name}@${version}`, 'version', 'dist.tarball', 'dist.integrity', 'engines']);
+              const immutable = npmView([
+                `${name}@${version}`,
+                'version',
+                'dist.tarball',
+                'dist.integrity',
+                'engines',
+                'dependencies',
+                'optionalDependencies',
+                'peerDependencies'
+              ]);
               selected[tag] = {
                 version,
                 resolvedVersion: immutable.version ?? version,
                 tarball: immutable['dist.tarball'] ?? immutable.dist?.tarball ?? null,
                 integrity: immutable['dist.integrity'] ?? immutable.dist?.integrity ?? null,
-                engines: immutable.engines ?? null
+                engines: immutable.engines ?? null,
+                dependencies: immutable.dependencies ?? null,
+                optionalDependencies: immutable.optionalDependencies ?? null,
+                peerDependencies: immutable.peerDependencies ?? null
               };
               if (!selected[tag].tarball || !selected[tag].integrity) {
                 throw new Error(`${name}@${version} did not expose immutable tarball/integrity metadata`);
