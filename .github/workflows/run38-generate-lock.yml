@@ -98,4 +98,5 @@ jobs:
         with:
           name: ferrum-run38-npm-lock-experiment
           path: .ferrum/run38-generated/
+          include-hidden-files: true
           if-no-files-found: error
