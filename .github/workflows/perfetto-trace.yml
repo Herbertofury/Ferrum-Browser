@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: Produce Ferrum evidence trace
         shell: bash
         run: |

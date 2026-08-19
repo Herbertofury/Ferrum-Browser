@@ -39,7 +39,7 @@ jobs:
         with:
           version: 10
       - name: Install Ferrum runtime dependencies
-        run: npm install --omit=dev --no-audit --no-fund
+        run: npm ci --omit=dev --no-audit --no-fund
       - name: Install Tauri Linux prerequisites
         if: runner.os == 'Linux'
         shell: bash
@@ -121,7 +121,7 @@ jobs:
         with:
           version: 10
       - name: Install Ferrum runtime dependencies
-        run: npm install --omit=dev --no-audit --no-fund
+        run: npm ci --omit=dev --no-audit --no-fund
       - name: Install Tauri Linux prerequisites
         if: runner.os == 'Linux'
         shell: bash
