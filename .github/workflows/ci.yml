@@ -111,6 +111,23 @@ jobs:
         run: npm run smoke:desktop
       - name: Package Ferrum desktop shell
         run: npm run package:desktop
+      - name: Prepare portable desktop artifact and prove archive round-trip
+        id: desktop-artifact
+        shell: bash
+        run: |
+          rm -rf .ferrum/desktop-artifact
+          mkdir -p .ferrum/desktop-artifact
+          find dist -type f -print0 | sort -z | xargs -0 sha256sum > .ferrum/desktop-artifact/original.sha256
+          ARCHIVE=".ferrum/desktop-artifact/ferrum-desktop-${RUNNER_OS}.tar.gz"
+          tar -C dist -cf - . | gzip -1 > "$ARCHIVE"
+          DIGEST="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
+          echo "path=$ARCHIVE" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          rm -rf dist
+          mkdir -p dist
+          tar -xzf "$ARCHIVE" -C dist
+          find dist -type f -print0 | sort -z | xargs -0 sha256sum > .ferrum/desktop-artifact/roundtrip.sha256
+          diff -u .ferrum/desktop-artifact/original.sha256 .ferrum/desktop-artifact/roundtrip.sha256
       - name: Fresh packaged Ferrum smoke
         if: runner.os == 'Linux'
         run: xvfb-run -a npm run smoke:packaged-desktop
@@ -123,13 +140,21 @@ jobs:
           name: ferrum-evidence-${{ runner.os }}
           path: artifacts/
           if-no-files-found: ignore
-      - uses: actions/upload-artifact@v7
+      - name: Upload verified portable desktop artifact
+        id: desktop-upload
         if: success()
+        uses: actions/upload-artifact@v7
         with:
-          name: ferrum-desktop-${{ runner.os }}
-          path: dist/
+          path: ${{ steps.desktop-artifact.outputs.path }}
           if-no-files-found: error
-          compression-level: 1
+          archive: false
+      - name: Verify uploaded desktop artifact digest
+        if: success()
+        shell: bash
+        env:
+          LOCAL_DIGEST: ${{ steps.desktop-artifact.outputs.digest }}
+          REMOTE_DIGEST: ${{ steps.desktop-upload.outputs.artifact-digest }}
+        run: test "$LOCAL_DIGEST" = "$REMOTE_DIGEST"
 
   windows-alt-browsers:
     strategy:
