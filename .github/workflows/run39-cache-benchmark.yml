@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - evolution/run39-cache-benchmark
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
