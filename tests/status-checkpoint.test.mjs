@@ -23,8 +23,19 @@ async function readOptionalJson(file) {
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const proposal = entry?.proposal;
+  const verification = entry?.verification;
+  const verificationWorkflowRun = Number(verification?.workflowRun ?? 0);
+  const verificationProof =
+    verifiedProduct?.commit &&
+    typeof verifiedProduct?.tree === 'string' && verifiedProduct.tree.length > 0 &&
+    typeof verifiedProduct?.testedProposalHead === 'string' && verifiedProduct.testedProposalHead.length > 0 &&
+    verifiedProduct?.treeParity === true &&
+    String(verification?.workflowConclusion ?? '').toLowerCase() === 'success' &&
+    Number.isSafeInteger(verificationWorkflowRun) &&
+    verificationWorkflowRun > 0;
   const directVerifiedWorkflowRun =
-    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.latestFullGate ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun;
+    verifiedProduct?.mainWorkflowRun ?? verifiedProduct?.workflowRun ?? verifiedProduct?.latestFullGate ?? verifiedProduct?.ciRun ?? verifiedProduct?.proposalRun ??
+    (verificationProof ? verificationWorkflowRun : undefined);
   const siblingProposalWorkflowRun = Number(proposal?.workflowRun ?? 0);
   const siblingProposalProof =
     verifiedProduct?.commit &&
@@ -247,6 +258,32 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       },
     }),
     { commit: 'final-product', workflowRun: 53, verifiedAt: '2026-08-18T17:25:18Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      verifiedProduct: {
+        commit: 'run36-product',
+        tree: 'run36-tree',
+        testedProposalHead: 'run36-proposal',
+        treeParity: true,
+      },
+      verification: { workflowRun: 55, workflowConclusion: 'success' },
+    }),
+    { commit: 'run36-product', workflowRun: 55, verifiedAt: null },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      verifiedProduct: {
+        commit: 'unproven-run36-product',
+        tree: 'run36-tree',
+        testedProposalHead: 'run36-proposal',
+        treeParity: true,
+      },
+      verification: { workflowRun: 56, workflowConclusion: 'failure' },
+    }),
+    null,
   );
 
   assert.equal(
