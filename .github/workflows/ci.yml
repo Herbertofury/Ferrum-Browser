@@ -139,7 +139,7 @@ jobs:
       - name: Fresh packaged Ferrum smoke
         if: runner.os == 'Windows'
         run: npm run smoke:packaged-desktop
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: ferrum-evidence-${{ runner.os }}
@@ -148,7 +148,7 @@ jobs:
       - name: Upload verified portable desktop artifact
         id: desktop-upload
         if: success()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           path: ${{ steps.desktop-artifact.outputs.path }}
           if-no-files-found: error
@@ -207,7 +207,7 @@ jobs:
           };
           fs.writeFileSync('artifacts/provenance/summary.json', `${JSON.stringify(summary, null, 2)}\n`);
           NODE
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: ferrum-provenance-${{ runner.os }}
@@ -236,7 +236,7 @@ jobs:
           }
       - name: Ferrum alternate browser matrix
         run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers ${{ matrix.browser }} --workers 1 --headless --require-all --compact
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: ferrum-evidence-Windows-${{ matrix.browser }}
@@ -254,7 +254,7 @@ jobs:
       - run: npm ci --omit=dev --no-audit --no-fund
       - name: Ferrum real remote WebDriver smoke against Selenium Grid
         run: npm run smoke:webdriver
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: ferrum-evidence-WebDriver-Grid
@@ -287,7 +287,7 @@ jobs:
         env:
           FERRUM_LIGHTPANDA: ${{ github.workspace }}/.ferrum/bin/lightpanda
         run: npm run smoke:lightpanda
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: ferrum-evidence-Lightpanda
@@ -329,7 +329,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -no-metrics
           disable-animations: true
           script: bash ./scripts/appium-android-smoke.sh
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:
           name: ferrum-evidence-Appium-Android
