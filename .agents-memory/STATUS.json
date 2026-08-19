@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "17b5260d6f18710e45f6b4e154ca77da5c2bbb82",
-  "verifiedWorkflowRun": 32211204897,
-  "verifiedAt": "2026-08-19T03:20:13Z",
+  "verifiedCodeCommit": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34",
+  "verifiedWorkflowRun": 32240882943,
+  "verifiedAt": "2026-08-19T13:49:44Z",
   "verifiedToolchain": {
     "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
@@ -182,96 +182,176 @@
       ]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32211204897,
-      "codeCommit": "17b5260d6f18710e45f6b4e154ca77da5c2bbb82",
-      "verifiedProposalHead": "2e4ec3e0f867189dc2495c0fdb0b2d56be17d562",
-      "verifiedTree": "3561dfc8b8b3392ef3ec75f3a6de0d30802e34b2",
+      "workflowRun": 32240882943,
+      "codeCommit": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34",
+      "verifiedProposalHead": "1b525897549800ce71cc4111652b45372ea1c7c6",
+      "verifiedTree": "ca28ba1cd950f7750d0edf8145962850db8f3fd0",
       "treeMatchesMergedProduct": true,
-      "perfettoCompatibilityWorkflowRun": 32155315736,
+      "sourceEvolutionRecord": "EVOLUTION_RUN_2026-08-19_41_VERIFIED.json",
       "linuxDesktop": {
-        "artifactId": 9350973979,
-        "sizeBytes": 145016986,
-        "providerSha256": "ce9934efe7d2b770179bb203a9fb81b7d0b4a955b0a10bf137eeffbb737201fd",
-        "freshPackagedDesktopSmoke": "passed",
-        "attestationId": 41517425,
-        "localProviderRedownloadDigestEqual": true,
-        "ghAttestationVerify": "passed"
+        "artifactId": 9367517504,
+        "sizeBytes": 145017192,
+        "providerSha256": "15048081291f0c34f6f386deb6ffca53e61ce2faa3cc084b34596a6f89916c6d",
+        "freshPackagedDesktopSmoke": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9350848915,
-        "sizeBytes": 166258587,
-        "providerSha256": "87c98724b06dccd670892e4a8937cc06f3551f7046148ccc97219a3da19f5855",
-        "freshPackagedDesktopSmoke": "passed",
-        "attestationId": 41516810,
-        "localProviderRedownloadDigestEqual": true,
-        "ghAttestationVerify": "passed"
+        "artifactId": 9367443089,
+        "sizeBytes": 166259773,
+        "providerSha256": "480e514c03e8bd7e6a639bd7bfecbfb520a978a7ab124c9a2a0e51046ed682dc",
+        "freshPackagedDesktopSmoke": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9350973177,
-        "sizeBytes": 2252244,
-        "providerSha256": "30ee69727d6ec4591d1673d2815a9cd8d45747e59fde86fd2cde41ce8de2d4ec"
+        "artifactId": 9367516113,
+        "sizeBytes": 2254516,
+        "providerSha256": "d6a1ec054b30d076e1fb0155a441dca60ae5d208afa1b0057a328a8588a32418"
       },
       "windowsEvidence": {
-        "artifactId": 9350847780,
-        "sizeBytes": 1920427,
-        "providerSha256": "23e64673c3863e6b7933af97e50de3527ec2ced60751c0e8db01ef6529fc8c45"
+        "artifactId": 9367441863,
+        "sizeBytes": 1915255,
+        "providerSha256": "9bcbb89de51b62302c03d800dbad3388747e35e9e2852128eac5a2c3dfed545b"
       },
       "appiumEvidence": {
-        "artifactId": 9350847926,
-        "sizeBytes": 126363,
-        "providerSha256": "238cb0ed0a90b3ee53324a7d7ff73def870a3fd8d80ca608e6e83e396757fc0e"
+        "artifactId": 9367455548,
+        "sizeBytes": 124109,
+        "providerSha256": "33f77a1d338a0d57456c18bc32c9e4c28f2c48299ffb77cf8b756c2758f5fb2d"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9350816434,
-        "sizeBytes": 23403,
-        "providerSha256": "71bab69aee554078bb32236435e4e19f51faf67b4d578ce40723063da88b0fd3"
+        "artifactId": 9367425284,
+        "sizeBytes": 23384,
+        "providerSha256": "2888c4760477f577104beceb89c233200daf7c4886083408e649edda9efe163e"
       },
       "lightpandaEvidence": {
-        "artifactId": 9350806272,
-        "sizeBytes": 13027,
-        "providerSha256": "5388868eed3a1cdcf3fe05380956af2f2171d5a9c8f56d87e9d367335d3aa64e"
+        "artifactId": 9367365588,
+        "sizeBytes": 13076,
+        "providerSha256": "eea20100b35543233dff169da2eb1eaf552fd06f6c64953f1996e4c70347ce4c"
       },
-      "serviceNetworkFaultEvidence": {
-        "artifactId": 9330056839,
-        "sizeBytes": 20057,
-        "providerSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7",
-        "downloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"
-      },
-      "independentArtifactRedownloadHash": "run-37 exact-head Linux/Windows producer SHA-256 equals provider digest and verified attestation linkage; the exact-run cross-job evidence index independently redownloaded to the provider SHA-256, contains all 11 required current-run artifacts, and merged product tree equals the exact tested proposal tree",
-      "tauriWebDriverWorkflowRun": 32194473469,
-      "nativeWindowsWorkflowRun": 32199800977,
       "linuxProvenance": {
-        "artifactId": 9350977444,
-        "sizeBytes": 8324,
-        "providerSha256": "1015b44e94824449c3ba6ac0d20adc8b7dab21fd9d8a874076d440f9a949eeeb"
+        "artifactId": 9367522858,
+        "sizeBytes": 8332,
+        "providerSha256": "f2e5960e9898673d0baed42f8a1ad6aa7e8c9e8943dad32126d9a55693f7ef3d"
       },
       "windowsProvenance": {
-        "artifactId": 9350855192,
-        "sizeBytes": 8391,
-        "providerSha256": "1c63240cf6aa9dbbea4c9d562a9077060fbc2ba75ec536568bcd187a7c9ad245"
+        "artifactId": 9367451594,
+        "sizeBytes": 8383,
+        "providerSha256": "022e48382f7a61a87bfe8417088b887ac2b36bf7a3eaa56479aa77eb0f46f693"
       },
       "windowsBraveEvidence": {
-        "artifactId": 9350835662,
-        "sizeBytes": 31799,
-        "providerSha256": "87234e434953e83e3efc8daecad01c3062e303d5844f870adc7ad2f1b1c446c1"
+        "artifactId": 9367551618,
+        "sizeBytes": 31854,
+        "providerSha256": "56b09db790104e8eb8d04fb6f61ff7685ab6eb6c0e2809ed53ae248369422c33"
       },
       "windowsOperaGxEvidence": {
-        "artifactId": 9350842154,
-        "sizeBytes": 3435282,
-        "providerSha256": "7502ac96a0a47cd0613d4060685eff57036c8cd8adb20f6cc80ba64ed0d6ca33"
+        "artifactId": 9367448729,
+        "sizeBytes": 3421039,
+        "providerSha256": "83d0fc38acabac554bd4a9d6945c19b2626a2e1b7e96fa49c5fc5aa870b10980"
       },
-      "evidenceIndex": {
-        "workflowRun": 32211204902,
-        "targetFerrumCiRun": 32211204897,
-        "artifactId": 9350979798,
-        "sizeBytes": 5368,
-        "providerSha256": "3be2e85975c3e68f8f0753ee4d04398183d1475b4dde11ac27ee941c57fbbd3e",
-        "artifactCount": 11,
-        "totalIndexedBytes": 319094833,
-        "missingRequiredArtifacts": [],
-        "verifiedAttestationCount": 2,
-        "providerDigestMatchesDownloadedBytes": true
-      }
+      "perfettoCompatibilityWorkflowRun": 32240882921,
+      "nativeWindowsWorkflowRun": 32240882984,
+      "tauriWebDriverWorkflowRun": 32240882950,
+      "serviceFixtureWorkflowRun": 32240882952,
+      "serviceNetworkFaultWorkflowRun": 32240882922,
+      "statefulApiWorkflowRun": 32240882942,
+      "companionWorkflows": {
+        "evidenceIndex": {
+          "workflowRun": 32240882985,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {
+            "ferrum-evidence-index-32240882943.json": {
+              "artifactId": 9367561027,
+              "sizeBytes": 5365,
+              "providerSha256": "81d762a7331ffde501f906dd3bc533e87529edb555279c6396e8746af89e962c"
+            }
+          }
+        },
+        "nativeWindows": {
+          "workflowRun": 32240882984,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {
+            "ferrum-evidence-Native-Windows-desktop-driver": {
+              "artifactId": 9367099355,
+              "sizeBytes": 48558,
+              "providerSha256": "3ec7e5a8c9514cd3478fba68f07789c210e4a21527e45cee4a42fd7f941f46e1"
+            },
+            "ferrum-evidence-Native-Windows-novawindows": {
+              "artifactId": 9367063384,
+              "sizeBytes": 48130,
+              "providerSha256": "fae4485fb7f4ea53a60da8b82e095e8e90bdb5ec8645375886de75379198c172"
+            }
+          }
+        },
+        "tauri": {
+          "workflowRun": 32240882950,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {
+            "ferrum-evidence-Tauri-Official-Windows": {
+              "artifactId": 9367405899,
+              "sizeBytes": 4849,
+              "providerSha256": "a0a0c327be09937baf0f7aaa85a6fbfeb529684fb33ac229ab2c6f18dfb161e2"
+            },
+            "ferrum-evidence-Tauri-Embedded-Linux": {
+              "artifactId": 9367179571,
+              "sizeBytes": 40218,
+              "providerSha256": "82db7c30432fba5a9d9fdd3e4f679619481e75f5af003b4a8c52f9f82934abf2"
+            },
+            "ferrum-evidence-Tauri-Official-Linux": {
+              "artifactId": 9367079206,
+              "sizeBytes": 22284,
+              "providerSha256": "9e51004f1f496ea3a66c0d9e54525592b2b20cdaedfa7a6dd930ac101be6bcf7"
+            },
+            "ferrum-evidence-Tauri-Embedded-Windows": {
+              "artifactId": 9367053329,
+              "sizeBytes": 37583,
+              "providerSha256": "8a2d798b92331b51d7fdc5d0dacf7ab43782838cb4006ed239d646f58b38f66d"
+            }
+          }
+        },
+        "perfetto": {
+          "workflowRun": 32240882921,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {}
+        },
+        "statefulApi": {
+          "workflowRun": 32240882942,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {
+            "ferrum-evidence-Stateful-API": {
+              "artifactId": 9367046197,
+              "sizeBytes": 87382,
+              "providerSha256": "262f70214661dfb8b988aa79d8e6be4c55f0fa4e931019dfbc090d5a81bbdc67"
+            }
+          }
+        },
+        "serviceFixture": {
+          "workflowRun": 32240882952,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {
+            "ferrum-evidence-Service-Fixture": {
+              "artifactId": 9366981818,
+              "sizeBytes": 11694,
+              "providerSha256": "ee44635e3819e2fe091d8ea32e61d5882e5b42c521011b3adf83e8d8ee96e540"
+            }
+          }
+        },
+        "networkFault": {
+          "workflowRun": 32240882922,
+          "conclusion": "success",
+          "headSha": "1b525897549800ce71cc4111652b45372ea1c7c6",
+          "artifacts": {
+            "ferrum-evidence-Service-Network-Fault": {
+              "artifactId": 9366954239,
+              "sizeBytes": 24139,
+              "providerSha256": "3e87b4f34edacf4a2a9b3c3327dd17538ae7319135b0983ee6d02790ade52e7e"
+            }
+          }
+        }
+      },
+      "independentArtifactRedownloadHash": "Selected EVOLUTION_RUN_2026-08-19_41_VERIFIED.json; exact product/proposal tree ca28ba1cd950f7750d0edf8145962850db8f3fd0; core CI 32240882943 completed success; current core artifact provider SHA-256 values are retained above and all declared companion workflow runs are independently required to be completed success on the exact proposal head."
     },
     "artifactPublication": {
       "sourceCheckpoint": {
@@ -401,7 +481,8 @@
     "Process targets could health-check a service but could not directly exercise its API; Ferrum now supports bounded HTTP requests with retained full-response evidence, and transport failures wait only briefly for the authoritative child terminal state so real process exits are attributed instead of being flattened into generic fetch errors.",
     "Run-25 checkpoint advanced beyond STATUS after a verified product merge; STATUS is now synchronized to product 502232441fdd828b9e7f191bb01f75a9154a789d and CI 32155315750, including the Perfetto-compatible evidence trace sidecar.",
     "Run-26 finalVerifiedProduct checkpoint was invisible to STATUS normalization, leaving durable STATUS on run 25; checkpoint normalization now recognizes proven finalVerifiedProduct records and STATUS is synchronized to product 0e212da9effebdc7db1d09a7faea03679bd11cc3 / CI 32164953344 without dropping run-25 trace evidence.",
-    "Run-36 verifiedProduct checkpoint stores its successful workflow under sibling verification.workflowRun/workflowConclusion; STATUS normalization now recognizes that proof shape and durable STATUS is synchronized to product f9f7f7689c2711896cc7ac57dae29760b4f130cc / CI 32208809141 without dropping earlier evidence."
+    "Run-36 verifiedProduct checkpoint stores its successful workflow under sibling verification.workflowRun/workflowConclusion; STATUS normalization now recognizes that proof shape and durable STATUS is synchronized to product f9f7f7689c2711896cc7ac57dae29760b4f130cc / CI 32208809141 without dropping earlier evidence.",
+    "Ferrum STATUS could lag a newer fully verified evolution product; deterministic promotion now selects EVOLUTION_RUN_2026-08-18_39.json, requires exact proposal/product tree parity and successful CI, verifies the selected product is on current main, refreshes current-run artifact identities, verifies declared companion workflows, and archives the superseded verified checkpoint without discarding evidence."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in an earlier Windows evidence bundle because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
@@ -434,5 +515,475 @@
     "Run the same process/service workload unisolated versus strict Sandlock, requiring active fail-closed filesystem/network restrictions, complete Ferrum evidence/cleanup parity and acceptable median/p95 overhead; use nsjail as a comparator if results remain unclear.",
     "Evaluate offline GitHub attestation bundles only when a concrete offline or provider-neutral verification need exists; do not duplicate the existing online provenance system speculatively."
   ],
-  "blockers": []
+  "blockers": [],
+  "verifiedCheckpointHistory": [
+    {
+      "verifiedCodeCommit": "17b5260d6f18710e45f6b4e154ca77da5c2bbb82",
+      "verifiedWorkflowRun": 32211204897,
+      "verifiedAt": "2026-08-19T03:20:13Z",
+      "verifiedToolchain": {
+        "playwright": "1.63.0-alpha-2026-08-17",
+        "electron": "43.4.0",
+        "electronPackager": "20.3.0"
+      },
+      "latestBuildArtifacts": {
+        "workflowRun": 32211204897,
+        "codeCommit": "17b5260d6f18710e45f6b4e154ca77da5c2bbb82",
+        "verifiedProposalHead": "2e4ec3e0f867189dc2495c0fdb0b2d56be17d562",
+        "verifiedTree": "3561dfc8b8b3392ef3ec75f3a6de0d30802e34b2",
+        "treeMatchesMergedProduct": true,
+        "perfettoCompatibilityWorkflowRun": 32155315736,
+        "linuxDesktop": {
+          "artifactId": 9350973979,
+          "sizeBytes": 145016986,
+          "providerSha256": "ce9934efe7d2b770179bb203a9fb81b7d0b4a955b0a10bf137eeffbb737201fd",
+          "freshPackagedDesktopSmoke": "passed",
+          "attestationId": 41517425,
+          "localProviderRedownloadDigestEqual": true,
+          "ghAttestationVerify": "passed"
+        },
+        "windowsDesktop": {
+          "artifactId": 9350848915,
+          "sizeBytes": 166258587,
+          "providerSha256": "87c98724b06dccd670892e4a8937cc06f3551f7046148ccc97219a3da19f5855",
+          "freshPackagedDesktopSmoke": "passed",
+          "attestationId": 41516810,
+          "localProviderRedownloadDigestEqual": true,
+          "ghAttestationVerify": "passed"
+        },
+        "linuxEvidence": {
+          "artifactId": 9350973177,
+          "sizeBytes": 2252244,
+          "providerSha256": "30ee69727d6ec4591d1673d2815a9cd8d45747e59fde86fd2cde41ce8de2d4ec"
+        },
+        "windowsEvidence": {
+          "artifactId": 9350847780,
+          "sizeBytes": 1920427,
+          "providerSha256": "23e64673c3863e6b7933af97e50de3527ec2ced60751c0e8db01ef6529fc8c45"
+        },
+        "appiumEvidence": {
+          "artifactId": 9350847926,
+          "sizeBytes": 126363,
+          "providerSha256": "238cb0ed0a90b3ee53324a7d7ff73def870a3fd8d80ca608e6e83e396757fc0e"
+        },
+        "webdriverGridEvidence": {
+          "artifactId": 9350816434,
+          "sizeBytes": 23403,
+          "providerSha256": "71bab69aee554078bb32236435e4e19f51faf67b4d578ce40723063da88b0fd3"
+        },
+        "lightpandaEvidence": {
+          "artifactId": 9350806272,
+          "sizeBytes": 13027,
+          "providerSha256": "5388868eed3a1cdcf3fe05380956af2f2171d5a9c8f56d87e9d367335d3aa64e"
+        },
+        "serviceNetworkFaultEvidence": {
+          "artifactId": 9330056839,
+          "sizeBytes": 20057,
+          "providerSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7",
+          "downloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"
+        },
+        "independentArtifactRedownloadHash": "run-37 exact-head Linux/Windows producer SHA-256 equals provider digest and verified attestation linkage; the exact-run cross-job evidence index independently redownloaded to the provider SHA-256, contains all 11 required current-run artifacts, and merged product tree equals the exact tested proposal tree",
+        "tauriWebDriverWorkflowRun": 32194473469,
+        "nativeWindowsWorkflowRun": 32199800977,
+        "linuxProvenance": {
+          "artifactId": 9350977444,
+          "sizeBytes": 8324,
+          "providerSha256": "1015b44e94824449c3ba6ac0d20adc8b7dab21fd9d8a874076d440f9a949eeeb"
+        },
+        "windowsProvenance": {
+          "artifactId": 9350855192,
+          "sizeBytes": 8391,
+          "providerSha256": "1c63240cf6aa9dbbea4c9d562a9077060fbc2ba75ec536568bcd187a7c9ad245"
+        },
+        "windowsBraveEvidence": {
+          "artifactId": 9350835662,
+          "sizeBytes": 31799,
+          "providerSha256": "87234e434953e83e3efc8daecad01c3062e303d5844f870adc7ad2f1b1c446c1"
+        },
+        "windowsOperaGxEvidence": {
+          "artifactId": 9350842154,
+          "sizeBytes": 3435282,
+          "providerSha256": "7502ac96a0a47cd0613d4060685eff57036c8cd8adb20f6cc80ba64ed0d6ca33"
+        },
+        "evidenceIndex": {
+          "workflowRun": 32211204902,
+          "targetFerrumCiRun": 32211204897,
+          "artifactId": 9350979798,
+          "sizeBytes": 5368,
+          "providerSha256": "3be2e85975c3e68f8f0753ee4d04398183d1475b4dde11ac27ee941c57fbbd3e",
+          "artifactCount": 11,
+          "totalIndexedBytes": 319094833,
+          "missingRequiredArtifacts": [],
+          "verifiedAttestationCount": 2,
+          "providerDigestMatchesDownloadedBytes": true
+        }
+      },
+      "archivedBecauseSupersededBy": "5ebbf1ffaee53dfe7ef0c8bb36f8526c8e1b7a95"
+    },
+    {
+      "verifiedCodeCommit": "5ebbf1ffaee53dfe7ef0c8bb36f8526c8e1b7a95",
+      "verifiedWorkflowRun": 32217425220,
+      "verifiedAt": "2026-08-19T06:00:00Z",
+      "verifiedToolchain": {
+        "playwright": "1.63.0-alpha-2026-08-17",
+        "electron": "43.4.0",
+        "electronPackager": "20.3.0"
+      },
+      "latestBuildArtifacts": {
+        "workflowRun": 32217425220,
+        "codeCommit": "5ebbf1ffaee53dfe7ef0c8bb36f8526c8e1b7a95",
+        "verifiedProposalHead": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+        "verifiedTree": "122a312792f621ac14031f2c25c9edf3b20e89b9",
+        "treeMatchesMergedProduct": true,
+        "sourceEvolutionRecord": "EVOLUTION_RUN_2026-08-18_39.json",
+        "linuxDesktop": {
+          "artifactId": 9353235870,
+          "sizeBytes": 145017072,
+          "providerSha256": "e8f7a9b3abeb5b3068a65d82c414d038c844abd28ec8e6f7a4ba88d5a19cbbe6",
+          "freshPackagedDesktopSmoke": "passed"
+        },
+        "windowsDesktop": {
+          "artifactId": 9353209860,
+          "sizeBytes": 166258570,
+          "providerSha256": "38cea436ffed5257bb964e2a1f0e457c0858be9896934d6f1ce555c4e4b1b90c",
+          "freshPackagedDesktopSmoke": "passed"
+        },
+        "linuxEvidence": {
+          "artifactId": 9353235382,
+          "sizeBytes": 2253063,
+          "providerSha256": "dfa88f95ae9fef08b74fd131e394933aecd549fe6dd63a523f3412bb873e5b31"
+        },
+        "windowsEvidence": {
+          "artifactId": 9353209167,
+          "sizeBytes": 1915378,
+          "providerSha256": "2673d32934e81d0c2259c815e1dfea0941b14dc3e85829a7e445bd0176042923"
+        },
+        "appiumEvidence": {
+          "artifactId": 9353258891,
+          "sizeBytes": 126354,
+          "providerSha256": "1acdedcde24671769f993332da9c768b62e7ca30494282612b4f038de8189d3d"
+        },
+        "webdriverGridEvidence": {
+          "artifactId": 9353190143,
+          "sizeBytes": 23312,
+          "providerSha256": "745933346f0d1f65dd4d9429dc9fd427f70f2a0ea43e46036aa95c7dab8670cf"
+        },
+        "lightpandaEvidence": {
+          "artifactId": 9353195080,
+          "sizeBytes": 13062,
+          "providerSha256": "09e5d395c7b9a5715e6369849a77579f650a66b8ec2981105c0f217fd82ffb26"
+        },
+        "linuxProvenance": {
+          "artifactId": 9353238601,
+          "sizeBytes": 8298,
+          "providerSha256": "6980ee1082367ebbd89ec67e0a6fd1a96e020c0de3cd2ca7c937dda4ab230116"
+        },
+        "windowsProvenance": {
+          "artifactId": 9353214240,
+          "sizeBytes": 8312,
+          "providerSha256": "31e9131bce15c347a4410978bedac85369c467f71a0e130cfb5b5983f457c513"
+        },
+        "windowsBraveEvidence": {
+          "artifactId": 9353229423,
+          "sizeBytes": 31823,
+          "providerSha256": "312e571efd0c4bc08442d6974223d1c6017ee7dc3b14397097c4ac9a30f5f5bc"
+        },
+        "windowsOperaGxEvidence": {
+          "artifactId": 9353227792,
+          "sizeBytes": 3434871,
+          "providerSha256": "07eb110c41137d4cbe2590a30e69bb587e1d1ad59607b676f00cf5a2abcf12a5"
+        },
+        "perfettoCompatibilityWorkflowRun": 32217425193,
+        "nativeWindowsWorkflowRun": 32217425183,
+        "tauriWebDriverWorkflowRun": 32217425214,
+        "serviceFixtureWorkflowRun": 32217425192,
+        "serviceNetworkFaultWorkflowRun": 32217425196,
+        "statefulApiWorkflowRun": 32217425199,
+        "companionWorkflows": {
+          "nativeWindows": {
+            "workflowRun": 32217425183,
+            "conclusion": "success",
+            "headSha": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+            "artifacts": {
+              "ferrum-evidence-Native-Windows-desktop-driver": {
+                "artifactId": 9352999643,
+                "sizeBytes": 48484,
+                "providerSha256": "2ae2a2fdc5f5bc3cd8bd731340591005ddf7be00cea770e4c304a883ae5ddbe5"
+              },
+              "ferrum-evidence-Native-Windows-novawindows": {
+                "artifactId": 9352938953,
+                "sizeBytes": 48026,
+                "providerSha256": "218bbf6f826a4de012fc2ea1a8d74ac75754c3e687bb89ef9c1d1174d7f0433e"
+              }
+            }
+          },
+          "perfetto": {
+            "workflowRun": 32217425193,
+            "conclusion": "success",
+            "headSha": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+            "artifacts": {}
+          },
+          "networkFault": {
+            "workflowRun": 32217425196,
+            "conclusion": "success",
+            "headSha": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+            "artifacts": {
+              "ferrum-evidence-Service-Network-Fault": {
+                "artifactId": 9352887028,
+                "sizeBytes": 24196,
+                "providerSha256": "414c0a706a03157518095bb8296592962b7c4143749ac97a48e2d915fc76d8b2"
+              }
+            }
+          },
+          "serviceFixture": {
+            "workflowRun": 32217425192,
+            "conclusion": "success",
+            "headSha": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+            "artifacts": {
+              "ferrum-evidence-Service-Fixture": {
+                "artifactId": 9352942926,
+                "sizeBytes": 11690,
+                "providerSha256": "82b27c97ff6705f4fa3a86d4e2f0b2f71757cb6659cfe2e5386114581c199c48"
+              }
+            }
+          },
+          "statefulApi": {
+            "workflowRun": 32217425199,
+            "conclusion": "success",
+            "headSha": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+            "artifacts": {
+              "ferrum-evidence-Stateful-API": {
+                "artifactId": 9352901034,
+                "sizeBytes": 69881,
+                "providerSha256": "fe1d1081d0bec420b3f5e3fd585850cf0c70098158c31df60ce48fb4175e517d"
+              }
+            }
+          },
+          "tauri": {
+            "workflowRun": 32217425214,
+            "conclusion": "success",
+            "headSha": "28cc49d4c21bed28e8a002c24b82230c1bfff34d",
+            "artifacts": {
+              "ferrum-evidence-Tauri-Embedded-Linux": {
+                "artifactId": 9353203604,
+                "sizeBytes": 40260,
+                "providerSha256": "32edf49164529e61f189af3d6a8e77b5eb62fb94d596dace74d8c547d4cd726a"
+              },
+              "ferrum-evidence-Tauri-Official-Linux": {
+                "artifactId": 9353119140,
+                "sizeBytes": 22316,
+                "providerSha256": "57809dccc75965a75c52972026171423fd1319d1ba89a4db26b51f0772b89b18"
+              },
+              "ferrum-evidence-Tauri-Official-Windows": {
+                "artifactId": 9353117164,
+                "sizeBytes": 4850,
+                "providerSha256": "e479c23ddd98f5444372b83817e510c86592db0d0a43c6b85f33a83ea52c7d73"
+              },
+              "ferrum-evidence-Tauri-Embedded-Windows": {
+                "artifactId": 9353092552,
+                "sizeBytes": 37580,
+                "providerSha256": "f502e66a57a2a02aa52708320bf7dc0ef97a688234aeb95bb08800ea597ed6e4"
+              }
+            }
+          }
+        },
+        "independentArtifactRedownloadHash": "Selected EVOLUTION_RUN_2026-08-18_39.json; exact product/proposal tree 122a312792f621ac14031f2c25c9edf3b20e89b9; core CI 32217425220 completed success; current core artifact provider SHA-256 values are retained above and all declared companion workflow runs are independently required to be completed success on the exact proposal head."
+      },
+      "archivedBecauseSupersededBy": "94e58b90956fc48eef2ba5692f7832b9151c5a5d"
+    },
+    {
+      "verifiedCodeCommit": "94e58b90956fc48eef2ba5692f7832b9151c5a5d",
+      "verifiedWorkflowRun": 32225418161,
+      "verifiedAt": "2026-08-19T08:53:30Z",
+      "verifiedToolchain": {
+        "playwright": "1.63.0-alpha-2026-08-17",
+        "electron": "43.4.0",
+        "electronPackager": "20.3.0"
+      },
+      "latestBuildArtifacts": {
+        "workflowRun": 32225418161,
+        "codeCommit": "94e58b90956fc48eef2ba5692f7832b9151c5a5d",
+        "verifiedProposalHead": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+        "verifiedTree": "8c90a80017e5f1a42144e746e2d8569e3c02a666",
+        "treeMatchesMergedProduct": true,
+        "sourceEvolutionRecord": "EVOLUTION_RUN_2026-08-19_40_VERIFIED.json",
+        "linuxDesktop": {
+          "artifactId": 9355552788,
+          "sizeBytes": 145016987,
+          "providerSha256": "c50132590df0f9036810690c018c6b90d7bfd671412eb9fd76734e4b01f30f07",
+          "freshPackagedDesktopSmoke": "passed"
+        },
+        "windowsDesktop": {
+          "artifactId": 9355522315,
+          "sizeBytes": 166258660,
+          "providerSha256": "331cc43dd430732f958a2a81a86924a83dbf12ad015f5f95e30409af19ea1cbb",
+          "freshPackagedDesktopSmoke": "passed"
+        },
+        "linuxEvidence": {
+          "artifactId": 9355552212,
+          "sizeBytes": 2257108,
+          "providerSha256": "11a29b17bb3eed973f8923d857cb251961f0c8ad17a0e2507cce3d40b6c4d231"
+        },
+        "windowsEvidence": {
+          "artifactId": 9355520891,
+          "sizeBytes": 1923216,
+          "providerSha256": "652c0fb502efbc7964d9cc4d32efbaf8532d7cff81692229a4b60320b8c75037"
+        },
+        "appiumEvidence": {
+          "artifactId": 9355502324,
+          "sizeBytes": 45288,
+          "providerSha256": "8b8905540f5dd18b702f0a7d1ec4895757e2dc85528606fd58d34fd12c92edd5"
+        },
+        "webdriverGridEvidence": {
+          "artifactId": 9355437568,
+          "sizeBytes": 23331,
+          "providerSha256": "3cd9286d17043e15460ccf2c47c905738a85c9fac6e545296558f523b58b20a7"
+        },
+        "lightpandaEvidence": {
+          "artifactId": 9355357894,
+          "sizeBytes": 13057,
+          "providerSha256": "8749af9f194f16a4c3c66a1dce31181840cebf021f38dc3ae46bcc562c04764f"
+        },
+        "linuxProvenance": {
+          "artifactId": 9355557910,
+          "sizeBytes": 8293,
+          "providerSha256": "7ea686a5e18775076234527f8d411e29ee72aa13b666be1a9efbd2fe14f55a42"
+        },
+        "windowsProvenance": {
+          "artifactId": 9355534441,
+          "sizeBytes": 8227,
+          "providerSha256": "06dc4c1c40f5a0d7c14606e4a8154fe14cba2c5149b0fca4eb402934ee7b6262"
+        },
+        "windowsBraveEvidence": {
+          "artifactId": 9355389341,
+          "sizeBytes": 31817,
+          "providerSha256": "52e61a5c4477ed188c4a9deb1692dc16701075d8d54c5409fd2d1626e134733e"
+        },
+        "windowsOperaGxEvidence": {
+          "artifactId": 9355388779,
+          "sizeBytes": 3499671,
+          "providerSha256": "7680d83483611928f609966f774a07de3b2d96e03135d5c4046c446bd0797fac"
+        },
+        "perfettoCompatibilityWorkflowRun": 32225418159,
+        "nativeWindowsWorkflowRun": 32225418124,
+        "tauriWebDriverWorkflowRun": 32225418142,
+        "serviceFixtureWorkflowRun": 32225418351,
+        "serviceNetworkFaultWorkflowRun": 32225418059,
+        "statefulApiWorkflowRun": 32225418036,
+        "companionWorkflows": {
+          "evidenceIndex": {
+            "workflowRun": 32225418041,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {
+              "ferrum-evidence-index-32225418161.json": {
+                "artifactId": 9355562366,
+                "sizeBytes": 5365,
+                "providerSha256": "2d508df8bc98025330c62e08d795a6bf6cdd169bc034de3eb883a8d25321659f"
+              }
+            }
+          },
+          "nativeWindows": {
+            "workflowRun": 32225418124,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {
+              "ferrum-evidence-Native-Windows-desktop-driver": {
+                "artifactId": 9355464485,
+                "sizeBytes": 48053,
+                "providerSha256": "454b32b89349301f72d5d24d940f7a0075a8d3cedda343810e1565aa195889ef"
+              },
+              "ferrum-evidence-Native-Windows-novawindows": {
+                "artifactId": 9355429292,
+                "sizeBytes": 48203,
+                "providerSha256": "e3e401b71c1dc388e733a77098eb5fc7ce43c697e45b9a9935db83ae106bafb3"
+              }
+            }
+          },
+          "tauri": {
+            "workflowRun": 32225418142,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {
+              "ferrum-evidence-Tauri-Official-Linux": {
+                "artifactId": 9356615553,
+                "sizeBytes": 22276,
+                "providerSha256": "e169bdf5b057ea4137c572f0b1e099605bf2426aa05f1187b876f94263d2103b"
+              },
+              "ferrum-evidence-Tauri-Official-Windows": {
+                "artifactId": 9355560035,
+                "sizeBytes": 4851,
+                "providerSha256": "e11e5e89569888d842e2d0aa6e24189755f4d1738a4fb278b5377d2c0c73e07b"
+              },
+              "ferrum-evidence-Tauri-Embedded-Linux": {
+                "artifactId": 9355494622,
+                "sizeBytes": 40248,
+                "providerSha256": "df99256bca9d0a29bd3e8e308558d1f6516ddf128f1041ff188bd69bba5752f5"
+              },
+              "ferrum-evidence-Tauri-Embedded-Windows": {
+                "artifactId": 9355442085,
+                "sizeBytes": 37585,
+                "providerSha256": "d53424456066f0343616746e2d5791dbac92eab200786183702600301c2de40c"
+              }
+            }
+          },
+          "perfetto": {
+            "workflowRun": 32225418159,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {}
+          },
+          "statefulApi": {
+            "workflowRun": 32225418036,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {
+              "ferrum-evidence-Stateful-API": {
+                "artifactId": 9355379480,
+                "sizeBytes": 86103,
+                "providerSha256": "411915ef345dfc6f10ae56ec59ac43a7571b00130292664bc8c25c4caf3af41d"
+              }
+            }
+          },
+          "serviceFixture": {
+            "workflowRun": 32225418351,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {
+              "ferrum-evidence-Service-Fixture": {
+                "artifactId": 9355363451,
+                "sizeBytes": 11703,
+                "providerSha256": "3e7e9dab3e979423193c35cac66caca67dbd0195a7f146b0f643c58398fbf932"
+              }
+            }
+          },
+          "networkFault": {
+            "workflowRun": 32225418059,
+            "conclusion": "success",
+            "headSha": "8d15d2dc814859da160981c2f2fa4edfc2553008",
+            "artifacts": {
+              "ferrum-evidence-Service-Network-Fault": {
+                "artifactId": 9355362860,
+                "sizeBytes": 24159,
+                "providerSha256": "33bda155d31784f2ac838c45b56f28d28256c3d1a3cd5bc462bd839c88369550"
+              }
+            }
+          }
+        },
+        "independentArtifactRedownloadHash": "Selected EVOLUTION_RUN_2026-08-19_40_VERIFIED.json; exact product/proposal tree 8c90a80017e5f1a42144e746e2d8569e3c02a666; core CI 32225418161 completed success; current core artifact provider SHA-256 values are retained above and all declared companion workflow runs are independently required to be completed success on the exact proposal head."
+      },
+      "archivedBecauseSupersededBy": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34"
+    }
+  ],
+  "statusSync": {
+    "mode": "newest-verified-evolution-exact-tree",
+    "sourceEvolutionRecord": "EVOLUTION_RUN_2026-08-19_41_VERIFIED.json",
+    "evolutionRun": 41,
+    "product": "ad43e9453a4ce22c4d2b1451f0c54c3e072beb34",
+    "proposal": "1b525897549800ce71cc4111652b45372ea1c7c6",
+    "tree": "ca28ba1cd950f7750d0edf8145962850db8f3fd0",
+    "workflowRun": 32240882943,
+    "workflowConclusion": "success",
+    "synchronizedAt": "2026-08-19T13:52:32.562Z"
+  }
 }
