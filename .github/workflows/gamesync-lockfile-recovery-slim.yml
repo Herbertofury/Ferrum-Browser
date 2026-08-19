@@ -2,6 +2,8 @@ name: GameSync lockfile recovery on ubuntu-slim
 
 # Additive recovery lane for authoritative npm lockfile regeneration while the
 # standard hosted VM pool is not dispatching. This never mutates GameSync refs.
+# Candidate branches are resolved at checkout time and rechecked before evidence
+# is accepted so worker branch movement cannot silently stale the generated lock.
 on:
   push:
     branches:
@@ -26,22 +28,22 @@ jobs:
         include:
           - name: gamesync-idb-keyval
             repository: Herbertofury/Gamesync
-            ref: 3bf322c09c2e4d5af9d3947739f40aa0e2ea4bc8
+            branch: automation/stack-idb-keyval-6-3
           - name: next-vite
             repository: Herbertofury/GameSync-Next
-            ref: 03e77c36c8348a774013ac69524027f95f3f0944
+            branch: automation/stack-vite-8-2
           - name: next-test-toolchain
             repository: Herbertofury/GameSync-Next
-            ref: 0a2e258317b0886a146198991d99d62b75a3b547
+            branch: automation/stack-test-toolchain-1-62
           - name: next-ui-runtime
             repository: Herbertofury/GameSync-Next
-            ref: c4b212adaf5ac66711fb0fcfa787f61d845f9c43
+            branch: automation/stack-ui-runtime-r185
           - name: next-typescript7
             repository: Herbertofury/GameSync-Next
-            ref: 473ee7cac07e280b46775774338f75750fa7e5f3
+            branch: automation/stack-typescript-7
           - name: next-desktop-runtime
             repository: Herbertofury/GameSync-Next
-            ref: 311273d299418b52eb3f931f35d19e0952b1fa60
+            branch: automation/stack-desktop-runtime-2-21
     steps:
       - name: Require private GameSync read token
         shell: bash
@@ -52,11 +54,11 @@ jobs:
             exit 2
           fi
 
-      - name: Check out exact candidate
+      - name: Check out current candidate branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ matrix.repository }}
-          ref: ${{ matrix.ref }}
+          ref: ${{ matrix.branch }}
           fetch-depth: 0
           token: ${{ env.CROSS_REPO_TOKEN }}
 
@@ -71,17 +73,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+          SOURCE_HEAD="$(git rev-parse HEAD)"
           test "$(node --version)" = "v26.7.0"
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci --ignore-scripts --no-audit --no-fund
           git diff --check -- package-lock.json
+          git fetch origin "${{ matrix.branch }}" --depth=1
+          if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
+            echo '::error::Candidate branch advanced during lock generation; refusing stale evidence.'
+            exit 3
+          fi
           mkdir -p "output/${{ matrix.name }}"
           cp package-lock.json "output/${{ matrix.name }}/package-lock.json"
           git diff -- package-lock.json > "output/${{ matrix.name }}/package-lock.patch"
           sha256sum package-lock.json > "output/${{ matrix.name }}/package-lock.sha256"
           printf '%s\n' '${{ matrix.repository }}' > "output/${{ matrix.name }}/repository.txt"
-          printf '%s\n' '${{ matrix.ref }}' > "output/${{ matrix.name }}/source-head.txt"
+          printf '%s\n' '${{ matrix.branch }}' > "output/${{ matrix.name }}/source-branch.txt"
+          printf '%s\n' "$SOURCE_HEAD" > "output/${{ matrix.name }}/source-head.txt"
           node --version > "output/${{ matrix.name }}/node-version.txt"
           npm --version > "output/${{ matrix.name }}/npm-version.txt"
 
