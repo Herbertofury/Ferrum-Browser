@@ -26,7 +26,7 @@ permissions:
 jobs:
   synchronize-status:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - name: Check out exact writable branch head
         uses: actions/checkout@v7
