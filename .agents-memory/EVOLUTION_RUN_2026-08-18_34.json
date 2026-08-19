@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "runId": "2026-08-18_34",
+  "checkedAt": "2026-08-18T19:05:00-06:00",
+  "checkpointType": "evolution-and-ecosystem-ledger",
+  "watermark": {
+    "previousCheckpointCommit": "dcff27b8c2a2b365aad43fff626fcf233cb3a969",
+    "previousVerifiedProductCommit": "8ff1d85d26500f415c01b7de1753608c4d689f80",
+    "previousCheckpointPath": ".agents-memory/EVOLUTION_RUN_2026-08-18_33.json"
+  },
+  "productChange": {
+    "status": "MERGED_VERIFIED_IMPROVEMENT",
+    "pullRequest": 51,
+    "branch": "evolution/desktop-artifact-fast-compression",
+    "baseCommit": "dcff27b8c2a2b365aad43fff626fcf233cb3a969",
+    "proposalHead": "e9a7a04989a9fab163eb363a94adfa00730bacf0",
+    "proposalTree": "289fe5939cc56f7b8e619789577b34ef62b26150",
+    "githubProposedMergeCommit": "41dd046092094b64caff8d622cde75aceba78bfe",
+    "finalProductCommit": "decc128bae032ad84fae98b557524b2aa8ce032f",
+    "finalProductTree": "289fe5939cc56f7b8e619789577b34ef62b26150",
+    "treeIdentityVerified": true,
+    "filesChanged": [".github/workflows/ci.yml"],
+    "change": "Set actions/upload-artifact desktop-package compression-level from default 6 to 1 for ferrum-desktop-${runner.os}; evidence artifacts remain at default level 6.",
+    "why": "The desktop artifact upload is measurable end-of-job work after real package/runtime smoke. The maintained upload action exposes compression-level directly, so Ferrum can reduce compression CPU without changing package contents, test scope, evidence, or runtime behavior."
+  },
+  "proof": {
+    "exactHeadFerrumCiRun": 32203274909,
+    "workflowConclusion": "success",
+    "workflowCreatedAtUtc": "2026-08-19T00:59:05Z",
+    "workflowUpdatedAtUtc": "2026-08-19T01:01:52Z",
+    "jobs": {"unit":"success","linux":"success","windows":"success","windowsBrave":"success","windowsOperaGX":"success","seleniumGridWebDriver":"success","lightpanda":"success","appiumAndroid":"success"},
+    "coverageObserved": [
+      "unit, syntax, shell, MCP, independent MCP Inspector, evidence integrity",
+      "Linux and Windows web, stable-ref deltas, offline/recovery, GitHub Wiki, Spaces, browser matrices, MV3 service-worker termination/recovery/restart, workload pack, Workbench replay/restart persistence, Electron, source desktop, package, fresh packaged desktop",
+      "separate real Brave and Opera GX Windows jobs",
+      "real Selenium Grid WebDriver, Lightpanda, and real Android/Appium"
+    ],
+    "scopeIntegrity": "No browser, app target, test, evidence class, diagnostic/image fidelity, runtime proof, dataset, or artifact content was removed or capped."
+  },
+  "performance": {
+    "metricScope": "GitHub Actions desktop upload-artifact step for the same 75-file packaged dist output after fresh packaged-desktop smoke",
+    "windows": {"baselineRun":32201388085,"baselineCompressionLevel":6,"baselineActionSeconds":13.22,"baselineArtifactBytes":151625672,"proposalCompressionLevel":1,"proposalActionSeconds":6.249,"proposalArtifactBytes":165894721,"timeSavedSeconds":6.971,"actionTimeReductionPct":52.73,"sizeIncreaseBytes":14269049,"sizeIncreasePct":9.41,"proposalArtifactId":9348301126,"proposalArtifactSha256":"d31785aef012f3402000db92e19731495a8af8b2a05734e1f3bd4da9bd6e0128"},
+    "linux": {"baselineRun":32201388085,"baselineCompressionLevel":6,"baselineActionSeconds":8.805,"baselineArtifactBytes":131751090,"proposalCompressionLevel":1,"proposalActionSeconds":6.305,"proposalArtifactBytes":144172717,"timeSavedSeconds":2.5,"actionTimeReductionPct":28.39,"sizeIncreaseBytes":12421627,"sizeIncreasePct":9.43,"proposalArtifactId":9348275496,"proposalArtifactSha256":"37e78d637818bf906da54be8a2250bb785f17b8120904203d4105b3d3245a9f5"},
+    "wholeWorkflowContext": {"baselineWallClockSeconds":149,"proposalWallClockSeconds":167,"interpretation":"Whole-workflow wall time was noisier/slower in this single comparison because unrelated hosted-runner/browser/setup timing varied. The accepted gain is narrowly the deterministic end-of-job desktop compression/upload action, reproduced materially on both OSes. Continue collecting this metric and revert if the tradeoff stops being beneficial."}
+  },
+  "artifacts": {
+    "windowsDesktop":{"id":9348301126,"sizeBytes":165894721,"sha256":"d31785aef012f3402000db92e19731495a8af8b2a05734e1f3bd4da9bd6e0128"},
+    "linuxDesktop":{"id":9348275496,"sizeBytes":144172717,"sha256":"37e78d637818bf906da54be8a2250bb785f17b8120904203d4105b3d3245a9f5"},
+    "windowsEvidence":{"id":9348298955,"sizeBytes":1915968,"sha256":"962d47141411b9f028366ee7e237b4cacacb37d51203b018512e9d1c5efe5c8c"},
+    "linuxEvidence":{"id":9348273162,"sizeBytes":2248760,"sha256":"fd735add49d2982ca0391c64d40a39512d659ae44bd15e9c2f130f97e980f4cd"},
+    "braveEvidence":{"id":9348277073,"sizeBytes":31827,"sha256":"dae638b9e35d24619b790379ab2afdd2f56bcc9a930ea029cf5b9e36c36dfe27"},
+    "operaGxEvidence":{"id":9348280985,"sizeBytes":3433162,"sha256":"a18629ae6e3084e310a2c136549473c8f772e0f1fcc4e92f5c6e968cc13c5fc8"},
+    "webdriverGridEvidence":{"id":9348257446,"sizeBytes":23378,"sha256":"4921bde77b24ef4a94ac7deaf39e61855869c831e0059b762188d3410610b943"},
+    "lightpandaEvidence":{"id":9348247634,"sizeBytes":13049,"sha256":"3c9d2129fc9dcc512f948a67cf1c296eece569e6e43cc11904549fb3a8263fe0"},
+    "appiumAndroidEvidence":{"id":9348300675,"sizeBytes":126011,"sha256":"794323d380f6e2c17d316e3be3af2731b4ee51c40406d45e114920a17e34e06c"}
+  },
+  "ecosystemRotation": "artifact/evidence transport, compression, artifact integrity, cross-job result aggregation",
+  "candidates": [
+    {
+      "project":"actions/upload-artifact","url":"https://github.com/actions/upload-artifact","owner":"actions","checkedDate":"2026-08-18","releaseOrHead":"v7.0.1 / 043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","maintenanceFreshness":"active 2026","purpose":"GitHub Actions artifact upload","architecture":"JS action over GitHub artifact service; ZIP archive mode with configurable zlib level or single-file archive:false","ferrumCapability":"CI artifact transport latency/integrity","harvest":"Use supported per-artifact compression-level rather than add a custom compressor","integrationMode":"direct maintained action configuration","expectedBenefit":"lower end-of-job desktop artifact latency without changing package bytes/tests","dependencies":"existing upload-artifact@v7","platformCoverage":"Linux and Windows Actions lanes","compatibilityRisks":"lower compression increases stored/transferred bytes and depends on workload/network","upstreamIssues":"no blocker found; upstream documents levels 0-9, default 6","benchmarkEvidence":"run 32203274909: Windows 52.73% and Linux 28.39% faster at about 9.4% size increase with all gates green","smallestExperiment":"compression-level:1 only on desktop artifacts","acceptanceTest":"material speedup both OSes, same complete package, all gates green, bounded size penalty","decision":"ADOPT","nextReviewTrigger":"package composition, artifact service, runner, storage limits or repeated metrics materially change"
+    },
+    {
+      "project":"actions/download-artifact","url":"https://github.com/actions/download-artifact","owner":"actions","checkedDate":"2026-08-18","releaseOrHead":"v8 line / 484a0b528fb4d7bd804637ccb632e47a0e638317","maintenanceFreshness":"active 2026","purpose":"GitHub artifact retrieval","architecture":"JS action with ID/name selection, merge-multiple, digest mismatch handling and unarchived-artifact support","ferrumCapability":"cross-job evidence/package retrieval","harvest":"ID-driven retrieval, merge-multiple, skip-decompress/direct-file paths and digest-aware failures","integrationMode":"future direct action aggregation","expectedBenefit":"deterministic compact cross-job evidence index","dependencies":"GitHub artifact service","platformCoverage":"GitHub Actions","compatibilityRisks":"aggregation adds time and must not replace raw artifacts","upstreamIssues":"no blocker established","benchmarkEvidence":"upstream current docs plus Ferrum multi-artifact workflow shape","smallestExperiment":"download only small evidence manifests by artifact ID","acceptanceTest":"every job identity/digest exactly once, raw artifacts untouched, bounded latency/bytes","decision":"TRANSPLANT-IDEA","nextReviewTrigger":"cross-job evidence index work"
+    },
+    {
+      "project":"duckdb artifact packaging technique","url":"https://github.com/duckdb/duckdb/commit/46f811a4300b60ab6c69169cd1fbd2632df92f3d","owner":"duckdb","checkedDate":"2026-08-18","releaseOrHead":"46f811a4300b60ab6c69169cd1fbd2632df92f3d; repo head c99ade5cb6028a4ae0a3d71ef1fd97f4c2154931","maintenanceFreshness":"same-day active","purpose":"production CLI/shared-lib artifact packaging","architecture":"producer creates tar.gz, then upload-artifact v7 archive:false uploads exact single file","ferrumCapability":"avoid nested wrapper compression/extraction while preserving permissions","harvest":"precompressed single-file artifact with producer-controlled format","integrationMode":"Ferrum-native experiment","expectedBenefit":"lower package/transport/extract overhead and stronger exact file identity","dependencies":"cross-platform archive/extract path","platformCoverage":"upstream Linux/macOS/Windows; Ferrum must prove Linux+Windows","compatibilityRisks":"changes Ferrum artifact format/consumer flow; Windows paths/permissions/fresh launch need proof","upstreamIssues":"upstream explicitly required downstream link updates, demonstrating compatibility cost","benchmarkEvidence":"production upstream commit removes nested ZIP and uses archive:false","smallestExperiment":"precompress one package per OS, archive:false upload, exact download, extract fresh, launch smoke","acceptanceTest":"better end-to-end time or identity, digest proof, fresh runtime pass, no usability regression","decision":"EXPERIMENT","nextReviewTrigger":"next artifact-transport rotation"
+    },
+    {
+      "project":"facebook/zstd","url":"https://github.com/facebook/zstd","owner":"facebook","checkedDate":"2026-08-18","releaseOrHead":"v1.5.7 / 82d322c4973d9e2968d94047a40892bc6d9a9bdf","maintenanceFreshness":"active","purpose":"high-speed lossless compression","architecture":"native codec/CLI/library","ferrumCapability":"optional precompressed package/evidence transport","harvest":"fast compression/decompression tradeoff","integrationMode":"benchmark","expectedBenefit":"potentially better size/time point than zlib","dependencies":"zstd binary/library on producer and consumer","platformCoverage":"cross-platform, qualification required","compatibilityRisks":"new format/tool and extraction burden","upstreamIssues":"no Ferrum blocker identified","benchmarkEvidence":"mature codec, not yet CI-compared on Ferrum dist","smallestExperiment":"same-byte Linux/Windows dist compression+transport+extract benchmark","acceptanceTest":"end-to-end better than level-1 ZIP with fresh-launch parity","decision":"BENCHMARK","nextReviewTrigger":"after archive:false baseline"
+    },
+    {
+      "project":"lz4/lz4","url":"https://github.com/lz4/lz4","owner":"lz4","checkedDate":"2026-08-18","releaseOrHead":"0774d05537f9762f838f7ab541b7765f1a729cb5","maintenanceFreshness":"maintained 2026","purpose":"very high-speed lossless compression","architecture":"native LZ4 frame/block codec and CLI","ferrumCapability":"fast prearchive transport option","harvest":"extreme compression/decompression speed when larger payload is acceptable","integrationMode":"benchmark","expectedBenefit":"lower CPU latency than zlib/zstd","dependencies":"lz4 binary/library and extraction support","platformCoverage":"cross-platform with qualification","compatibilityRisks":"weaker ratio and less default user familiarity","upstreamIssues":"no Ferrum blocker identified","benchmarkEvidence":"not yet measured on Ferrum bytes","smallestExperiment":"same-byte package transport/extract benchmark","acceptanceTest":"beat level-1 ZIP end-to-end without excessive size/usability cost","decision":"BENCHMARK","nextReviewTrigger":"if CPU remains dominant after archive:false/zstd"
+    },
+    {
+      "project":"ip7z/7zip","url":"https://github.com/ip7z/7zip","owner":"ip7z","checkedDate":"2026-08-18","releaseOrHead":"26.02 / f9d78aff31a5f2521ae7ddbdc97c4a8855808959","maintenanceFreshness":"current 2026 line","purpose":"multi-format archiver","architecture":"native CLI/library supporting 7z/ZIP and multiple codecs","ferrumCapability":"package/archive benchmark","harvest":"native parallel archiving and flexible formats","integrationMode":"benchmark","expectedBenefit":"possibly faster packaging or better ratio","dependencies":"7-Zip tool and extraction support","platformCoverage":"Windows strong; Linux available","compatibilityRisks":"new tool/archive semantics and portable fresh-run complexity","upstreamIssues":"no blocker identified","benchmarkEvidence":"maintained but not yet superior on Ferrum workload","smallestExperiment":"compare 7z/zip modes on exact dist directories","acceptanceTest":"material end-to-end gain both OSes with fresh extraction/launch parity","decision":"BENCHMARK","nextReviewTrigger":"if wrapper zlib remains a bottleneck"
+    },
+    {
+      "project":"madler/pigz","url":"https://github.com/madler/pigz","owner":"madler","checkedDate":"2026-08-18","releaseOrHead":"v2.8 / fe4894f57739e3039a2ffc2a2a360d35e19bacbe","maintenanceFreshness":"tracked head 2023; less fresh","purpose":"parallel gzip","architecture":"multithreaded gzip-compatible CLI","ferrumCapability":"tar.gz generation","harvest":"parallel gzip compatibility","integrationMode":"none unless gzip becomes required","expectedBenefit":"parallel gzip creation","dependencies":"pigz binary","platformCoverage":"primarily Unix workflow","compatibilityRisks":"staler upstream, extra dependency, weak Windows fit","upstreamIssues":"maintenance freshness","benchmarkEvidence":"no current Ferrum-specific advantage","smallestExperiment":"none while stronger maintained choices exist","acceptanceTest":"n/a until gzip-specific need","decision":"REJECT","nextReviewTrigger":"strict gzip need plus renewed upstream activity"
+    },
+    {
+      "project":"oras-project/oras","url":"https://github.com/oras-project/oras","owner":"oras-project","checkedDate":"2026-08-18","releaseOrHead":"e2b1cd6bd18f76fa26b222328606af7158e51e9c","maintenanceFreshness":"active same-day","purpose":"OCI artifact distribution","architecture":"OCI registry client/library with content-addressed manifests/media types","ferrumCapability":"long-lived content-addressed artifact publication","harvest":"artifact manifests, media types and provenance concepts","integrationMode":"watch/reference","expectedBenefit":"strong reusable identity/distribution beyond ephemeral Actions artifacts","dependencies":"OCI registry/auth and ORAS","platformCoverage":"cross-platform","compatibilityRisks":"far more infrastructure than current need","upstreamIssues":"integration cost, not blocker","benchmarkEvidence":"mature OCI ecosystem but no present Ferrum need","smallestExperiment":"none until Actions retention/distribution is insufficient","acceptanceTest":"must solve observed durability/distribution gap with lower agent burden than GitHub+Drive","decision":"WATCH","nextReviewTrigger":"long-lived artifact promotion/distribution requirement"
+    },
+    {
+      "project":"ctrf-io/ctrf","url":"https://github.com/ctrf-io/ctrf","owner":"ctrf-io","checkedDate":"2026-08-18","releaseOrHead":"66e823ca2c9e1f54bf8b387adda0b7e0c7610538","maintenanceFreshness":"active August 2026","purpose":"Common Test Report Format","architecture":"portable JSON test-result schema and adapters","ferrumCapability":"derived interoperable cross-job summary","harvest":"compact normalized sidecar while retaining Ferrum-native evidence","integrationMode":"optional derived export/benchmark","expectedBenefit":"easier agent/CI consumption","dependencies":"schema mapping only if implemented","platformCoverage":"format-level cross-platform","compatibilityRisks":"generic schema can lose Ferrum diagnostics if treated as authoritative","upstreamIssues":"must remain additive","benchmarkEvidence":"active ecosystem, no Ferrum tool-call gain measured yet","smallestExperiment":"export CTRF sidecar for one multi-job run and compare size/tool calls","acceptanceTest":"correct identity/status mapping, raw evidence retained, materially easier agent consumption","decision":"TRANSPLANT-IDEA","nextReviewTrigger":"compact evidence-index work"
+    },
+    {
+      "project":"ctrf-io/github-test-reporter","url":"https://github.com/ctrf-io/github-test-reporter","owner":"ctrf-io","checkedDate":"2026-08-18","releaseOrHead":"9ad85b91f851ff39e7da5f82981d30b9e637e163","maintenanceFreshness":"active August 2026","purpose":"GitHub CTRF reporting/history","architecture":"GitHub Action consuming CTRF","ferrumCapability":"agent/human CI summary and trends","harvest":"derived GitHub summary/trend patterns","integrationMode":"watch/benchmark","expectedBenefit":"less manual interpretation of distributed outcomes","dependencies":"CTRF export plus action","platformCoverage":"GitHub Actions","compatibilityRisks":"could duplicate evidence/add CI time/hide detail","upstreamIssues":"must never replace native evidence","benchmarkEvidence":"not yet measured for Ferrum","smallestExperiment":"only after additive CTRF sidecar exists","acceptanceTest":"lower tool-call burden, zero evidence loss, bounded CI overhead","decision":"WATCH","nextReviewTrigger":"after CTRF sidecar proves value"
+    }
+  ],
+  "maximumImprovementChallenge": {
+    "result": "NO_SECOND_CHANGE",
+    "challenge": "Could Ferrum remove artifact wrapper compression/extraction or add a cross-job evidence index immediately?",
+    "decision": "Keep the one-line compression change as the only product change.",
+    "reason": "DuckDB's current tar.gz + archive:false pattern is promising, but changing Ferrum's user-facing desktop transport requires full Linux+Windows package/upload/download/extract/fresh-launch proof first. A cross-job index needs measured agent-round-trip benefit and must not hide raw evidence. Dependency caching remains deferred until reproducible dependency identity/invalidation and stale-cache negative tests exist."
+  },
+  "nextExperiments": [
+    "Compare level-1 desktop transport with a Ferrum-produced precompressed single-file archive using upload-artifact@v7 archive:false; measure package, upload, bytes, download, extraction, permissions/identity and fresh launch on Linux+Windows.",
+    "Prototype a compact cross-job evidence index that retrieves only small manifests/summaries by artifact ID/digest, never large desktop packages; measure agent calls, response bytes and CI latency.",
+    "Establish deterministic dependency identity, runtime/toolchain keying, explicit invalidation and stale-cache negative tests before enabling dependency caches.",
+    "Resume process/sandbox isolation after transport/index work converges."
+  ],
+  "guardrails": [
+    "No reduced browser/app/OS coverage, omitted evidence, lower diagnostics/image fidelity, caps, viewport-only shortcuts or synthetic substitution for real runtime proof.",
+    "Artifact transport may change compression only when packaged contents remain complete and fresh runtime proof stays green.",
+    "Derived indexes/reports remain additive; Ferrum-native evidence and provider artifact digests are authoritative."
+  ],
+  "publication": {
+    "githubPath": ".agents-memory/EVOLUTION_RUN_2026-08-18_34.json",
+    "googleDriveFolder": "Ferrum Browser",
+    "googleDriveRecoveryDocumentId": "1moxoAGgRBJMQwiOBWP4NiyxMB9fTnDCwwMmAMYPl3s8",
+    "verificationRequired": "independent remote re-read/download plus size/hash evidence on both destinations"
+  }
+}
