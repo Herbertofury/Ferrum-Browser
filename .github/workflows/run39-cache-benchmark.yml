@@ -1,0 +1,137 @@
+name: Ferrum run39 npm cache benchmark
+
+on:
+  push:
+    branches:
+      - evolution/run39-cache-benchmark
+
+permissions:
+  contents: read
+
+jobs:
+  linux-no-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Measure frozen install without cache
+        shell: bash
+        run: |
+          node --version
+          npm --version
+          start=$(date +%s%N)
+          npm ci --omit=dev --no-audit --no-fund
+          end=$(date +%s%N)
+          echo "FERRUM_NPM_CI_MS=$(( (end-start) / 1000000 ))"
+
+  linux-cache-cold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Measure frozen install with cache candidate
+        shell: bash
+        run: |
+          echo "FERRUM_CACHE_HIT=${{ steps.setup.outputs.cache-hit }}"
+          node --version
+          npm --version
+          start=$(date +%s%N)
+          npm ci --omit=dev --no-audit --no-fund
+          end=$(date +%s%N)
+          echo "FERRUM_NPM_CI_MS=$(( (end-start) / 1000000 ))"
+
+  linux-cache-warm:
+    runs-on: ubuntu-latest
+    needs: linux-cache-cold
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Measure frozen install with warm cache
+        shell: bash
+        run: |
+          echo "FERRUM_CACHE_HIT=${{ steps.setup.outputs.cache-hit }}"
+          node --version
+          npm --version
+          start=$(date +%s%N)
+          npm ci --omit=dev --no-audit --no-fund
+          end=$(date +%s%N)
+          echo "FERRUM_NPM_CI_MS=$(( (end-start) / 1000000 ))"
+
+  windows-no-cache:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Measure frozen install without cache
+        shell: pwsh
+        run: |
+          node --version
+          npm --version
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          npm ci --omit=dev --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sw.Stop()
+          Write-Output "FERRUM_NPM_CI_MS=$($sw.ElapsedMilliseconds)"
+
+  windows-cache-cold:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Measure frozen install with cache candidate
+        shell: pwsh
+        run: |
+          Write-Output "FERRUM_CACHE_HIT=${{ steps.setup.outputs.cache-hit }}"
+          node --version
+          npm --version
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          npm ci --omit=dev --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sw.Stop()
+          Write-Output "FERRUM_NPM_CI_MS=$($sw.ElapsedMilliseconds)"
+
+  windows-cache-warm:
+    runs-on: windows-latest
+    needs: windows-cache-cold
+    steps:
+      - uses: actions/checkout@v7
+      - id: setup
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Measure frozen install with warm cache
+        shell: pwsh
+        run: |
+          Write-Output "FERRUM_CACHE_HIT=${{ steps.setup.outputs.cache-hit }}"
+          node --version
+          npm --version
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          npm ci --omit=dev --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sw.Stop()
+          Write-Output "FERRUM_NPM_CI_MS=$($sw.ElapsedMilliseconds)"
