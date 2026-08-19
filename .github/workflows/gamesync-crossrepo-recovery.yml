@@ -1,5 +1,6 @@
 name: GameSync cross-repo recovery acceptance
 
+# Exact cross-repository recovery harness for blocked GameSync proposal verification.
 on:
   push:
     branches:
