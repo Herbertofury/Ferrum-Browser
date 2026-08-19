@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - automation/ferrum-bug-status-run39-20260819-0051
+    paths:
+      - '.github/workflows/status-sync-repair.yml'
+      - 'scripts/sync-verified-status.mjs'
+      - 'tests/status-sync.test.mjs'
+  pull_request:
+    paths:
+      - '.github/workflows/status-sync-repair.yml'
+      - 'scripts/sync-verified-status.mjs'
+      - 'tests/status-sync.test.mjs'
 
 permissions:
   actions: read
@@ -11,17 +20,19 @@ permissions:
 
 jobs:
   synchronize-status:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Check out exact branch head
+      - name: Check out exact writable branch head
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
-      - name: Set up Node 24
+      - name: Set up exact Node 24 LTS
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 24.19.0
           cache: npm
 
       - name: Install exact Ferrum dependencies
@@ -56,6 +67,8 @@ jobs:
 
       - name: Commit synchronized STATUS when changed
         shell: bash
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
           if git diff --quiet -- .agents-memory/STATUS.json; then
@@ -66,4 +79,4 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add .agents-memory/STATUS.json
           git commit -m "Synchronize verified Ferrum STATUS"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin "HEAD:${BRANCH_NAME}"
