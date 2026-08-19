@@ -69,8 +69,16 @@ jobs:
           find dist -type f -print0 | sort -z | xargs -0 sha256sum > .ferrum/transport/baseline.sha256
           diff -u .ferrum/transport/original.sha256 .ferrum/transport/baseline.sha256
       - name: Baseline downloaded packaged Ferrum smoke
+        id: baseline-linux-smoke
         if: runner.os == 'Linux'
+        continue-on-error: true
         run: xvfb-run -a npm run smoke:packaged-desktop
+      - name: Confirm baseline Linux permission loss
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          test "${{ steps.baseline-linux-smoke.outcome }}" = "failure"
+          test ! -x dist/Ferrum-linux-x64/Ferrum
       - name: Baseline downloaded packaged Ferrum smoke
         if: runner.os == 'Windows'
         run: npm run smoke:packaged-desktop
