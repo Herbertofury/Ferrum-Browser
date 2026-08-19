@@ -87,18 +87,12 @@ jobs:
         run: |
           node ./bin/ferrum.mjs spaces create ci-auth --spaces-root artifacts/ci-spaces
           node ./bin/ferrum.mjs test ./examples/self-test-web.json --headless --space ci-auth --space-mode clone --spaces-root artifacts/ci-spaces --compact
-      - name: Install Brave and Opera GX for browser matrix
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          choco install brave -y --no-progress
-          choco install opera-gx -y --no-progress
       - name: Ferrum browser matrix
         if: runner.os == 'Linux'
         run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers chromium,chrome --workers 2 --headless --require-all --compact
       - name: Ferrum browser matrix
         if: runner.os == 'Windows'
-        run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers chromium,chrome,edge,brave,opera-gx --workers 2 --headless --require-all --compact
+        run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers chromium,chrome,edge --workers 2 --headless --require-all --compact
       - run: npm run smoke:extension
       - name: Ferrum workload-pack extension smoke
         run: node ./bin/ferrum.mjs pack ./packs/ferrum-self-test.pack.json --headless --compact
@@ -134,6 +128,35 @@ jobs:
         with:
           name: ferrum-desktop-${{ runner.os }}
           path: dist/
+          if-no-files-found: error
+
+  windows-alt-browsers:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [brave, opera-gx]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --omit=dev --no-audit --no-fund
+      - name: Install alternate browser
+        shell: powershell
+        run: |
+          if ("${{ matrix.browser }}" -eq "brave") {
+            choco install brave -y --no-progress
+          } else {
+            choco install opera-gx -y --no-progress
+          }
+      - name: Ferrum alternate browser matrix
+        run: node ./bin/ferrum.mjs matrix ./examples/self-test-web.json --browsers ${{ matrix.browser }} --workers 1 --headless --require-all --compact
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-Windows-${{ matrix.browser }}
+          path: artifacts/
           if-no-files-found: error
 
   webdriver-grid:
