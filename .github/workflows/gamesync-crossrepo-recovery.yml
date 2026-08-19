@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -135,8 +138,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$(git rev-parse HEAD)"
-          test "$(git rev-parse origin/main 2>/dev/null || git rev-parse HEAD~1)" = "94e58b90956fc48eef2ba5692f7832b9151c5a5d" || true
           test "$(node --version)" = "v24.19.0"
           npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
