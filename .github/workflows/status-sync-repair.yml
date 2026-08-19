@@ -1,17 +1,22 @@
-name: Repair verified STATUS synchronization
+name: Synchronize verified STATUS
 
 on:
   push:
     branches:
+      - main
       - automation/ferrum-bug-status-run39-20260819-0051
     paths:
+      - '.agents-memory/EVOLUTION_RUN_*.json'
       - '.github/workflows/status-sync-repair.yml'
       - 'scripts/sync-verified-status.mjs'
+      - 'tests/status-checkpoint.test.mjs'
       - 'tests/status-sync.test.mjs'
   pull_request:
     paths:
+      - '.agents-memory/EVOLUTION_RUN_*.json'
       - '.github/workflows/status-sync-repair.yml'
       - 'scripts/sync-verified-status.mjs'
+      - 'tests/status-checkpoint.test.mjs'
       - 'tests/status-sync.test.mjs'
 
 permissions:
