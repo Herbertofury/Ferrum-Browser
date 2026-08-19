@@ -1,0 +1,49 @@
+name: Ferrum TUI PTY Candidate
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/tui-pty-candidate.yml'
+      - 'scripts/tui-pty-fixture.mjs'
+      - 'scripts/tui-pty-candidate-smoke.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  microsoft-tui-test:
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.19.0
+      - run: npm ci --omit=dev --no-audit --no-fund
+      - name: Prepare TUI candidate evidence directory
+        shell: bash
+        run: mkdir -p artifacts/tui-pty-candidate
+      - name: Record pinned candidate package identity
+        shell: bash
+        run: npm view @microsoft/tui-test@0.1.0-beta.1 version dist.integrity dist.tarball --json > artifacts/tui-pty-candidate/candidate-package.json
+      - name: Install isolated Microsoft tui-test candidate
+        run: npm install --no-save --package-lock=false --no-audit --no-fund @microsoft/tui-test@0.1.0-beta.1
+      - name: Prove experiment did not mutate Ferrum dependency metadata
+        run: git diff --exit-code -- package.json package-lock.json
+      - name: Repeated real PTY and terminal-semantics smoke
+        env:
+          FERRUM_TUI_ITERATIONS: '10'
+        run: node ./scripts/tui-pty-candidate-smoke.mjs
+      - name: Prove candidate cleanup returned control to the host process
+        run: node -e "console.log(JSON.stringify({cleanup:'host-process-responsive',platform:process.platform,node:process.version}))"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: ferrum-evidence-TUI-Candidate-${{ runner.os }}
+          path: artifacts/tui-pty-candidate/
+          if-no-files-found: error
