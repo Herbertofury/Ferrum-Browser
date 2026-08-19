@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "runId": "2026-08-19-56-verified",
+  "state": "VERIFIED_IMPROVEMENT_MERGED",
+  "checkedAt": "2026-08-19T20:50:31Z",
+  "finalVerifiedProduct": {
+    "product": "2fbb96eaff23a747b8dfce9041c9a6204791f439",
+    "proposal": "1eac23e9adf5f36d5f34b795dbfc7922addd0488",
+    "tree": "57ffe2579b55f572d568e120d43d64a3a71cd5b2",
+    "treeParity": true,
+    "workflowRun": 32299963354,
+    "workflowConclusion": "success",
+    "result": "VERIFIED_IMPROVEMENT_MERGED",
+    "proof": {
+      "conclusion": "success",
+      "ferrumCi": {
+        "id": 32299963354,
+        "conclusion": "success"
+      }
+    }
+  },
+  "scope": {
+    "summary": "Record exact Selenium Grid runtime image identity and refresh the stable dated fixture without reducing the Ferrum acceptance surface.",
+    "runtimeProductChanged": true,
+    "verifiedBy": [
+      "unit and MCP",
+      "Linux browser/MV3/desktop/package/provenance",
+      "Windows browser/MV3/desktop/package/provenance",
+      "Brave",
+      "Opera GX",
+      "Lightpanda",
+      "Android/Appium",
+      "Selenium Grid WebDriver"
+    ]
+  }
+}
