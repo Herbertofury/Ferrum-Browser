@@ -14,6 +14,15 @@ const iterations = Number(process.env.FERRUM_TUI_ITERATIONS || 10);
 if (!Number.isInteger(iterations) || iterations < 1) throw new Error('FERRUM_TUI_ITERATIONS must be a positive integer');
 await fs.mkdir(artifacts, { recursive: true });
 
+const publishedMethods = Object.getOwnPropertyNames(TuiTest.prototype).filter(name => name !== 'constructor').sort();
+const requiredMethods = [
+  'run', 'close', 'closeQuiet', 'type', 'write', 'press', 'resize', 'state', 'cells',
+  'getCursor', 'getSize', 'screenshot', 'startRecording', 'stopRecording', 'waitText',
+  'waitIdle', 'waitExit', 'expectText', 'expectExitCode'
+];
+const missingRequiredMethods = requiredMethods.filter(name => !publishedMethods.includes(name));
+assert.deepEqual(missingRequiredMethods, [], `published tui-test candidate is missing required methods: ${missingRequiredMethods.join(', ')}`);
+
 function percentile(values, fraction) {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * fraction) - 1))];
@@ -46,8 +55,10 @@ try {
       await t.waitText('ASYNC:ready');
       const initialSize = await t.getSize();
       assert.deepEqual(initialSize, { cols: 80, rows: 24 });
-      assert.equal(await t.getTitle(), 'Ferrum TUI Fixture');
-      assert.ok((await t.getBellCount()) >= 1, 'fixture bell was not observed');
+      const title = typeof t.getTitle === 'function' ? await t.getTitle() : null;
+      if (title != null) assert.equal(title, 'Ferrum TUI Fixture');
+      const bellCount = typeof t.getBellCount === 'function' ? await t.getBellCount() : null;
+      if (bellCount != null) assert.ok(bellCount >= 1, 'fixture bell was not observed');
 
       await t.startRecording(castPath, { format: 'cast' });
       await t.press('Escape');
@@ -93,7 +104,8 @@ try {
         initialSize,
         finalSize,
         cursor,
-        bellCount: await t.getBellCount().catch(() => null),
+        title,
+        bellCount,
         screenshotBytes: svg.size,
         recordingBytes: cast.size
       });
@@ -114,6 +126,12 @@ const summary = {
   schemaVersion: 1,
   candidate: '@microsoft/tui-test',
   candidateVersion: VERSION,
+  publishedMethods,
+  optionalSurface: {
+    getTitle: publishedMethods.includes('getTitle'),
+    getBellCount: publishedMethods.includes('getBellCount'),
+    waitBell: publishedMethods.includes('waitBell')
+  },
   platform: process.platform,
   arch: process.arch,
   node: process.version,
