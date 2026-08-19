@@ -17,8 +17,7 @@ await fs.mkdir(artifacts, { recursive: true });
 const publishedMethods = Object.getOwnPropertyNames(TuiTest.prototype).filter(name => name !== 'constructor').sort();
 const requiredMethods = [
   'run', 'close', 'closeQuiet', 'type', 'write', 'press', 'resize', 'state', 'cells',
-  'getCursor', 'getSize', 'screenshot', 'waitText', 'waitIdle', 'waitExit', 'expectText',
-  'expectExitCode'
+  'getCursor', 'getSize', 'screenshot', 'waitText', 'waitIdle', 'waitExit', 'expectText'
 ];
 const missingRequiredMethods = requiredMethods.filter(name => !publishedMethods.includes(name));
 assert.deepEqual(missingRequiredMethods, [], `published tui-test candidate is missing required methods: ${missingRequiredMethods.join(', ')}`);
@@ -93,7 +92,9 @@ try {
 
       await t.write('q');
       await t.waitExit();
-      await t.expectExitCode(0);
+      const exitedState = await t.state();
+      assert.equal(exitedState.exited, 0, `direct PTY child exit code was ${exitedState.exited}`);
+      const trackedCommandExit = typeof t.getExitCode === 'function' ? await t.getExitCode() : null;
       await t.close();
       const remaining = await sessions();
       assert.ok(!remaining.includes(session), `session leaked after close: ${session}`);
@@ -107,6 +108,8 @@ try {
         cursor,
         title,
         bellCount,
+        directProcessExit: exitedState.exited,
+        trackedCommandExit,
         screenshotBytes: svg.size,
         recordingBytes: cast?.size ?? null
       });
@@ -132,6 +135,8 @@ const summary = {
     recording: !recordingSupported,
     bell: !publishedMethods.includes('getBellCount') || !publishedMethods.includes('waitBell')
   },
+  directProcessExitSemantics: 'state.exited',
+  commandExitSemantics: 'getExitCode/expectExitCode are command-tracking APIs and are not used as direct run() child-exit proof',
   optionalSurface: {
     getTitle: publishedMethods.includes('getTitle'),
     getBellCount: publishedMethods.includes('getBellCount'),
