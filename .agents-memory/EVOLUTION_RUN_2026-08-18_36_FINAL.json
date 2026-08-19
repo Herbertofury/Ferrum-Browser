@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "run": 36,
+  "phase": "final",
+  "checkedAt": "2026-08-19T02:35:00Z",
+  "outcome": "VERIFIED_IMPROVEMENT_MERGED",
+  "candidateLedger": ".agents-memory/EVOLUTION_RUN_2026-08-18_36.json",
+  "deltaWatermark": ".agents-memory/EVOLUTION_RUN_2026-08-18_35.json",
+  "verifiedProduct": {
+    "commit": "f9f7f7689c2711896cc7ac57dae29760b4f130cc",
+    "tree": "6bff0ac4ad4272cd946fbc8d981b305d0b71f685",
+    "pullRequest": 53,
+    "testedProposalHead": "70fc4920c31f8eae587edf2f6b9e3ec2435160b0",
+    "testedProposalTree": "6bff0ac4ad4272cd946fbc8d981b305d0b71f685",
+    "treeParity": true
+  },
+  "improvement": {
+    "name": "exact-byte desktop artifact provenance",
+    "scope": [".github/workflows/ci.yml"],
+    "behavior": [
+      "after the existing producer tar.gz roundtrip proof, require the locally computed SHA-256 to equal upload-artifact's provider digest",
+      "attest that exact already-verified Linux/Windows tarball with actions/attest@v4 using explicit OIDC/attestation/artifact-metadata permissions",
+      "redownload the exact immutable artifact by artifact ID with actions/download-artifact@v8",
+      "recompute SHA-256 and require equality with the producer/provider digest",
+      "independently verify repository-bound provenance using gh attestation verify with structured JSON output",
+      "retain compact provenance evidence containing OS, artifact identity, SHA-256, attestation identity and passed verification"
+    ],
+    "antiRegression": "provenance supplements and does not replace package/runtime/evidence proof"
+  },
+  "verification": {
+    "workflowRun": 32208809141,
+    "workflowConclusion": "success",
+    "jobs": {
+      "unitMcpInspectorEvidenceIntegrity": "success",
+      "linuxFullBrowserMv3WorkloadElectronDesktopPackageProvenance": "success",
+      "windowsFullBrowserMv3WorkloadElectronDesktopPackageProvenance": "success",
+      "brave": "success",
+      "operaGx": "success",
+      "seleniumGridWebDriver": "success",
+      "lightpanda": "success",
+      "realAndroidAppium": "success"
+    },
+    "initialFlakeRecovery": {
+      "earlierRun": 32208274183,
+      "unitTimingFailureRepeated": false,
+      "windowsLocalNavigationFailureRepeated": false,
+      "policy": "neither unrelated transient was mixed into the provenance product diff"
+    }
+  },
+  "artifacts": {
+    "linuxDesktop": {
+      "artifactId": 9350065653,
+      "sizeBytes": 145016162,
+      "sha256": "dfc5f9fcdd95f8c9681747979d7c3d4211714275088d8deb6c72822c440a9c24",
+      "attestationId": 41511647,
+      "localProviderRedownloadDigestEqual": true,
+      "ghAttestationVerify": "passed"
+    },
+    "windowsDesktop": {
+      "artifactId": 9350056674,
+      "sizeBytes": 166254073,
+      "sha256": "f0bcba8bdbbab00e4c834d7d7723a06551bd463e6ea2681f66502c5908f561ed",
+      "attestationId": 41511597,
+      "localProviderRedownloadDigestEqual": true,
+      "ghAttestationVerify": "passed"
+    },
+    "linuxEvidence": {
+      "artifactId": 9350064585,
+      "sizeBytes": 2258558,
+      "sha256": "ef0e3a6d17f9f9fa6b317db168dac36b1352c26556c9dba0854ba6530ff24648"
+    },
+    "windowsEvidence": {
+      "artifactId": 9350055850,
+      "sizeBytes": 1922233,
+      "sha256": "7cbffcff61a56be0456406ca226d6bf0d2590b79534d1bef7f6edd4faeabfba6"
+    },
+    "linuxProvenance": {
+      "artifactId": 9350071068,
+      "sizeBytes": 8345,
+      "sha256": "1084b28c79430a16adbcc2990711968d90a5348a048ffe534a73f0d1b98fbd41"
+    },
+    "windowsProvenance": {
+      "artifactId": 9350060690,
+      "sizeBytes": 8485,
+      "sha256": "b9a7652e9b2af05fdecdbcd6636f5e0430128254a55fa0a3f2ab39240cf2dbdb"
+    }
+  },
+  "researchDecision": {
+    "adopted": [
+      "actions/attest v4 exact subject-path provenance on already verified artifact bytes",
+      "gh attestation verify as an independent repository-bound verification gate"
+    ],
+    "transplanted": ["in-toto subject digest semantics"],
+    "superseded": ["slsa-framework/slsa-github-generator for new Ferrum integration"],
+    "watch": ["sigstore/cosign", "anchore/syft", "aquasecurity/trivy", "guacsec/guac", "oras-project/oras", "CycloneDX/cdxgen", "sigstore/sigstore-js", "CycloneDX/cyclonedx-node-npm", "anchore/grype"]
+  },
+  "challengePass": {
+    "decision": "NO_SECOND_CHANGE",
+    "reason": "raw attestation-bundle persistence/offline verification, SBOMs and OCI transport do not yet have same-workload evidence of additional Ferrum value; adding them now would be speculative churn"
+  },
+  "researchNextCursor": [
+    "build a compact cross-job evidence index keyed by source SHA, runtime/build identity, artifact ID/digest, attestation identity and evidence digests",
+    "establish reproducible dependency/cache identity and explicit invalidation prerequisites before dependency caching",
+    "evaluate preserving raw attestation bundles only if offline/provider-neutral verification becomes a demonstrated need",
+    "resume process/sandbox isolation differential after artifact/evidence transport converges"
+  ],
+  "guardrails": [
+    "No target, browser, runtime, package, evidence or diagnostic coverage was reduced.",
+    "Attestation does not substitute for fresh packaged runtime proof or exact-byte digest checks.",
+    "Unrelated timing/navigation transients were not hidden, waived, or mixed into the provenance change."
+  ]
+}
