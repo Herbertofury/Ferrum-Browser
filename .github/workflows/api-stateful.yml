@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: npm install --omit=dev --no-audit --no-fund
+      - run: npm ci --omit=dev --no-audit --no-fund
       - name: Ferrum fixed-seed stateful OpenAPI planted-defect benchmark
         run: |
           umask 000
