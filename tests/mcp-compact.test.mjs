@@ -36,6 +36,22 @@ function createRpcClient(child) {
   });
 }
 
+test('MCP legacy initialize counter-offers its supported legacy protocol instead of accepting the modern era', async () => {
+  const child = spawn(process.execPath, ['./bin/ferrum.mjs', 'mcp'], {
+    cwd: process.cwd(),
+    stdio: ['pipe', 'pipe', 'pipe']
+  });
+  const call = createRpcClient(child);
+  try {
+    const initialized = await call(1, 'initialize', { protocolVersion: '2026-07-28' });
+    assert.equal(initialized.result.protocolVersion, '2025-06-18');
+    assert.equal(initialized.result.serverInfo.name, 'ferrum');
+  } finally {
+    child.stdin.end();
+    child.kill();
+  }
+});
+
 test('MCP defaults to compact evidence summaries and can opt into full output', async () => {
   const artifactsRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-mcp-'));
   const child = spawn(process.execPath, ['./bin/ferrum.mjs', 'mcp'], {
@@ -45,6 +61,7 @@ test('MCP defaults to compact evidence summaries and can opt into full output', 
   const call = createRpcClient(child);
   try {
     const initialized = await call(1, 'initialize', { protocolVersion: '2025-06-18' });
+    assert.equal(initialized.result.protocolVersion, '2025-06-18');
     assert.equal(initialized.result.serverInfo.name, 'ferrum');
 
     const compactReply = await call(2, 'tools/call', {
