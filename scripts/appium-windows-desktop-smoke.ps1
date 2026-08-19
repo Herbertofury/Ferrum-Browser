@@ -32,21 +32,29 @@ try {
         throw 'Appium did not become ready within 90 seconds'
     }
 
-    $started = [System.Diagnostics.Stopwatch]::StartNew()
-    & node .\bin\ferrum.mjs test .\examples\self-test-windows-desktop.json --artifacts (Join-Path $artifactDir 'ferrum') --compact
-    $exitCode = $LASTEXITCODE
-    $started.Stop()
+    $runs = @()
+    foreach ($iteration in 1..2) {
+        $started = [System.Diagnostics.Stopwatch]::StartNew()
+        & node .\bin\ferrum.mjs test .\examples\self-test-windows-desktop.json --artifacts (Join-Path $artifactDir "ferrum-run-$iteration") --compact
+        $exitCode = $LASTEXITCODE
+        $started.Stop()
+        $runs += [ordered]@{
+            iteration = $iteration
+            elapsedMs = [Math]::Round($started.Elapsed.TotalMilliseconds, 3)
+            ferrumExitCode = $exitCode
+        }
 
-    [ordered]@{
-        automationName = $env:FERRUM_WINDOWS_AUTOMATION_NAME
-        app = $env:FERRUM_WINDOWS_APP
-        elapsedMs = [Math]::Round($started.Elapsed.TotalMilliseconds, 3)
-        ferrumExitCode = $exitCode
-        server = $serverUrl
-    } | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $artifactDir 'metrics.json') -Encoding utf8
+        [ordered]@{
+            automationName = $env:FERRUM_WINDOWS_AUTOMATION_NAME
+            app = $env:FERRUM_WINDOWS_APP
+            runs = $runs
+            server = $serverUrl
+        } | ConvertTo-Json -Depth 10 | Set-Content -Path (Join-Path $artifactDir 'metrics.json') -Encoding utf8
 
-    if ($exitCode -ne 0) {
-        throw "Ferrum native Windows smoke failed with exit code $exitCode"
+        if ($exitCode -ne 0) {
+            throw "Ferrum native Windows smoke iteration $iteration failed with exit code $exitCode"
+        }
+        Start-Sleep -Milliseconds 500
     }
 } finally {
     if ($appium -and -not $appium.HasExited) {
