@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "name": "ferrum-self-test-windows-desktop",
+  "target": {
+    "type": "webdriver",
+    "server": "${ENV:FERRUM_WINDOWS_WEBDRIVER_URL}",
+    "capabilities": {
+      "platformName": "Windows",
+      "appium:automationName": "${ENV:FERRUM_WINDOWS_AUTOMATION_NAME}",
+      "appium:app": "${ENV:FERRUM_WINDOWS_APP}",
+      "appium:shouldCloseApp": true
+    }
+  },
+  "timeouts": {
+    "startupMs": 90000,
+    "stepMs": 15000
+  },
+  "steps": [
+    {
+      "action": "find",
+      "using": "accessibility id",
+      "value": "NameInput",
+      "as": "name"
+    },
+    {
+      "action": "fill",
+      "element": "name",
+      "text": "Ferrum"
+    },
+    {
+      "action": "find",
+      "using": "accessibility id",
+      "value": "SubmitButton",
+      "as": "submit"
+    },
+    {
+      "action": "click",
+      "element": "submit"
+    },
+    {
+      "action": "assert-text",
+      "using": "accessibility id",
+      "value": "StatusText",
+      "text": "hello Ferrum",
+      "equals": true
+    },
+    {
+      "action": "find",
+      "using": "accessibility id",
+      "value": "ToggleButton",
+      "as": "toggle"
+    },
+    {
+      "action": "click",
+      "element": "toggle"
+    },
+    {
+      "action": "assert-visible",
+      "using": "accessibility id",
+      "value": "DetailsText"
+    },
+    {
+      "action": "assert-visible",
+      "element": "submit"
+    },
+    {
+      "action": "screenshot",
+      "name": "windows-native"
+    },
+    {
+      "action": "source",
+      "name": "windows-native"
+    }
+  ]
+}

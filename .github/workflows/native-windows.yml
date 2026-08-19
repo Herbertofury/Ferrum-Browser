@@ -1,0 +1,71 @@
+name: Ferrum Native Windows
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/native-windows.yml'
+      - 'fixtures/windows-uia/**'
+      - 'examples/self-test-windows-desktop.json'
+      - 'scripts/appium-windows-desktop-smoke.ps1'
+      - 'src/runners/webdriver.mjs'
+      - 'src/core/spec.mjs'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  appium-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: desktop-driver
+            package: appium-desktop-driver@2.4.5
+            automation: DesktopDriver
+          - id: novawindows
+            package: appium-novawindows-driver@1.4.4
+            automation: NovaWindows
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install Ferrum runtime dependencies
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Install pinned Appium Windows stack
+        shell: powershell
+        run: |
+          npm install --global appium@3.6.0 --no-audit --no-fund
+          appium driver install --source=npm '${{ matrix.package }}'
+          appium --version
+          appium driver list --installed
+      - name: Build deterministic native Windows fixture
+        shell: powershell
+        run: dotnet build .\fixtures\windows-uia\Ferrum.WindowsFixture.csproj -c Release --nologo
+      - name: Resolve native fixture and provider identity
+        shell: powershell
+        run: |
+          $app = (Resolve-Path '.\fixtures\windows-uia\bin\Release\net8.0-windows\Ferrum.WindowsFixture.exe').Path
+          "FERRUM_WINDOWS_APP=$app" >> $env:GITHUB_ENV
+          "FERRUM_WINDOWS_WEBDRIVER_URL=http://127.0.0.1:4723" >> $env:GITHUB_ENV
+          "FERRUM_WINDOWS_AUTOMATION_NAME=${{ matrix.automation }}" >> $env:GITHUB_ENV
+          "FERRUM_WINDOWS_ARTIFACTS=${{ github.workspace }}\artifacts\windows-${{ matrix.id }}" >> $env:GITHUB_ENV
+          Get-FileHash $app -Algorithm SHA256 | Format-List | Out-String | Set-Content '.\fixtures\windows-uia\fixture-sha256.txt' -Encoding utf8
+      - name: Ferrum real native Windows application smoke
+        shell: powershell
+        run: .\scripts\appium-windows-desktop-smoke.ps1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-evidence-Native-Windows-${{ matrix.id }}
+          path: |
+            artifacts/windows-${{ matrix.id }}/
+            fixtures/windows-uia/fixture-sha256.txt
+          if-no-files-found: error
