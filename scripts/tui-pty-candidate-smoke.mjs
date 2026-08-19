@@ -17,11 +17,12 @@ await fs.mkdir(artifacts, { recursive: true });
 const publishedMethods = Object.getOwnPropertyNames(TuiTest.prototype).filter(name => name !== 'constructor').sort();
 const requiredMethods = [
   'run', 'close', 'closeQuiet', 'type', 'write', 'press', 'resize', 'state', 'cells',
-  'getCursor', 'getSize', 'screenshot', 'startRecording', 'stopRecording', 'waitText',
-  'waitIdle', 'waitExit', 'expectText', 'expectExitCode'
+  'getCursor', 'getSize', 'screenshot', 'waitText', 'waitIdle', 'waitExit', 'expectText',
+  'expectExitCode'
 ];
 const missingRequiredMethods = requiredMethods.filter(name => !publishedMethods.includes(name));
 assert.deepEqual(missingRequiredMethods, [], `published tui-test candidate is missing required methods: ${missingRequiredMethods.join(', ')}`);
+const recordingSupported = publishedMethods.includes('startRecording') && publishedMethods.includes('stopRecording');
 
 function percentile(values, fraction) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -60,7 +61,7 @@ try {
       const bellCount = typeof t.getBellCount === 'function' ? await t.getBellCount() : null;
       if (bellCount != null) assert.ok(bellCount >= 1, 'fixture bell was not observed');
 
-      await t.startRecording(castPath, { format: 'cast' });
+      if (recordingSupported) await t.startRecording(castPath, { format: 'cast' });
       await t.press('Escape');
       await t.waitText('KEY:ESCAPE');
       await t.type('abc');
@@ -84,11 +85,11 @@ try {
       assert.ok(state.text.includes('KEY:ESCAPE'));
 
       await t.screenshot(svgPath);
-      await t.stopRecording();
+      if (recordingSupported) await t.stopRecording();
       const svg = await fs.stat(svgPath);
-      const cast = await fs.stat(castPath);
+      const cast = recordingSupported ? await fs.stat(castPath) : null;
       assert.ok(svg.size > 0, 'SVG screenshot is empty');
-      assert.ok(cast.size > 0, 'asciicast recording is empty');
+      if (cast) assert.ok(cast.size > 0, 'asciicast recording is empty');
 
       await t.write('q');
       await t.waitExit();
@@ -107,7 +108,7 @@ try {
         title,
         bellCount,
         screenshotBytes: svg.size,
-        recordingBytes: cast.size
+        recordingBytes: cast?.size ?? null
       });
     } catch (error) {
       failure = { iteration: index + 1, session, message: error.message, stack: error.stack };
@@ -127,10 +128,15 @@ const summary = {
   candidate: '@microsoft/tui-test',
   candidateVersion: VERSION,
   publishedMethods,
+  publishedSurfaceGapsVsCurrentMainDocs: {
+    recording: !recordingSupported,
+    bell: !publishedMethods.includes('getBellCount') || !publishedMethods.includes('waitBell')
+  },
   optionalSurface: {
     getTitle: publishedMethods.includes('getTitle'),
     getBellCount: publishedMethods.includes('getBellCount'),
-    waitBell: publishedMethods.includes('waitBell')
+    waitBell: publishedMethods.includes('waitBell'),
+    recording: recordingSupported
   },
   platform: process.platform,
   arch: process.arch,
