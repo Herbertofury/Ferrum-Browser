@@ -4,9 +4,9 @@
   "version": "0.2.0",
   "goal": "Operate Ferrum as the mandatory full-fidelity acceptance layer for GameSync and as a reusable full application tester without sacrificing coverage, diagnostics, evidence, runtime fidelity, target breadth, or output quality.",
   "state": "verified complete product checkpoint on main",
-  "verifiedCodeCommit": "0e212da9effebdc7db1d09a7faea03679bd11cc3",
-  "verifiedWorkflowRun": 32164953344,
-  "verifiedAt": "2026-08-18T17:25:18Z",
+  "verifiedCodeCommit": "f9f7f7689c2711896cc7ac57dae29760b4f130cc",
+  "verifiedWorkflowRun": 32208809141,
+  "verifiedAt": "2026-08-19T02:35:00Z",
   "verifiedToolchain": {
     "playwright": "1.63.0-alpha-2026-08-17",
     "electron": "43.4.0",
@@ -179,48 +179,54 @@
       ]
     },
     "latestBuildArtifacts": {
-      "workflowRun": 32164953344,
-      "codeCommit": "0e212da9effebdc7db1d09a7faea03679bd11cc3",
-      "verifiedProposalHead": "53a8e8b11229c08aab95e06cda7d699cf2caed6b",
-      "verifiedTree": "95f135263ed7f6c4961699c101f25fb319ef7572",
+      "workflowRun": 32208809141,
+      "codeCommit": "f9f7f7689c2711896cc7ac57dae29760b4f130cc",
+      "verifiedProposalHead": "70fc4920c31f8eae587edf2f6b9e3ec2435160b0",
+      "verifiedTree": "6bff0ac4ad4272cd946fbc8d981b305d0b71f685",
       "treeMatchesMergedProduct": true,
       "perfettoCompatibilityWorkflowRun": 32155315736,
       "linuxDesktop": {
-        "artifactId": 9335145634,
-        "sizeBytes": 131750248,
-        "providerSha256": "024c112937f911502f20da095020c3548f44527eab7b7d499c56a96266dfe462",
-        "freshPackagedDesktopSmoke": "passed"
+        "artifactId": 9350065653,
+        "sizeBytes": 145016162,
+        "providerSha256": "dfc5f9fcdd95f8c9681747979d7c3d4211714275088d8deb6c72822c440a9c24",
+        "freshPackagedDesktopSmoke": "passed",
+        "attestationId": 41511647,
+        "localProviderRedownloadDigestEqual": true,
+        "ghAttestationVerify": "passed"
       },
       "windowsDesktop": {
-        "artifactId": 9335187641,
-        "sizeBytes": 151618930,
-        "providerSha256": "9437a366ca6d03224a8b475bd2268c3d08e6ed1927f3566bb749aab04e60cd18",
-        "freshPackagedDesktopSmoke": "passed"
+        "artifactId": 9350056674,
+        "sizeBytes": 166254073,
+        "providerSha256": "f0bcba8bdbbab00e4c834d7d7723a06551bd463e6ea2681f66502c5908f561ed",
+        "freshPackagedDesktopSmoke": "passed",
+        "attestationId": 41511597,
+        "localProviderRedownloadDigestEqual": true,
+        "ghAttestationVerify": "passed"
       },
       "linuxEvidence": {
-        "artifactId": 9335139628,
-        "sizeBytes": 2239193,
-        "providerSha256": "ec18bbae8dc6636a7f3972c5fce1b2f43526cb7dbffc469bf19b1bdaeb0fe380"
+        "artifactId": 9350064585,
+        "sizeBytes": 2258558,
+        "providerSha256": "ef0e3a6d17f9f9fa6b317db168dac36b1352c26556c9dba0854ba6530ff24648"
       },
       "windowsEvidence": {
-        "artifactId": 9335180126,
-        "sizeBytes": 4115455,
-        "providerSha256": "5aff755e3c8ecc78db4416c8deb04ce1610f543a6fe57f78e4ace57320517b92"
+        "artifactId": 9350055850,
+        "sizeBytes": 1922233,
+        "providerSha256": "7cbffcff61a56be0456406ca226d6bf0d2590b79534d1bef7f6edd4faeabfba6"
       },
       "appiumEvidence": {
-        "artifactId": 9335147080,
-        "sizeBytes": 123830,
-        "providerSha256": "69255d09387649c905eea52c8bfd5ba0be2987435bff30a113b40c57aeb6b5f4"
+        "artifactId": 9350063840,
+        "sizeBytes": 124054,
+        "providerSha256": "5b7e151294a3bf0076f19a1a5cbe81316e133d4474bd64fe7556ba6d49fce111"
       },
       "webdriverGridEvidence": {
-        "artifactId": 9335114030,
-        "sizeBytes": 23338,
-        "providerSha256": "4e586e66239db21c56fa70e803f277ee71bb81633c90c3438dc06e8046f26a24"
+        "artifactId": 9350034635,
+        "sizeBytes": 23377,
+        "providerSha256": "c1efa59b6e00cdeb5a32ba3108df12d46950dee779b13820f5e98fb3ff5ba395"
       },
       "lightpandaEvidence": {
-        "artifactId": 9335086132,
-        "sizeBytes": 13044,
-        "providerSha256": "e85783a39bba38688487c8b8588ba3df2666da6adae37f5104509db902b75e21"
+        "artifactId": 9350015546,
+        "sizeBytes": 13072,
+        "providerSha256": "ec767edc2e192cad2d0b19a7be710694f1a97453365c36ecd9f89cf6ef65d3c7"
       },
       "serviceNetworkFaultEvidence": {
         "artifactId": 9330056839,
@@ -228,7 +234,19 @@
         "providerSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7",
         "downloadedSha256": "8d5da08582000594ae2914d4aeee336cdebe628de21311c1eee1a9e97ad377d7"
       },
-      "independentArtifactRedownloadHash": "run-26 provider SHA-256 digests plus exact-head fresh packaged runtime smokes passed; merged product tree equals the exact verified proposal tree; the inherited run-25 Perfetto-compatible trace sidecar remains independently loaded and queried"
+      "independentArtifactRedownloadHash": "run-36 Linux/Windows producer SHA-256 equals provider digest, immutable artifact-ID redownload digest, and independently verified GitHub attestation; full severe CI passed and merged product tree equals exact tested proposal tree",
+      "tauriWebDriverWorkflowRun": 32194473469,
+      "nativeWindowsWorkflowRun": 32199800977,
+      "linuxProvenance": {
+        "artifactId": 9350071068,
+        "sizeBytes": 8345,
+        "providerSha256": "1084b28c79430a16adbcc2990711968d90a5348a048ffe534a73f0d1b98fbd41"
+      },
+      "windowsProvenance": {
+        "artifactId": 9350060690,
+        "sizeBytes": 8485,
+        "providerSha256": "b9a7652e9b2af05fdecdbcd6636f5e0430128254a55fa0a3f2ab39240cf2dbdb"
+      }
     },
     "artifactPublication": {
       "sourceCheckpoint": {
@@ -320,7 +338,12 @@
     "bounded constrained Appium find-all convergence within the existing step budget while preserving attempt/count diagnostics",
     "GitHub Wiki Git-remote probe and real-browser first-page bootstrap with persistent authenticated Spaces, idempotency and private false-404 protection",
     "secret-safe evidence boundary for templated environment/variable credentials and remote provider capabilities",
-    "Playwright 1.63.0-alpha-2026-08-17 qualified across Ferrum's complete existing real-runtime acceptance surface"
+    "Playwright 1.63.0-alpha-2026-08-17 qualified across Ferrum's complete existing real-runtime acceptance surface",
+    "real Tauri v2 application qualification through Ferrum WebDriver on Linux and Windows with real UI interaction and Rust IPC",
+    "native Windows WPF/UIA qualification through both appium-desktop-driver and NovaWindows WebDriver providers",
+    "parallel Brave and Opera GX Windows acceptance jobs while retaining Chromium/Chrome/Edge full-gate coverage",
+    "producer-owned portable desktop tar transport with exact file-digest round-trip, runnable extracted-package proof, raw artifact upload and provider digest equality",
+    "exact-byte GitHub artifact attestation with immutable artifact-ID redownload and independent gh attestation verify on Linux and Windows"
   ],
   "implementedButNotRuntimeQualifiedYet": [],
   "incidentsResolved": [
@@ -351,7 +374,8 @@
     "Evidence timelines exposed wall-clock timestamps but required agents to derive run-relative timing; events now include monotonic elapsedMs and finalized/compact results expose direct durationMs without hiding raw evidence.",
     "Process targets could health-check a service but could not directly exercise its API; Ferrum now supports bounded HTTP requests with retained full-response evidence, and transport failures wait only briefly for the authoritative child terminal state so real process exits are attributed instead of being flattened into generic fetch errors.",
     "Run-25 checkpoint advanced beyond STATUS after a verified product merge; STATUS is now synchronized to product 502232441fdd828b9e7f191bb01f75a9154a789d and CI 32155315750, including the Perfetto-compatible evidence trace sidecar.",
-    "Run-26 finalVerifiedProduct checkpoint was invisible to STATUS normalization, leaving durable STATUS on run 25; checkpoint normalization now recognizes proven finalVerifiedProduct records and STATUS is synchronized to product 0e212da9effebdc7db1d09a7faea03679bd11cc3 / CI 32164953344 without dropping run-25 trace evidence."
+    "Run-26 finalVerifiedProduct checkpoint was invisible to STATUS normalization, leaving durable STATUS on run 25; checkpoint normalization now recognizes proven finalVerifiedProduct records and STATUS is synchronized to product 0e212da9effebdc7db1d09a7faea03679bd11cc3 / CI 32164953344 without dropping run-25 trace evidence.",
+    "Run-36 verifiedProduct checkpoint stores its successful workflow under sibling verification.workflowRun/workflowConclusion; STATUS normalization now recognizes that proof shape and durable STATUS is synchronized to product f9f7f7689c2711896cc7ac57dae29760b4f130cc / CI 32208809141 without dropping earlier evidence."
   ],
   "observedNonBlockingWarnings": [
     "Opera GX emitted one bounded startup-page-close warning in an earlier Windows evidence bundle because its vendor startup page did not close within 10000ms. The workload page remained isolated, all five browsers passed, final context teardown completed, and no Electron force-close or Electron shutdown-warning events were present."
