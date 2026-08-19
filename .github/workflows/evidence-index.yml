@@ -1,0 +1,126 @@
+name: Ferrum Evidence Index
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/evidence-index.yml'
+      - 'scripts/workflow-evidence-index.mjs'
+      - 'tests/workflow-evidence-index.test.mjs'
+  workflow_run:
+    workflows: ['Ferrum CI']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  index:
+    if: github.event_name == 'pull_request' || github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact proposal head
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout canonical main index implementation
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Resolve exact Ferrum CI run
+        id: target
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p .ferrum/evidence-index
+          RUN_JSON=.ferrum/evidence-index/target-run.json
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}" > "$RUN_JSON"
+          else
+            FOUND=""
+            for attempt in $(seq 1 90); do
+              FOUND="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${PR_HEAD_SHA}&per_page=20" --jq '.workflow_runs | map(select(.status == "completed")) | sort_by(.run_started_at) | last | .id // empty')"
+              if [ -n "$FOUND" ]; then
+                break
+              fi
+              sleep 5
+            done
+            test -n "$FOUND"
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${FOUND}" > "$RUN_JSON"
+            test "$(jq -r '.head_sha' "$RUN_JSON")" = "$PR_HEAD_SHA"
+          fi
+          RUN_ID="$(jq -r '.id' "$RUN_JSON")"
+          RUN_SHA="$(jq -r '.head_sha' "$RUN_JSON")"
+          RUN_CONCLUSION="$(jq -r '.conclusion' "$RUN_JSON")"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "run_sha=$RUN_SHA" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$RUN_CONCLUSION" >> "$GITHUB_OUTPUT"
+      - name: Fetch exact current-run artifact metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_RUN_ID: ${{ steps.target.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${TARGET_RUN_ID}/artifacts?per_page=100" > .ferrum/evidence-index/artifacts.json
+      - name: Download exact desktop provenance summaries
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ferrum-provenance-*
+          path: .ferrum/evidence-index/provenance
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.target.outputs.run_id }}
+          github-token: ${{ github.token }}
+      - name: Build and verify compact evidence index
+        id: build-index
+        shell: bash
+        env:
+          TARGET_RUN_ID: ${{ steps.target.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          OUTPUT=".ferrum/evidence-index/ferrum-evidence-index-${TARGET_RUN_ID}.json"
+          SUMMARY="$(node ./scripts/workflow-evidence-index.mjs \
+            --run-json .ferrum/evidence-index/target-run.json \
+            --artifacts-json .ferrum/evidence-index/artifacts.json \
+            --provenance-root .ferrum/evidence-index/provenance \
+            --output "$OUTPUT")"
+          DIGEST="$(printf '%s' "$SUMMARY" | jq -r '.sha256')"
+          BYTES="$(printf '%s' "$SUMMARY" | jq -r '.bytes')"
+          test "$DIGEST" = "$(sha256sum "$OUTPUT" | cut -d' ' -f1)"
+          echo "path=$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "bytes=$BYTES" >> "$GITHUB_OUTPUT"
+          printf '### Ferrum evidence index\n\n- target run: `%s`\n- target SHA: `%s`\n- artifacts: `%s`\n- indexed bytes: `%s`\n- index SHA-256: `%s`\n' \
+            "$TARGET_RUN_ID" \
+            "${{ steps.target.outputs.run_sha }}" \
+            "$(printf '%s' "$SUMMARY" | jq -r '.artifactCount')" \
+            "$BYTES" \
+            "$DIGEST" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload exact-byte evidence index
+        id: upload-index
+        uses: actions/upload-artifact@v7
+        with:
+          name: ferrum-evidence-index-${{ steps.target.outputs.run_id }}.json
+          path: ${{ steps.build-index.outputs.path }}
+          archive: false
+          if-no-files-found: error
+      - name: Verify evidence index provider digest
+        shell: bash
+        env:
+          LOCAL_DIGEST: ${{ steps.build-index.outputs.digest }}
+          REMOTE_DIGEST: ${{ steps.upload-index.outputs.artifact-digest }}
+        run: test "$LOCAL_DIGEST" = "$REMOTE_DIGEST"
+      - name: Require exact-head Ferrum CI success for proposal gate
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: test "${{ steps.target.outputs.conclusion }}" = "success"
