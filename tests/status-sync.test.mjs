@@ -20,6 +20,23 @@ function ensureMainHistoryForProvenance() {
   });
 }
 
+function ensureCommitAvailable(sha) {
+  try {
+    git(['cat-file', '-e', `${sha}^{commit}`]);
+    return;
+  } catch {
+    // A shallow PR checkout can contain merged products from main without the
+    // original exact proposal commit. Fetch only the recorded immutable commit
+    // so exact proposal-tree verification remains strong instead of silently
+    // dropping the newest verified evolution candidate.
+  }
+  execFileSync('git', ['fetch', '--no-tags', '--depth=1', 'origin', sha], {
+    cwd: root,
+    stdio: 'ignore',
+  });
+  git(['cat-file', '-e', `${sha}^{commit}`]);
+}
+
 function successful(value) {
   const normalized = String(value ?? '').trim().toLowerCase();
   return normalized === 'success' || normalized === 'all success' || normalized === 'passed';
@@ -41,6 +58,8 @@ function candidateFrom(record, filename) {
   if (!product || !proposal || !tree || !Number.isFinite(workflowRun) || !successful(conclusion)) return null;
   if (entry.treeParity === false || verification.treeParity === false) return null;
   try {
+    ensureCommitAvailable(product);
+    ensureCommitAvailable(proposal);
     execFileSync('git', ['merge-base', '--is-ancestor', product, 'HEAD'], { cwd: root, stdio: 'ignore' });
     if (git(['rev-parse', `${product}^{tree}`]) !== tree) return null;
     if (git(['rev-parse', `${proposal}^{tree}`]) !== tree) return null;
