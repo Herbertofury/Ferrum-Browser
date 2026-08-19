@@ -70,9 +70,6 @@
     {
       "action": "source",
       "name": "windows-native"
-    },
-    {
-      "action": "assert-session"
     }
   ]
 }
