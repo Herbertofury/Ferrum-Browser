@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
+import { evolutionRunNumber } from '../scripts/evolution-run-number.mjs';
 
 const root = process.cwd();
 const memoryDir = path.join(root, '.agents-memory');
@@ -17,6 +18,23 @@ function ensureMainHistoryForProvenance() {
     cwd: root,
     stdio: 'ignore',
   });
+}
+
+function ensureCommitAvailable(sha) {
+  try {
+    git(['cat-file', '-e', `${sha}^{commit}`]);
+    return;
+  } catch {
+    // A shallow PR checkout can contain merged products from main without the
+    // original exact proposal commit. Fetch only the recorded immutable commit
+    // so exact proposal-tree verification remains strong instead of silently
+    // dropping the newest verified evolution candidate.
+  }
+  execFileSync('git', ['fetch', '--no-tags', '--depth=1', 'origin', sha], {
+    cwd: root,
+    stdio: 'ignore',
+  });
+  git(['cat-file', '-e', `${sha}^{commit}`]);
 }
 
 function successful(value) {
@@ -40,13 +58,23 @@ function candidateFrom(record, filename) {
   if (!product || !proposal || !tree || !Number.isFinite(workflowRun) || !successful(conclusion)) return null;
   if (entry.treeParity === false || verification.treeParity === false) return null;
   try {
+    ensureCommitAvailable(product);
+    ensureCommitAvailable(proposal);
     execFileSync('git', ['merge-base', '--is-ancestor', product, 'HEAD'], { cwd: root, stdio: 'ignore' });
     if (git(['rev-parse', `${product}^{tree}`]) !== tree) return null;
     if (git(['rev-parse', `${proposal}^{tree}`]) !== tree) return null;
   } catch {
     return null;
   }
-  return { filename, run: Number(record.run ?? 0), checkedAt: record.checkedAt ?? '', product, proposal, tree, workflowRun };
+  return {
+    filename,
+    run: evolutionRunNumber(record, filename),
+    checkedAt: record.checkedAt ?? '',
+    product,
+    proposal,
+    tree,
+    workflowRun,
+  };
 }
 
 test('STATUS points at the newest fully verified exact-tree evolution product', async () => {

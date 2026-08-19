@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - automation/ferrum-bug-status-run39-20260819-0051
+      - 'automation/ferrum-status-*'
     paths:
       - '.agents-memory/EVOLUTION_RUN_*.json'
       - '.github/workflows/status-sync-repair.yml'
@@ -18,6 +18,9 @@ on:
       - 'scripts/sync-verified-status.mjs'
       - 'tests/status-checkpoint.test.mjs'
       - 'tests/status-sync.test.mjs'
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -25,7 +28,7 @@ permissions:
 
 jobs:
   synchronize-status:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-slim
     steps:
       - name: Check out exact writable branch head

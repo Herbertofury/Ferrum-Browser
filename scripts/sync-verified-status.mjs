@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { evolutionRunNumber } from './evolution-run-number.mjs';
 
 const root = process.cwd();
 const memoryDir = path.join(root, '.agents-memory');
@@ -76,7 +77,7 @@ function normalizeCandidate(record, filename) {
     return {
       filename,
       shape,
-      run: Number(record.run ?? 0),
+      run: evolutionRunNumber(record, filename),
       checkedAt: record.checkedAt ?? null,
       product,
       proposal,
