@@ -18,7 +18,7 @@ jobs:
   index:
     if: github.event_name == 'pull_request' || github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 30
     steps:
       - name: Checkout exact proposal head
         if: github.event_name == 'pull_request'
@@ -47,15 +47,23 @@ jobs:
             gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}" > "$RUN_JSON"
           else
             FOUND=""
-            for attempt in $(seq 1 90); do
-              FOUND="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${PR_HEAD_SHA}&per_page=20" --jq '.workflow_runs | map(select(.status == "completed")) | sort_by(.run_started_at) | last | .id // empty')"
+            for attempt in $(seq 1 60); do
+              FOUND="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${PR_HEAD_SHA}&per_page=20" --jq '.workflow_runs | sort_by(.run_started_at) | last | .id // empty')"
               if [ -n "$FOUND" ]; then
                 break
               fi
               sleep 5
             done
             test -n "$FOUND"
-            gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${FOUND}" > "$RUN_JSON"
+            for attempt in $(seq 1 150); do
+              gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${FOUND}" > "$RUN_JSON"
+              STATUS="$(jq -r '.status' "$RUN_JSON")"
+              if [ "$STATUS" = "completed" ]; then
+                break
+              fi
+              sleep 10
+            done
+            test "$(jq -r '.status' "$RUN_JSON")" = "completed"
             test "$(jq -r '.head_sha' "$RUN_JSON")" = "$PR_HEAD_SHA"
           fi
           RUN_ID="$(jq -r '.id' "$RUN_JSON")"
