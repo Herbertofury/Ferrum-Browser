@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24.19.0
-          cache: npm
+          package-manager-cache: false
 
       - name: Install exact Ferrum dependencies
         run: npm ci --no-audit --no-fund
