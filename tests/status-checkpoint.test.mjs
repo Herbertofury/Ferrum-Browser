@@ -20,6 +20,11 @@ async function readOptionalJson(file) {
   }
 }
 
+function isSuccess(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'success' || normalized === 'all success' || normalized === 'passed';
+}
+
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const proposal = entry?.proposal;
@@ -30,7 +35,7 @@ function normalizeVerifiedCheckpoint(entry) {
     typeof verifiedProduct?.tree === 'string' && verifiedProduct.tree.length > 0 &&
     typeof verifiedProduct?.testedProposalHead === 'string' && verifiedProduct.testedProposalHead.length > 0 &&
     verifiedProduct?.treeParity === true &&
-    String(verification?.workflowConclusion ?? '').toLowerCase() === 'success' &&
+    isSuccess(verification?.workflowConclusion) &&
     Number.isSafeInteger(verificationWorkflowRun) &&
     verificationWorkflowRun > 0;
   const directVerifiedWorkflowRun =
@@ -42,7 +47,7 @@ function normalizeVerifiedCheckpoint(entry) {
     typeof verifiedProduct?.treeSha === 'string' && verifiedProduct.treeSha.length > 0 &&
     typeof proposal?.treeSha === 'string' && proposal.treeSha.length > 0 &&
     verifiedProduct.treeSha === proposal.treeSha &&
-    String(proposal?.workflowConclusion ?? '').toLowerCase() === 'success' &&
+    isSuccess(proposal?.workflowConclusion) &&
     Number.isSafeInteger(siblingProposalWorkflowRun) &&
     siblingProposalWorkflowRun > 0;
   const verifiedWorkflowRun = Number(
@@ -72,7 +77,7 @@ function normalizeVerifiedCheckpoint(entry) {
     typeof verifiedImprovement?.productTree === 'string' && verifiedImprovement.productTree.length > 0 &&
     typeof verifiedImprovement?.proposalTree === 'string' && verifiedImprovement.proposalTree.length > 0 &&
     verifiedImprovement.productTree === verifiedImprovement.proposalTree &&
-    String(verifiedImprovement?.proposalCiConclusion ?? '').toLowerCase() === 'success' &&
+    isSuccess(verifiedImprovement?.proposalCiConclusion) &&
     Number.isSafeInteger(verifiedImprovementWorkflowRun) &&
     verifiedImprovementWorkflowRun > 0;
   if (verifiedImprovementProof) {
@@ -84,8 +89,25 @@ function normalizeVerifiedCheckpoint(entry) {
   }
 
   const improvement = entry?.improvement;
-  const improvementWorkflowRun = Number(improvement?.mainRun ?? 0);
-  if (improvement?.product && Number.isSafeInteger(improvementWorkflowRun) && improvementWorkflowRun > 0) {
+  const improvementProof = improvement?.proof ?? entry?.proof ?? {};
+  const improvementWorkflowRun = Number(improvementProof?.workflows?.ci ?? improvement?.mainRun ?? 0);
+  const improvementTree = improvement?.mergedTree ?? improvement?.tree;
+  const improvementExactTreeProof =
+    improvement?.product &&
+    typeof improvement?.proposal === 'string' && improvement.proposal.length > 0 &&
+    typeof improvementTree === 'string' && improvementTree.length > 0 &&
+    improvement?.treeParity === true &&
+    isSuccess(improvementProof?.conclusion) &&
+    Number.isSafeInteger(improvementWorkflowRun) &&
+    improvementWorkflowRun > 0;
+  if (improvementExactTreeProof) {
+    return {
+      commit: improvement.product,
+      workflowRun: improvementWorkflowRun,
+      verifiedAt: improvement?.verifiedAt ?? entry?.checkedAt ?? null,
+    };
+  }
+  if (improvement?.product && Number.isSafeInteger(improvementWorkflowRun) && improvementWorkflowRun > 0 && improvement?.mainRun) {
     return {
       commit: improvement.product,
       workflowRun: improvementWorkflowRun,
@@ -104,16 +126,24 @@ function normalizeVerifiedCheckpoint(entry) {
   }
 
   const finalVerifiedProduct = entry?.finalVerifiedProduct;
-  const finalVerifiedWorkflowRun = Number(finalVerifiedProduct?.workflow ?? 0);
-  const finalVerifiedProductProof =
+  const finalVerifiedWorkflowRun = Number(finalVerifiedProduct?.workflowRun ?? finalVerifiedProduct?.workflow ?? 0);
+  const finalVerifiedModernProof =
+    finalVerifiedProduct?.product &&
+    typeof finalVerifiedProduct?.tree === 'string' && finalVerifiedProduct.tree.length > 0 &&
+    typeof finalVerifiedProduct?.proposal === 'string' && finalVerifiedProduct.proposal.length > 0 &&
+    finalVerifiedProduct?.treeParity === true &&
+    isSuccess(finalVerifiedProduct?.workflowConclusion ?? finalVerifiedProduct?.proof?.conclusion) &&
+    Number.isSafeInteger(finalVerifiedWorkflowRun) &&
+    finalVerifiedWorkflowRun > 0;
+  const finalVerifiedLegacyProof =
     finalVerifiedProduct?.commit &&
     typeof finalVerifiedProduct?.tree === 'string' && finalVerifiedProduct.tree.length > 0 &&
     typeof finalVerifiedProduct?.proposalHead === 'string' && finalVerifiedProduct.proposalHead.length > 0 &&
     Number.isSafeInteger(finalVerifiedWorkflowRun) &&
     finalVerifiedWorkflowRun > 0;
-  if (finalVerifiedProductProof) {
+  if (finalVerifiedModernProof || finalVerifiedLegacyProof) {
     return {
-      commit: finalVerifiedProduct.commit,
+      commit: finalVerifiedProduct.product ?? finalVerifiedProduct.commit,
       workflowRun: finalVerifiedWorkflowRun,
       verifiedAt: finalVerifiedProduct?.verifiedAt ?? entry?.checkedAt ?? null,
     };
@@ -135,6 +165,37 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       improvement: { product: 'improvement-product', mainRun: 43, verifiedAt: '2026-08-17T21:32:30Z' },
     }),
     { commit: 'improvement-product', workflowRun: 43, verifiedAt: '2026-08-17T21:32:30Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      state: 'VERIFIED_IMPROVEMENT_MERGED',
+      checkedAt: '2026-08-19T06:00:00Z',
+      improvement: {
+        product: 'run39-product',
+        proposal: 'run39-proposal',
+        tree: 'run39-tree',
+        mergedTree: 'run39-tree',
+        treeParity: true,
+        proof: { workflows: { ci: 431 }, conclusion: 'all success' },
+      },
+    }),
+    { commit: 'run39-product', workflowRun: 431, verifiedAt: '2026-08-19T06:00:00Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      state: 'VERIFIED_IMPROVEMENT_MERGED',
+      improvement: {
+        product: 'bad-run39-product',
+        proposal: 'bad-run39-proposal',
+        tree: 'one-tree',
+        mergedTree: 'different-tree',
+        treeParity: false,
+        proof: { workflows: { ci: 432 }, conclusion: 'all success' },
+      },
+    }),
+    null,
   );
 
   assert.deepEqual(
@@ -258,6 +319,36 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       },
     }),
     { commit: 'final-product', workflowRun: 53, verifiedAt: '2026-08-18T17:25:18Z' },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      checkedAt: '2026-08-19T08:53:30Z',
+      finalVerifiedProduct: {
+        product: 'run40-product',
+        proposal: 'run40-proposal',
+        tree: 'run40-tree',
+        workflowRun: 54,
+        workflowConclusion: 'success',
+        treeParity: true,
+        proof: { conclusion: 'all success', workflows: { ci: 54 } },
+      },
+    }),
+    { commit: 'run40-product', workflowRun: 54, verifiedAt: '2026-08-19T08:53:30Z' },
+  );
+
+  assert.equal(
+    normalizeVerifiedCheckpoint({
+      finalVerifiedProduct: {
+        product: 'unproven-run40-product',
+        proposal: 'run40-proposal',
+        tree: 'run40-tree',
+        workflowRun: 54,
+        workflowConclusion: 'failure',
+        treeParity: true,
+      },
+    }),
+    null,
   );
 
   assert.deepEqual(
