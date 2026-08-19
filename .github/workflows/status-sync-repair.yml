@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - automation/ferrum-bug-status-run39-20260819-0051
+      - automation/ferrum-status-run56-repair
     paths:
       - '.agents-memory/EVOLUTION_RUN_*.json'
       - '.github/workflows/status-sync-repair.yml'
