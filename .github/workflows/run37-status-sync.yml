@@ -1,0 +1,73 @@
+name: Run 37 STATUS sync
+
+on:
+  push:
+    branches:
+      - evolution/run37-status-sync
+
+permissions:
+  contents: write
+
+jobs:
+  sync-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: evolution/run37-status-sync
+          fetch-depth: 0
+      - name: Synchronize STATUS from verified run 37
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = '.agents-memory/STATUS.json';
+          const status = JSON.parse(fs.readFileSync(path, 'utf8'));
+          status.verifiedCodeCommit = '17b5260d6f18710e45f6b4e154ca77da5c2bbb82';
+          status.verifiedWorkflowRun = 32211204897;
+          status.verifiedAt = '2026-08-19T03:20:13Z';
+          const regression = 'exact-run cross-job evidence index requires the complete successful Ferrum artifact surface, exact source/run identity, provider SHA-256 digests and verified desktop attestation linkage';
+          if (!status.verified.unit.regressionCoverage.includes(regression)) status.verified.unit.regressionCoverage.push(regression);
+          status.verified.agentInterfaces.crossJobEvidenceIndex = true;
+          status.verified.evidenceIntegrity.workflowEvidenceIndex = 'passed';
+          Object.assign(status.verified.latestBuildArtifacts, {
+            workflowRun: 32211204897,
+            codeCommit: '17b5260d6f18710e45f6b4e154ca77da5c2bbb82',
+            verifiedProposalHead: '2e4ec3e0f867189dc2495c0fdb0b2d56be17d562',
+            verifiedTree: '3561dfc8b8b3392ef3ec75f3a6de0d30802e34b2',
+            treeMatchesMergedProduct: true,
+            linuxDesktop: {artifactId:9350973979,sizeBytes:145016986,providerSha256:'ce9934efe7d2b770179bb203a9fb81b7d0b4a955b0a10bf137eeffbb737201fd',freshPackagedDesktopSmoke:'passed',attestationId:41517425,localProviderRedownloadDigestEqual:true,ghAttestationVerify:'passed'},
+            windowsDesktop: {artifactId:9350848915,sizeBytes:166258587,providerSha256:'87c98724b06dccd670892e4a8937cc06f3551f7046148ccc97219a3da19f5855',freshPackagedDesktopSmoke:'passed',attestationId:41516810,localProviderRedownloadDigestEqual:true,ghAttestationVerify:'passed'},
+            linuxEvidence: {artifactId:9350973177,sizeBytes:2252244,providerSha256:'30ee69727d6ec4591d1673d2815a9cd8d45747e59fde86fd2cde41ce8de2d4ec'},
+            windowsEvidence: {artifactId:9350847780,sizeBytes:1920427,providerSha256:'23e64673c3863e6b7933af97e50de3527ec2ced60751c0e8db01ef6529fc8c45'},
+            appiumEvidence: {artifactId:9350847926,sizeBytes:126363,providerSha256:'238cb0ed0a90b3ee53324a7d7ff73def870a3fd8d80ca608e6e83e396757fc0e'},
+            webdriverGridEvidence: {artifactId:9350816434,sizeBytes:23403,providerSha256:'71bab69aee554078bb32236435e4e19f51faf67b4d578ce40723063da88b0fd3'},
+            lightpandaEvidence: {artifactId:9350806272,sizeBytes:13027,providerSha256:'5388868eed3a1cdcf3fe05380956af2f2171d5a9c8f56d87e9d367335d3aa64e'},
+            windowsBraveEvidence: {artifactId:9350835662,sizeBytes:31799,providerSha256:'87234e434953e83e3efc8daecad01c3062e303d5844f870adc7ad2f1b1c446c1'},
+            windowsOperaGxEvidence: {artifactId:9350842154,sizeBytes:3435282,providerSha256:'7502ac96a0a47cd0613d4060685eff57036c8cd8adb20f6cc80ba64ed0d6ca33'},
+            linuxProvenance: {artifactId:9350977444,sizeBytes:8324,providerSha256:'1015b44e94824449c3ba6ac0d20adc8b7dab21fd9d8a874076d440f9a949eeeb'},
+            windowsProvenance: {artifactId:9350855192,sizeBytes:8391,providerSha256:'1c63240cf6aa9dbbea4c9d562a9077060fbc2ba75ec536568bcd187a7c9ad245'},
+            evidenceIndex: {workflowRun:32211204902,targetFerrumCiRun:32211204897,artifactId:9350979798,sizeBytes:5368,providerSha256:'3be2e85975c3e68f8f0753ee4d04398183d1475b4dde11ac27ee941c57fbbd3e',artifactCount:11,totalIndexedBytes:319094833,missingRequiredArtifacts:[],verifiedAttestationCount:2,providerDigestMatchesDownloadedBytes:true},
+            independentArtifactRedownloadHash: 'run-37 exact-head Linux/Windows producer SHA-256 equals provider digest and verified attestation linkage; the exact-run cross-job evidence index independently redownloaded to the provider SHA-256, contains all 11 required current-run artifacts, and merged product tree equals the exact tested proposal tree'
+          });
+          const capability = 'exact-run cross-job evidence index binding CI source/run identity to every required current-run artifact ID, provider SHA-256, size and verified Linux/Windows desktop attestation identity without replacing raw evidence';
+          if (!status.verifiedCapabilities.includes(capability)) status.verifiedCapabilities.push(capability);
+          const next = [
+            'Commit and review a package-lock.json, then prove npm ci reproduces the same dependency tree and full Linux/Windows Ferrum acceptance surface before enabling any dependency cache.',
+            'Only after lockfile/npm-ci proof, benchmark cache-off, cold-cache and warm-cache setup-node/actions-cache paths with repeated median/p95 setup timing plus artifact/evidence parity and explicit invalidation checks.',
+            'Run the same process/service workload unisolated versus strict Sandlock, requiring active fail-closed filesystem/network restrictions, complete Ferrum evidence/cleanup parity and acceptable median/p95 overhead; use nsjail as a comparator if results remain unclear.',
+            'Evaluate offline GitHub attestation bundles only when a concrete offline or provider-neutral verification need exists; do not duplicate the existing online provenance system speculatively.'
+          ];
+          for (const item of next) if (!status.nextActions.includes(item)) status.nextActions.push(item);
+          fs.writeFileSync(path, JSON.stringify(status, null, 2) + '\n');
+          NODE
+      - name: Commit STATUS and remove temporary synchronizer
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/run37-status-sync.yml
+          git add .agents-memory/STATUS.json
+          git diff --cached --check
+          git commit -m 'Synchronize durable STATUS to Ferrum run 37'
+          git push origin HEAD:evolution/run37-status-sync
