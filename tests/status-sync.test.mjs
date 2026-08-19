@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import test from 'node:test';
+import { evolutionRunNumber } from '../scripts/evolution-run-number.mjs';
 
 const root = process.cwd();
 const memoryDir = path.join(root, '.agents-memory');
@@ -46,7 +47,15 @@ function candidateFrom(record, filename) {
   } catch {
     return null;
   }
-  return { filename, run: Number(record.run ?? 0), checkedAt: record.checkedAt ?? '', product, proposal, tree, workflowRun };
+  return {
+    filename,
+    run: evolutionRunNumber(record, filename),
+    checkedAt: record.checkedAt ?? '',
+    product,
+    proposal,
+    tree,
+    workflowRun,
+  };
 }
 
 test('STATUS points at the newest fully verified exact-tree evolution product', async () => {
