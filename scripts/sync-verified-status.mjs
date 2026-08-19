@@ -258,11 +258,22 @@ function archivePriorVerifiedCheckpoint(status, selected) {
   }));
 }
 
+function sameSyncIdentity(sync, selected, conclusion) {
+  return sync?.sourceEvolutionRecord === selected.filename
+    && Number(sync?.evolutionRun) === selected.run
+    && sync?.product === selected.product
+    && sync?.proposal === selected.proposal
+    && sync?.tree === selected.tree
+    && Number(sync?.workflowRun) === selected.workflowRun
+    && sync?.workflowConclusion === conclusion;
+}
+
 const status = JSON.parse(await fs.readFile(statusPath, 'utf8'));
 const selected = await loadLatestVerifiedEvolution();
 const { repository, apiBase, run, artifacts } = await verifiedRunEvidence(selected);
 const companionWorkflows = await verifiedCompanionEvidence(selected, repository, apiBase);
 const toolchain = packageToolchainAt(selected.product);
+const priorSync = status.statusSync;
 
 archivePriorVerifiedCheckpoint(status, selected);
 
@@ -316,7 +327,9 @@ status.statusSync = {
   tree: selected.tree,
   workflowRun: selected.workflowRun,
   workflowConclusion: run.conclusion,
-  synchronizedAt: new Date().toISOString(),
+  synchronizedAt: sameSyncIdentity(priorSync, selected, run.conclusion)
+    ? priorSync.synchronizedAt
+    : new Date().toISOString(),
 };
 
 status.incidentsResolved ??= [];
