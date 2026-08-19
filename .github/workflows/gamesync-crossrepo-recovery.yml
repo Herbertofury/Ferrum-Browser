@@ -16,6 +16,8 @@ jobs:
   lockfile-repair:
     name: lockfile-${{ matrix.name }}
     runs-on: ubuntu-latest
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +41,15 @@ jobs:
             repository: Herbertofury/GameSync-Next
             ref: 311273d299418b52eb3f931f35d19e0952b1fa60
     steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Private cross-repository checkout requires repository secret FERRUM_GAMESYNC_READ_TOKEN (preferred) or GH_PAT with read access to Herbertofury/Gamesync and Herbertofury/GameSync-Next.'
+            exit 2
+          fi
+
       - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,6 +57,7 @@ jobs:
           ref: ${{ matrix.ref }}
           path: candidate
           fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
 
       - name: Set up exact Node 26.7.0
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -88,9 +100,20 @@ jobs:
 
   standalone-vite-linux-ferrum:
     runs-on: ubuntu-latest
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
     steps:
       - name: Check out Ferrum recovery harness
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Private cross-repository checkout requires repository secret FERRUM_GAMESYNC_READ_TOKEN (preferred) or GH_PAT with read access to Herbertofury/Gamesync and Herbertofury/GameSync-Next.'
+            exit 2
+          fi
 
       - name: Check out exact Gamesync Vite candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -99,6 +122,7 @@ jobs:
           ref: 8178577420ba9c540883c4dbac4634ed087f7788
           path: candidate
           fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
 
       - name: Set up exact candidate Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -165,13 +189,23 @@ jobs:
 
   standalone-vite-opera:
     runs-on: windows-latest
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
     steps:
+      - name: Require private GameSync read token
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CROSS_REPO_TOKEN)) {
+            throw 'Private cross-repository checkout requires repository secret FERRUM_GAMESYNC_READ_TOKEN (preferred) or GH_PAT with read access to Herbertofury/Gamesync and Herbertofury/GameSync-Next.'
+          }
+
       - name: Check out exact Gamesync Vite candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Herbertofury/Gamesync
           ref: 8178577420ba9c540883c4dbac4634ed087f7788
           fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
 
       - name: Set up exact Node 26.7.0
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
