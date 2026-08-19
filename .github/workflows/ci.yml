@@ -57,6 +57,10 @@ jobs:
           node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('/tmp/ferrum-integrity-mcp.jsonl','utf8').trim()); const v=JSON.parse(r.result.content[0].text); if(v.status!=='passed') process.exit(1)"
 
   chromium-smoke:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -155,6 +159,59 @@ jobs:
           LOCAL_DIGEST: ${{ steps.desktop-artifact.outputs.digest }}
           REMOTE_DIGEST: ${{ steps.desktop-upload.outputs.artifact-digest }}
         run: test "$LOCAL_DIGEST" = "$REMOTE_DIGEST"
+      - name: Attest verified portable desktop artifact
+        id: desktop-attest
+        if: success()
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.desktop-artifact.outputs.path }}
+      - name: Download exact uploaded desktop artifact
+        if: success()
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ steps.desktop-upload.outputs.artifact-id }}
+          path: .ferrum/attestation-verify
+      - name: Verify downloaded desktop artifact provenance
+        if: success()
+        shell: bash
+        env:
+          LOCAL_DIGEST: ${{ steps.desktop-artifact.outputs.digest }}
+          ATTESTATION_ID: ${{ steps.desktop-attest.outputs.attestation-id }}
+          ATTESTATION_URL: ${{ steps.desktop-attest.outputs.attestation-url }}
+          ARTIFACT_ID: ${{ steps.desktop-upload.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.desktop-upload.outputs.artifact-url }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DOWNLOADED=".ferrum/attestation-verify/ferrum-desktop-${RUNNER_OS}.tar.gz"
+          test -f "$DOWNLOADED"
+          DOWNLOADED_DIGEST="$(sha256sum "$DOWNLOADED" | cut -d' ' -f1)"
+          test "$LOCAL_DIGEST" = "$DOWNLOADED_DIGEST"
+          test -n "$ATTESTATION_ID"
+          test -n "$ATTESTATION_URL"
+          mkdir -p artifacts/provenance
+          gh attestation verify "$DOWNLOADED" -R "$GITHUB_REPOSITORY" --format json > artifacts/provenance/attestation-verify.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const verification = JSON.parse(fs.readFileSync('artifacts/provenance/attestation-verify.json', 'utf8'));
+          const serialized = JSON.stringify(verification);
+          if (!serialized.includes(process.env.LOCAL_DIGEST)) throw new Error('verified attestation does not contain the expected artifact digest');
+          const summary = {
+            runnerOs: process.env.RUNNER_OS,
+            artifactId: process.env.ARTIFACT_ID,
+            artifactUrl: process.env.ARTIFACT_URL,
+            sha256: process.env.LOCAL_DIGEST,
+            attestationId: process.env.ATTESTATION_ID,
+            attestationUrl: process.env.ATTESTATION_URL,
+            verification: 'passed'
+          };
+          fs.writeFileSync('artifacts/provenance/summary.json', `${JSON.stringify(summary, null, 2)}\n`);
+          NODE
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ferrum-provenance-${{ runner.os }}
+          path: artifacts/provenance/
+          if-no-files-found: ignore
 
   windows-alt-browsers:
     strategy:
