@@ -6,7 +6,7 @@ import path from 'node:path';
 const MANIFEST_NAME = 'evidence-manifest.json';
 const LIST_EVIDENCE_CONCURRENCY = 32;
 const EVIDENCE_DESCRIPTOR_CONCURRENCY = 32;
-const evidenceSummaryCaches = new Map();
+let evidenceSummaryCache = null;
 
 export function resolveEvidenceRoot(root) {
   return path.resolve(root || 'artifacts');
@@ -121,6 +121,13 @@ function cloneSummary(summary) {
   return summary == null ? null : structuredClone(summary);
 }
 
+function evidenceCacheFor(base) {
+  if (evidenceSummaryCache?.base === base) return evidenceSummaryCache.entries;
+  const entries = new Map();
+  evidenceSummaryCache = { base, entries };
+  return entries;
+}
+
 async function readEvidenceSummary(file, cache) {
   let stat;
   try { stat = await fs.stat(file, { bigint: true }); }
@@ -168,12 +175,7 @@ export async function listEvidence({ root } = {}) {
   try { entries = await fs.readdir(base, { withFileTypes: true }); }
   catch (error) { if (error?.code === 'ENOENT') return []; throw error; }
 
-  let cache = evidenceSummaryCaches.get(base);
-  if (!cache) {
-    cache = new Map();
-    evidenceSummaryCaches.set(base, cache);
-  }
-
+  const cache = evidenceCacheFor(base);
   const directories = entries.filter(entry => entry.isDirectory());
   const results = new Array(directories.length);
   const seen = new Set();
@@ -198,7 +200,7 @@ export async function listEvidence({ root } = {}) {
   for (const file of cache.keys()) {
     if (!seen.has(file)) cache.delete(file);
   }
-  if (!cache.size) evidenceSummaryCaches.delete(base);
+  if (!cache.size && evidenceSummaryCache?.entries === cache) evidenceSummaryCache = null;
 
   return results
     .filter(Boolean)
