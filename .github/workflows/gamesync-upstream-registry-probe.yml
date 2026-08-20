@@ -1,0 +1,79 @@
+name: GameSync upstream registry freshness probe
+
+# Public, token-free upstream package freshness evidence for the coordinated
+# GameSync Stack proposals. This does not replace private checkout, lockfile,
+# Ferrum, Opera GX, Tauri, security, parity, or merge acceptance gates.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-registry-freshness:
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    steps:
+      - name: Resolve current npm dist-tags and immutable package identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { execFileSync } = require('node:child_process');
+          const fs = require('node:fs');
+
+          // Exhaustive direct/foundational package watchlist from the active standalone,
+          // monorepo root, Extension V2, Desktop, Feature Foundry, Asset Orchestrator,
+          // server and HyperBowl manifests. URL-only packages such as SheetJS are audited
+          // separately because npm dist-tags are not authoritative for them.
+          const packages = [
+            '@dimforge/rapier2d-compat','@fontsource/ibm-plex-sans','@fontsource/jetbrains-mono','@fontsource/space-grotesk',
+            '@hono/node-server','@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber',
+            '@sqlite.org/sqlite-wasm','@tauri-apps/cli','@types/better-sqlite3','@types/decompress','@types/node','@types/react',
+            '@types/react-dom','@types/three','@types/ws','@vitejs/plugin-react','@xyflow/react','archiver','better-sqlite3',
+            'cannon-es','chalk','cheerio','chrome-remote-interface','comlink','commander','decompress','delegate-it','dexie',
+            'docx','dompurify','fastdom','flexsearch','glob','hono','howler','idb','idb-keyval','jszip','libheif-js','linkedom',
+            'lucide-react','mammoth','mime-types','morphdom','node-pkware','ora','oxlint','p-limit','playcanvas','playwright',
+            'pngjs','puppeteer-core','quick-lru','react','react-dom','sharp','three','tsx','typescript','utif','vite','web-vitals',
+            'wink-eng-lite-web-model','wink-nlp','ws','wxt'
+          ];
+
+          const npmView = (args) => JSON.parse(execFileSync('npm', ['view', ...args, '--json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }));
+          const report = { generatedAt: new Date().toISOString(), node: process.version, npm: execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim(), packages: {} };
+          for (const name of packages) {
+            const distTags = npmView([name, 'dist-tags']);
+            const selected = {};
+            for (const tag of ['latest','next','beta','rc','canary','alpha']) {
+              const version = distTags?.[tag];
+              if (!version) continue;
+              const immutable = npmView([`${name}@${version}`,'version','dist.tarball','dist.integrity','engines','dependencies','optionalDependencies','peerDependencies']);
+              selected[tag] = { version, resolvedVersion: immutable.version ?? version, tarball: immutable['dist.tarball'] ?? immutable.dist?.tarball ?? null, integrity: immutable['dist.integrity'] ?? immutable.dist?.integrity ?? null, engines: immutable.engines ?? null, dependencies: immutable.dependencies ?? null, optionalDependencies: immutable.optionalDependencies ?? null, peerDependencies: immutable.peerDependencies ?? null };
+              if (!selected[tag].tarball || !selected[tag].integrity) throw new Error(`${name}@${version} did not expose immutable tarball/integrity metadata`);
+            }
+            report.packages[name] = { distTags, selected };
+          }
+          fs.writeFileSync('gamesync-upstream-registry.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+          console.log(JSON.stringify(report, null, 2));
+          NODE
+      - name: Summarize coordinated Stack targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE' >> "${GITHUB_STEP_SUMMARY}"
+          const fs = require('node:fs');
+          const r = JSON.parse(fs.readFileSync('gamesync-upstream-registry.json', 'utf8'));
+          console.log('## GameSync upstream npm registry freshness'); console.log(''); console.log(`Generated: \`${r.generatedAt}\``); console.log(`Node: \`${r.node}\`; npm: \`${r.npm}\``); console.log(''); console.log('| package | latest | next/beta/rc/canary/alpha |'); console.log('|---|---:|---|');
+          for (const [name,row] of Object.entries(r.packages)) { const d=row.distTags||{}; const forward=['next','beta','rc','canary','alpha'].filter(k=>d[k]).map(k=>`${k}: ${d[k]}`).join('<br>')||'-'; console.log(`| \`${name}\` | \`${d.latest||'-'}\` | ${forward} |`); }
+          NODE
+      - name: Upload registry freshness evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gamesync-upstream-registry-freshness
+          path: gamesync-upstream-registry.json
+          if-no-files-found: error
