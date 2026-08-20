@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-08-19-63",
+  "checkedAt": "2026-08-19T21:35:00-06:00",
+  "decision": "MERGED_VERIFIED_IMPROVEMENT",
+  "base": {
+    "canonicalMain": "73b05f52325f5d7a1e1371b23b296fe6a14406fe",
+    "verifiedProduct": "81782b1ae35df9078543d267381611ff974974cf",
+    "verifiedCheckpoint": ".agents-memory/EVOLUTION_RUN_2026-08-19_62.json"
+  },
+  "proposal": {
+    "pullRequest": 75,
+    "branch": "automation/evidence-history-cache-20260819",
+    "head": "5b1b42496c836c7da68e0112b1af8edf7e06081a",
+    "tree": "f7c7289b66df0ef17f47646d6bb8da67fd89b8d2",
+    "base": "73b05f52325f5d7a1e1371b23b296fe6a14406fe"
+  },
+  "verifiedProduct": {
+    "commit": "f2f984589d02a63b6ae73412add68f36f73717d6",
+    "tree": "f7c7289b66df0ef17f47646d6bb8da67fd89b8d2",
+    "proposalTreeParity": true,
+    "scopeFiles": [
+      "src/core/evidence-store.mjs",
+      "tests/evidence-store.test.mjs",
+      "scripts/evidence-manifest-benchmark.mjs"
+    ]
+  },
+  "improvement": {
+    "name": "stat-validated evidence summary cache",
+    "problem": "Repeated evidence-history reads reparsed every finalized agent-summary.json even when summaries were unchanged.",
+    "implementation": [
+      "Keep a process-local cache for the active artifacts root only.",
+      "Validate every cache reuse against dev, inode, byte size, mtimeNs, and ctimeNs from bigint stat metadata.",
+      "Re-read changed summaries, prune deleted runs, and preserve malformed/incomplete-run skipping.",
+      "Preserve the existing full directory enumeration and bounded 32-worker scan; no run count cap or hidden filtering was introduced.",
+      "Return structured clones so caller mutation cannot poison cached nested summary state.",
+      "Keep agent-summary.json as authoritative raw state; no persistent derived database or stale index was introduced."
+    ],
+    "acceptance": [
+      "Exact output parity with the pre-change direct-read algorithm on a 2,000-run fixture.",
+      "Cache invalidates after a summary changes and after a run is deleted.",
+      "Caller mutation of returned nested data cannot affect future reads.",
+      "Material median and p95 repeated-read improvement on Linux and Windows.",
+      "Full affected Ferrum CI remains green."
+    ]
+  },
+  "benchmarks": {
+    "fixture": {
+      "finalizedRuns": 2000,
+      "measuredRuns": 7,
+      "order": "alternating baseline/candidate",
+      "node": "24.19.0"
+    },
+    "linux": {
+      "baseline": {
+        "medianMs": 156.324,
+        "p95Ms": 170.783,
+        "samplesMs": [164.76, 155.445, 155.201, 170.783, 160.677, 140.785, 156.324]
+      },
+      "cachedWarm": {
+        "medianMs": 67.833,
+        "p95Ms": 76.643,
+        "samplesMs": [76.643, 61.742, 70.386, 67.833, 60.983, 72.278, 55.243]
+      },
+      "medianGainPct": 56.61,
+      "p95GainPct": 55.12
+    },
+    "windows": {
+      "baseline": {
+        "medianMs": 256.073,
+        "p95Ms": 265.791,
+        "samplesMs": [241.229, 249.408, 256.03, 258.918, 265.791, 258.077, 256.073]
+      },
+      "cachedWarm": {
+        "medianMs": 108.287,
+        "p95Ms": 130.157,
+        "samplesMs": [107.849, 102.466, 117.005, 101.305, 126.814, 108.287, 130.157]
+      },
+      "medianGainPct": 57.71,
+      "p95GainPct": 51.03
+    }
+  },
+  "verification": {
+    "workflows": [
+      {"name": "Ferrum CI", "runId": 32328413094, "conclusion": "success"},
+      {"name": "Ferrum evidence manifest benchmark", "runId": 32328413093, "conclusion": "success"},
+      {"name": "Perfetto Trace Compatibility", "runId": 32328413376, "conclusion": "success"},
+      {"name": "Ferrum stateful API benchmark", "runId": 32328413133, "conclusion": "success"},
+      {"name": "Ferrum service fixture", "runId": 32328413215, "conclusion": "success"},
+      {"name": "Ferrum service network fault benchmark", "runId": 32328413228, "conclusion": "success"}
+    ],
+    "coverage": [
+      "unit tests, syntax, shell checks, MCP surface and independent MCP Inspector, evidence integrity",
+      "Linux Chromium/MV3/workloads/Spaces/Workbench/Electron/source desktop/packaged desktop/provenance",
+      "Windows Chromium/MV3/workloads/Spaces/Workbench/Electron/source desktop/packaged desktop/provenance",
+      "real Selenium Grid WebDriver, Brave, Opera GX, Lightpanda, and real Android/Appium"
+    ],
+    "artifactDigests": [
+      {"name": "ferrum-desktop-Windows.tar.gz", "id": 9392251695, "bytes": 166276523, "sha256": "5a3a9f157a9052a28bed9cc1fbd5b01c5a74fb483baf720bd746f72bb4e1c4aa"},
+      {"name": "ferrum-desktop-Linux.tar.gz", "id": 9392235777, "bytes": 145023526, "sha256": "cae53af976a3b5395cdd3c7a7d593eba334935eb974046721510a79c54bb76c0"},
+      {"name": "ferrum-evidence-Windows", "id": 9392251133, "bytes": 1924277, "sha256": "c3575ccda6a2bf3c6fb9660a7e65546012a579f8b81522c3545478138d667f3b"},
+      {"name": "ferrum-evidence-Linux", "id": 9392235296, "bytes": 2252560, "sha256": "558f46389414b9f36634b06bed2ba8b227799a02db0de03c4075422ff6d088fe"},
+      {"name": "ferrum-evidence-Appium-Android", "id": 9392255671, "bytes": 123474, "sha256": "a9a6eb21689373533049e1e81477f80bef753e1963fd00f637401e9ce876cecb"},
+      {"name": "ferrum-evidence-WebDriver-Grid", "id": 9392226958, "bytes": 35724, "sha256": "894fcf523cd1789e8f93c272e9ee8bc1f96c75afcd1fe685e60e5837089b5278"},
+      {"name": "ferrum-evidence-Lightpanda", "id": 9392213764, "bytes": 13061, "sha256": "7869395bcf2e4b75ba71565683cb2704b865252d078266423411cc19e7040862"},
+      {"name": "ferrum-evidence-Windows-brave", "id": 9392243808, "bytes": 31832, "sha256": "631a93aaedb71892c4a61d2d760d86956b841f985124829da00c8e79f6f0097b"},
+      {"name": "ferrum-evidence-Windows-opera-gx", "id": 9392256182, "bytes": 3179478, "sha256": "b6213547b5fd4cbf4718eb3b0bb5d0fb69b4ab6aef3cad495c78aa262ebd29cb"},
+      {"name": "ferrum-provenance-Linux", "id": 9392238548, "bytes": 8326, "sha256": "310cb3b0a60b8b77b5479bd34d7ca917fbb16c868d61ca410d1c22a6a747fb8f"},
+      {"name": "ferrum-provenance-Windows", "id": 9392257826, "bytes": 8225, "sha256": "50646f351ee783a18e60cca5f66936565dfaf0e1ce7b0d6efc023c1600422cfe"},
+      {"name": "ferrum-evidence-manifest-benchmark-Linux", "id": 9392187675, "bytes": 756, "sha256": "bb567234d6aee0c844d970c9801db8af4a633c784e1edff2d409255d1293456e"},
+      {"name": "ferrum-evidence-manifest-benchmark-Windows", "id": 9392197441, "bytes": 753, "sha256": "f10165d7ca150027505a74e78b0b1a7e1cfc7a94f2678a43e8d39761e8c072e5"}
+    ]
+  },
+  "ecosystemRotation": "evidence history/query/index/correlation/local analytics",
+  "candidates": [
+    {
+      "project": "Node.js node:sqlite", "owner": "OpenJS Foundation / Node.js", "url": "https://nodejs.org/api/sqlite.html", "checkedDate": "2026-08-19", "versionOrHead": "Node 24.19.0; node:sqlite Stability 1.2 release candidate", "maintenanceFreshness": "current Node 24 line", "purpose": "built-in embedded SQLite interface", "architecture": "in-process SQLite through Node core APIs", "relevantFerrumCapability": "optional derived cross-run evidence query index", "harvest": "zero-extra-runtime SQL index, prepared statements, sessions/changesets", "integrationMode": "Ferrum-native optional derived index rebuilt from authoritative agent-summary files", "expectedBenefit": "lower median/p95 for multidimensional filtering/search once simple list scans become a measured bottleneck", "dependencies": "none beyond current Node runtime", "platformCoverage": "Node-supported platforms", "compatibilityRisks": "node:sqlite remains release-candidate stability; persistent index can become stale or corrupt if not rebuilt/fail-closed", "upstreamIssues": "stability and API evolution until stable", "benchmarkOrProductionEvidence": "official Node documentation and bundled runtime", "smallestExperiment": "10,000-run filter/search workload comparing current list cache with derived node:sqlite index, including corruption and rebuild tests", "acceptanceTest": "exact raw-summary parity, deterministic rebuild, no stale rows, material median/p95 filter/search gain", "decision": "EXPERIMENT", "nextReviewTrigger": "a real agent/UI filtering workload is measured or node:sqlite reaches stable status"
+    },
+    {
+      "project": "SQLite", "owner": "SQLite Consortium", "url": "https://www.sqlite.org/", "checkedDate": "2026-08-19", "versionOrHead": "3.53.4 (2026-07-24)", "maintenanceFreshness": "current stable release", "purpose": "embedded relational database", "architecture": "single-file transactional SQL engine", "relevantFerrumCapability": "reference durability/index semantics for derived evidence indexes", "harvest": "transactional rebuild, indexes, query planner, corruption handling patterns", "integrationMode": "technique/reference through node:sqlite rather than direct native dependency", "expectedBenefit": "durable local filtering/query semantics if a derived index proves necessary", "dependencies": "native SQLite if direct; avoid direct dependency initially", "platformCoverage": "cross-platform", "compatibilityRisks": "direct native packaging churn; stale derived state if lifecycle is weak", "upstreamIssues": "none material to current reference use", "benchmarkOrProductionEvidence": "long-lived production embedded database ecosystem", "smallestExperiment": "same node:sqlite query experiment, with full index deletion/rebuild parity", "acceptanceTest": "rebuildable derived state and exact source parity", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "node:sqlite experiment demonstrates a Ferrum query bottleneck and win"
+    },
+    {
+      "project": "DuckDB", "owner": "DuckDB Foundation", "url": "https://github.com/duckdb/duckdb", "checkedDate": "2026-08-19", "versionOrHead": "v1.5.5, release 2026-07-22", "maintenanceFreshness": "current stable bug/security-fix line", "purpose": "in-process analytical SQL over local data", "architecture": "vectorized OLAP engine with JSON/Parquet support", "relevantFerrumCapability": "offline analytics over large evidence/result collections", "harvest": "fast ad hoc analytical queries and direct JSON/Parquet ingestion", "integrationMode": "benchmark-only optional analytics sidecar", "expectedBenefit": "faster complex aggregation over many runs, not simple evidence listing", "dependencies": "native DuckDB package/runtime", "platformCoverage": "major desktop/server platforms", "compatibilityRisks": "binary/package weight and redundant complexity for simple local history reads", "upstreamIssues": "not a Ferrum-specific blocker", "benchmarkOrProductionEvidence": "widely deployed analytical engine; active current release", "smallestExperiment": "10k/100k-run aggregate/filter benchmark from retained summaries", "acceptanceTest": "material query win that outweighs setup/package cost and preserves raw evidence", "decision": "BENCHMARK", "nextReviewTrigger": "cross-run analytical queries become a recurring agent workflow"
+    },
+    {
+      "project": "Tantivy", "owner": "Quickwit / Tantivy contributors", "url": "https://github.com/quickwit-oss/tantivy", "checkedDate": "2026-08-19", "versionOrHead": "v0.26.1, 2026-05-10", "maintenanceFreshness": "active, 0.27 development present", "purpose": "embedded full-text search", "architecture": "Rust inverted-index search library", "relevantFerrumCapability": "full-text search across evidence/log corpus", "harvest": "fielded indexing and relevance scoring", "integrationMode": "optional benchmark or subprocess adapter only if evidence-text search is needed", "expectedBenefit": "lower latency for broad text search across large retained logs", "dependencies": "Rust/native library or service bridge", "platformCoverage": "cross-platform with build/toolchain cost", "compatibilityRisks": "index freshness, native packaging, excessive complexity for summary listing", "upstreamIssues": "ongoing major-version development", "benchmarkOrProductionEvidence": "production search library ecosystem", "smallestExperiment": "fixed 100k-document evidence-text search corpus versus direct grep/JSON scan", "acceptanceTest": "exact hit completeness, deterministic rebuild, material latency gain", "decision": "WATCH", "nextReviewTrigger": "agents need cross-run text search beyond structured summary fields"
+    },
+    {
+      "project": "Polars", "owner": "Polars contributors", "url": "https://github.com/pola-rs/polars", "checkedDate": "2026-08-19", "versionOrHead": "Python 1.43.1, 2026-07-27", "maintenanceFreshness": "current active release", "purpose": "lazy columnar dataframe analytics", "architecture": "Rust columnar query engine with Python/other bindings", "relevantFerrumCapability": "offline benchmark/report analytics", "harvest": "lazy scans, predicate pushdown, vectorized aggregation", "integrationMode": "benchmark-only analysis tooling", "expectedBenefit": "fast large-run metrics analysis outside Ferrum hot path", "dependencies": "external Python/Rust package", "platformCoverage": "major platforms", "compatibilityRisks": "dependency/toolchain overhead and duplicate query layer", "upstreamIssues": "none material to benchmark use", "benchmarkOrProductionEvidence": "active high-performance dataframe ecosystem", "smallestExperiment": "offline analysis of 100k synthetic run summaries", "acceptanceTest": "clear analysis-time benefit without becoming a runtime dependency", "decision": "BENCHMARK", "nextReviewTrigger": "benchmark/report generation itself becomes a measured bottleneck"
+    },
+    {
+      "project": "Apache Arrow", "owner": "Apache Software Foundation", "url": "https://github.com/apache/arrow", "checkedDate": "2026-08-19", "versionOrHead": "25.0.0, 2026-07-10", "maintenanceFreshness": "current release line", "purpose": "columnar memory/interchange format", "architecture": "language-neutral columnar data specification and libraries", "relevantFerrumCapability": "provider-neutral bulk evidence-summary export/interchange", "harvest": "stable columnar schemas and zero/low-copy interchange concepts", "integrationMode": "TRANSPLANT-IDEA / benchmark, not runtime dependency now", "expectedBenefit": "compact efficient transfer to analytical tools if large batch export becomes valuable", "dependencies": "Arrow implementation per language", "platformCoverage": "broad multi-language ecosystem", "compatibilityRisks": "schema/version burden and needless complexity for current JSON-native agent interfaces", "upstreamIssues": "none material to reference use", "benchmarkOrProductionEvidence": "widely adopted data interchange standard", "smallestExperiment": "compare JSON versus Arrow export size/encode/decode time on 100k summaries", "acceptanceTest": "material transfer/analysis benefit with full semantic fidelity", "decision": "TRANSPLANT-IDEA", "nextReviewTrigger": "large batch export or external analytical integration is requested"
+    },
+    {
+      "project": "Perfetto", "owner": "Google", "url": "https://github.com/google/perfetto", "checkedDate": "2026-08-19", "versionOrHead": "v57.2, 2026-07-07", "maintenanceFreshness": "current point release", "purpose": "trace capture, processing and SQL querying", "architecture": "trace processor with queryable event model", "relevantFerrumCapability": "existing Ferrum trace sidecar and cross-target timing correlation", "harvest": "stable event/evidence identity correlation and SQL trace analysis", "integrationMode": "ADOPT existing trace sidecar; transplant correlation ideas only", "expectedBenefit": "higher-value temporal correlation without adding a second summary database", "dependencies": "existing optional Perfetto compatibility tooling", "platformCoverage": "multi-platform trace processing", "compatibilityRisks": "trace format/query overhead if overused for simple evidence list operations", "upstreamIssues": "current release includes parser fix", "benchmarkOrProductionEvidence": "Ferrum already has a verified Perfetto-compatible sidecar", "smallestExperiment": "join run/evidence identifiers with current trace events in a failure-analysis workload", "acceptanceTest": "fewer agent calls to correlate timing with retained evidence at bounded overhead", "decision": "ADOPT", "nextReviewTrigger": "cross-target failure correlation is the next measured diagnostic bottleneck"
+    },
+    {
+      "project": "OpenTelemetry Collector", "owner": "OpenTelemetry", "url": "https://github.com/open-telemetry/opentelemetry-collector-releases", "checkedDate": "2026-08-19", "versionOrHead": "v0.159.0, 2026-08-17", "maintenanceFreshness": "very current release", "purpose": "telemetry receive/process/export pipelines", "architecture": "modular collector with receivers, processors and exporters", "relevantFerrumCapability": "optional external trace/log/metric export and correlation", "harvest": "provider-neutral telemetry envelopes and correlation identifiers", "integrationMode": "optional experiment only", "expectedBenefit": "unified external observability for distributed Ferrum/service workflows", "dependencies": "separate collector binary/config", "platformCoverage": "major server/desktop platforms", "compatibilityRisks": "daemon/config overhead, provider complexity, duplicate evidence path", "upstreamIssues": "rapid release cadence requires careful pinning", "benchmarkOrProductionEvidence": "broad production observability ecosystem", "smallestExperiment": "export one retained Ferrum trace/evidence identity through OTLP while keeping raw evidence authoritative", "acceptanceTest": "useful cross-service correlation with bounded setup/runtime overhead and no data loss", "decision": "WATCH", "nextReviewTrigger": "Ferrum verifies distributed services where local evidence is insufficient"
+    },
+    {
+      "project": "Grafana Tempo", "owner": "Grafana Labs", "url": "https://github.com/grafana/tempo", "checkedDate": "2026-08-19", "versionOrHead": "v3.0.2, 2026-06-09", "maintenanceFreshness": "current 3.0 line", "purpose": "distributed trace storage and query", "architecture": "remote scalable trace backend with TraceQL", "relevantFerrumCapability": "long-term remote trace query for distributed test fleets", "harvest": "TraceQL query patterns and trace identity model", "integrationMode": "watch/reference, never default local dependency", "expectedBenefit": "cross-run distributed trace search at fleet scale", "dependencies": "external service/storage stack", "platformCoverage": "server/container environments", "compatibilityRisks": "far too heavy for local Ferrum evidence history and increases operational surface", "upstreamIssues": "3.0 architecture migration considerations", "benchmarkOrProductionEvidence": "production distributed tracing backend", "smallestExperiment": "none until a distributed Ferrum fleet exists", "acceptanceTest": "operational benefit must exceed service complexity and preserve local raw evidence", "decision": "WATCH", "nextReviewTrigger": "multi-host Ferrum execution needs centralized trace search"
+    },
+    {
+      "project": "Grafana Loki", "owner": "Grafana Labs", "url": "https://github.com/grafana/loki", "checkedDate": "2026-08-19", "versionOrHead": "v3.7.2, 2026-05-13", "maintenanceFreshness": "current stable line checked", "purpose": "central log aggregation and query", "architecture": "label-indexed remote log store with LogQL", "relevantFerrumCapability": "distributed retained-log search", "harvest": "low-index-cardinality labeling and query concepts", "integrationMode": "watch/reference only", "expectedBenefit": "centralized cross-run log query in distributed environments", "dependencies": "external service/storage stack", "platformCoverage": "server/container environments", "compatibilityRisks": "operational weight and external-service dependency for a local-first tester", "upstreamIssues": "not material to reference-only status", "benchmarkOrProductionEvidence": "large production log ecosystem", "smallestExperiment": "none until distributed log search is an actual requirement", "acceptanceTest": "must reduce agent diagnosis time without replacing local evidence or weakening retention", "decision": "WATCH", "nextReviewTrigger": "multi-host Ferrum deployments need centralized log query"
+    }
+  ],
+  "challengePass": {
+    "result": "NO_SECOND_PRODUCT_CHANGE",
+    "rationale": "A persistent database, filesystem watcher, or external analytical service would add stale-derived-state or dependency risk without evidence of a second current bottleneck. The stat-validated in-process cache already cuts repeated evidence-history median and p95 by more than 50 percent on both Linux and Windows while keeping raw JSON authoritative and output complete."
+  },
+  "nextCursor": [
+    "Benchmark an optional node:sqlite derived index only when a real multidimensional filter/search workload exceeds the new list cache.",
+    "Prototype a compact cross-run index keyed by source/build/artifact/attestation identity only if it reduces measured lookup or agent round trips.",
+    "Use the existing Perfetto sidecar for timing correlation before introducing a second trace/query backend."
+  ],
+  "guardrails": [
+    "No evidence run caps, no skipped directories, no reduced artifacts, and no stale-cache success path.",
+    "Raw agent-summary.json files remain authoritative; derived cache state is process-local and disposable.",
+    "Every reuse is stat-validated and changed/deleted summaries are observed on the next call.",
+    "Existing manifest SHA-256 verification and all real-runtime acceptance lanes remain unchanged."
+  ],
+  "publication": {
+    "githubPath": ".agents-memory/EVOLUTION_RUN_2026-08-19_63.json",
+    "googleDriveFolder": "Ferrum Browser",
+    "verification": "Canonical bytes are hashed locally; GitHub blob identity and Drive export/embedded JSON are independently re-read after publication."
+  },
+  "endMarker": "FERRUM_RUN_2026-08-19_63_END"
+}
