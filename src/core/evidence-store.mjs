@@ -117,6 +117,10 @@ function summaryIdentity(stat) {
   return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
 }
 
+function cloneSummary(summary) {
+  return summary == null ? null : structuredClone(summary);
+}
+
 async function readEvidenceSummary(file, cache) {
   let stat;
   try { stat = await fs.stat(file, { bigint: true }); }
@@ -134,12 +138,12 @@ async function readEvidenceSummary(file, cache) {
 
   const identity = summaryIdentity(stat);
   const cached = cache.get(file);
-  if (cached?.identity === identity) return cached.summary;
+  if (cached?.identity === identity) return cloneSummary(cached.summary);
 
   let summary = null;
   try { summary = await readJson(file); } catch {}
   cache.set(file, { identity, summary });
-  return summary;
+  return cloneSummary(summary);
 }
 
 export async function writeEvidenceManifest(dir) {
