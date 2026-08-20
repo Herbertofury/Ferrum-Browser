@@ -1,3 +1,4 @@
+// Recovery branch exact-head validation marker after STATUS auto-synchronization.
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
