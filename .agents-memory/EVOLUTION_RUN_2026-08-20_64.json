@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-08-20-64",
+  "checkedAt": "2026-08-20T10:39:07Z",
+  "decision": "MERGED_VERIFIED_IMPROVEMENT",
+  "base": {
+    "canonicalMain": "14810c4de9933fe27c94808d3c12db0630001787",
+    "verifiedProduct": "f2f984589d02a63b6ae73412add68f36f73717d6",
+    "verifiedCheckpoint": ".agents-memory/EVOLUTION_RUN_2026-08-19_63.json"
+  },
+  "proposal": {
+    "pullRequest": 76,
+    "branch": "automation/ferrum-stack-playwright-1-63-aug19",
+    "head": "2d287f31d23799c25ad5baf7275165606a610d71",
+    "tree": "88bb84e833005632448f8e760d7de137a8890379",
+    "base": "14810c4de9933fe27c94808d3c12db0630001787"
+  },
+  "verifiedProduct": {
+    "commit": "4068747e8c3fce19155cfe1087aa7cd534bba910",
+    "tree": "88bb84e833005632448f8e760d7de137a8890379",
+    "proposalTreeParity": true,
+    "scopeFiles": [
+      "package.json",
+      "package-lock.json",
+      ".agents-memory/STACK_CANDIDATE.json",
+      ".github/workflows/stack-playwright-lock-refresh.yml",
+      "src/browser/browser-matrix-worker.mjs",
+      "tests/browser-matrix-worker.test.mjs"
+    ]
+  },
+  "improvement": {
+    "name": "Playwright 1.63.0-alpha-2026-08-20 qualification",
+    "problem": "Ferrum's verified toolchain remained on the Aug-17 Playwright 1.63 alpha while a newer Aug-20 next build was available; Opera GX required a narrow screenshot compatibility path under the newer runtime.",
+    "implementation": [
+      "Advance Playwright and playwright-core to exact 1.63.0-alpha-2026-08-20 through the authoritative npm lock.",
+      "Preserve Electron 43.4.0 and @electron/packager 20.3.0.",
+      "Inject PLAYWRIGHT_LEGACY_SCREENSHOT=1 only for the Opera GX browser-matrix worker when the caller has not explicitly configured it.",
+      "Retain immutable GitHub Action SHA pins, frozen npm installs, all browser/app targets, evidence, restart, packaging, mobile, WebDriver and Tauri coverage.",
+      "Remove the verification-in-progress Stack candidate marker only after exact-head qualification and merge."
+    ],
+    "acceptance": [
+      "Authoritative lock resolves Playwright and playwright-core exactly to 1.63.0-alpha-2026-08-20.",
+      "Ferrum CI remains fully green across Linux/Windows browser, MV3, Workbench, Electron, desktop package/provenance, Selenium Grid, Brave, Opera GX, Lightpanda and Android/Appium.",
+      "Native Windows, Tauri WebDriver, service fixture, stateful API and network-fault companion workflows pass on the exact proposal head.",
+      "Merged product tree is byte-identical to the exact tested proposal tree."
+    ]
+  },
+  "verification": {
+    "workflows": [
+      {"name": "Ferrum CI", "runId": 32349222284, "conclusion": "success"},
+      {"name": "Stack Playwright lock integrity", "runId": 32349222312, "conclusion": "success"},
+      {"name": "Ferrum Native Windows", "runId": 32349222353, "conclusion": "success"},
+      {"name": "Ferrum Tauri WebDriver", "runId": 32349222310, "conclusion": "success"},
+      {"name": "Ferrum service fixture", "runId": 32349222320, "conclusion": "success"},
+      {"name": "Ferrum stateful API benchmark", "runId": 32349222392, "conclusion": "success"},
+      {"name": "Ferrum service network fault benchmark", "runId": 32349222307, "conclusion": "success"}
+    ],
+    "coverage": [
+      "unit tests, syntax, shell checks, MCP surface and independent MCP Inspector, evidence integrity",
+      "Linux Chromium/MV3/workloads/Spaces/Workbench/Electron/source desktop/packaged desktop/provenance",
+      "Windows Chromium/Chrome/Edge/MV3/workloads/Spaces/Workbench/Electron/source desktop/packaged desktop/provenance",
+      "independent Brave and Opera GX, real Selenium Grid WebDriver, Lightpanda and real Android/Appium",
+      "real embedded and official-reference Tauri WebDriver paths on Linux and Windows"
+    ],
+    "artifactDigests": [
+      {"name": "ferrum-desktop-Windows.tar.gz", "id": 9399255488, "bytes": 166281469, "sha256": "4354c4d9714cde817200de0a63cd16c62b0abbc1d43e0637258291fe2c124440"},
+      {"name": "ferrum-desktop-Linux.tar.gz", "id": 9399243989, "bytes": 145027556, "sha256": "c48e4c4deb3afc90f0098060aacce6b3726412ecb16b408ad5cb1949b5c381c8"},
+      {"name": "ferrum-evidence-Windows", "id": 9399254354, "bytes": 1923597, "sha256": "1e7cabf3b1840b8da712b8f140a3f7d21b2ea576216cc89c93d0dde90423dd25"},
+      {"name": "ferrum-evidence-Linux", "id": 9399242953, "bytes": 2267808, "sha256": "ea092f9c62a0a5098037509ba8f02f0602737ae59ee7198116064c03f5925005"},
+      {"name": "ferrum-evidence-Appium-Android", "id": 9399261528, "bytes": 122756, "sha256": "2caa6d91e0a0aff5c84231dd2561c4e9fda2132e565d689b01c4002f643ed1a4"},
+      {"name": "ferrum-evidence-WebDriver-Grid", "id": 9399212568, "bytes": 35690, "sha256": "07c77c7de3ecb3f1901604a07ecab7fbf450e6fd4ee8a6ddd5d0168b34a32e07"},
+      {"name": "ferrum-evidence-Lightpanda", "id": 9399194534, "bytes": 13063, "sha256": "b6aad473e8538f8a4e791a9753146597f143202cf74851cd48859711559d4939"},
+      {"name": "ferrum-evidence-Windows-brave", "id": 9399228825, "bytes": 31880, "sha256": "5ab98e784e897bf4a610a2c066e2f5dae2f345519bf91664abbb2b936348c648"},
+      {"name": "ferrum-evidence-Windows-opera-gx", "id": 9399237912, "bytes": 100061, "sha256": "e1e4e3f84776b400e23e69188ca80a97cba9039f096135bbda9b5830c895091d"},
+      {"name": "ferrum-provenance-Linux", "id": 9399249969, "bytes": 8266, "sha256": "02d217c4be987b77a0aeb3725e67864d49250420717e063300db725869f68129"},
+      {"name": "ferrum-provenance-Windows", "id": 9399265079, "bytes": 8428, "sha256": "6cc1bd7286c7b533f9d551bd6e536a0c01968612a2bb16df7d682bed5eddd6ea"}
+    ]
+  },
+  "risk": {
+    "summary": "Playwright remains a prerelease forward line and the Opera GX compatibility environment variable is intentionally browser-specific.",
+    "rollback": "Revert the coherent Playwright manifest/lock and Opera-only compatibility changes to the prior verified Aug-17 toolchain if a later exact runtime regression cannot be fixed forward."
+  }
+}
