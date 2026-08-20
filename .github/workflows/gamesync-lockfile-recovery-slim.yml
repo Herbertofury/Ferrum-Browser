@@ -47,6 +47,9 @@ jobs:
           - name: next-asset-orchestrator
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-asset-orchestrator-2026-08
+          - name: next-extension-runtime-libs
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-extension-runtime-libs-2026-08
     steps:
       - name: Require private GameSync read token
         shell: bash
