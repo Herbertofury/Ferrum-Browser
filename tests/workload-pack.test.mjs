@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { expandVariables, loadSpec } from '../src/core/spec.mjs';
+import { compactPackResult } from '../src/core/agent-result.mjs';
 import { loadWorkloadPack, runWorkloadPack, summarizePackRuns } from '../src/core/workload-pack.mjs';
 
 async function tempDir() { return await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-pack-test-')); }
@@ -59,6 +60,41 @@ test('workload pack metrics preserve complete target, step, transition, timing a
     passedWithEvidence: 2,
     failedWithEvidence: 1
   });
+});
+
+test('compact workload pack results expose aggregate metrics without hiding member evidence', () => {
+  const metrics = {
+    specCount: 2,
+    totalSteps: 7,
+    targetTypes: ['web', 'process'],
+    targetTypeCounts: { web: 1, process: 1 },
+    targetTypeTransitions: 1,
+    totalSpecDurationMs: 42,
+    evidence: { evidenceDirsRetained: 2, passedWithEvidence: 2, failedWithEvidence: 0 }
+  };
+  const compact = compactPackResult({
+    id: 'pack-1',
+    name: 'pack-test',
+    status: 'passed',
+    durationMs: 50,
+    evidenceDir: '/e/pack-1',
+    result: {
+      repository: 'owner/repo',
+      pack: 'hybrid-pack',
+      passed: 2,
+      failed: 0,
+      metrics,
+      specs: [
+        { specPath: 'web.json', targetType: 'web', evidenceDir: '/e/web' },
+        { specPath: 'process.json', targetType: 'process', evidenceDir: '/e/process' }
+      ]
+    }
+  });
+
+  assert.equal(compact.durationMs, 50);
+  assert.deepEqual(compact.metrics, metrics);
+  assert.equal(compact.specs.length, 2);
+  assert.equal(compact.specs[1].evidenceDir, '/e/process');
 });
 
 test('workload pack runs real setup and member specs with parent and child evidence', async () => {
