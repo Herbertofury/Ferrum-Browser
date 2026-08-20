@@ -12,6 +12,7 @@ export async function runWebTarget(spec, evidence, options = {}) {
     session = await launchLightpandaSession({ executable: spec.target.executable, evidence });
     page = session.page;
   } else {
+    if (options.browserCompatibility) evidence.record('browser-compatibility', options.browserCompatibility);
     session = await launchChromiumSession({
       profileDir: options.profileDir || spec.target.profileDir,
       headless,

@@ -22,6 +22,25 @@ export function normalizeBrowserWorkerTimeout(value, fallback = 90000) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export function browserWorkerEnvironment(browser, env = process.env) {
+  const childEnv = { ...env };
+  if (browser?.name === 'opera-gx' && !Object.prototype.hasOwnProperty.call(childEnv, 'PLAYWRIGHT_LEGACY_SCREENSHOT')) {
+    childEnv.PLAYWRIGHT_LEGACY_SCREENSHOT = '1';
+  }
+  return childEnv;
+}
+
+function browserCompatibility(browser, env = process.env) {
+  if (browser?.name !== 'opera-gx') return null;
+  const inherited = Object.prototype.hasOwnProperty.call(env, 'PLAYWRIGHT_LEGACY_SCREENSHOT');
+  return {
+    playwrightScreenshotMode: inherited ? 'environment-controlled' : 'legacy',
+    reason: inherited
+      ? 'PLAYWRIGHT_LEGACY_SCREENSHOT was explicitly supplied by the caller'
+      : 'Opera GX uses Playwright legacy screenshot transport to avoid CDPScreenshotNewSurface target loss while preserving full screenshot evidence'
+  };
+}
+
 function joiner(platform) {
   return platform === 'win32' ? path.win32 : path.posix;
 }
@@ -116,7 +135,10 @@ function workerRequest(specPath, browser, options, profileDir) {
   return {
     specPath,
     browser,
-    options: serializableRunOptions(options, profileDir)
+    options: {
+      ...serializableRunOptions(options, profileDir),
+      browserCompatibility: browserCompatibility(browser)
+    }
   };
 }
 
@@ -127,7 +149,7 @@ async function runBrowserWorker(specPath, browser, options) {
   const encoded = Buffer.from(JSON.stringify(request)).toString('base64url');
   const child = spawn(process.execPath, [WORKER_SCRIPT, encoded], {
     cwd: process.cwd(),
-    env: process.env,
+    env: browserWorkerEnvironment(browser),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
     detached: process.platform !== 'win32'

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { browserCandidates, discoverBrowsers, normalizeBrowserList, normalizeBrowserWorkerTimeout } from '../src/core/browser-matrix.mjs';
+import { browserCandidates, browserWorkerEnvironment, discoverBrowsers, normalizeBrowserList, normalizeBrowserWorkerTimeout } from '../src/core/browser-matrix.mjs';
 
 test('browser list is normalized and deduplicated', () => {
   assert.deepEqual(normalizeBrowserList('Chromium,chrome,CHROME,edge'), ['chromium', 'chrome', 'edge']);
@@ -11,6 +11,19 @@ test('browser worker timeout is bounded and configurable', () => {
   assert.equal(normalizeBrowserWorkerTimeout(undefined), 90000);
   assert.equal(normalizeBrowserWorkerTimeout(0), 90000);
   assert.equal(normalizeBrowserWorkerTimeout('120000'), 120000);
+});
+
+test('Opera GX worker uses Playwright legacy screenshot transport without mutating caller environment', () => {
+  const base = { PATH: 'test-path' };
+  const opera = browserWorkerEnvironment({ name: 'opera-gx' }, base);
+  assert.equal(opera.PLAYWRIGHT_LEGACY_SCREENSHOT, '1');
+  assert.equal(base.PLAYWRIGHT_LEGACY_SCREENSHOT, undefined);
+
+  const chromium = browserWorkerEnvironment({ name: 'chromium' }, base);
+  assert.equal(chromium.PLAYWRIGHT_LEGACY_SCREENSHOT, undefined);
+
+  const explicit = browserWorkerEnvironment({ name: 'opera-gx' }, { PLAYWRIGHT_LEGACY_SCREENSHOT: 'caller-value' });
+  assert.equal(explicit.PLAYWRIGHT_LEGACY_SCREENSHOT, 'caller-value');
 });
 
 test('windows candidates include browser-specific standard locations', () => {

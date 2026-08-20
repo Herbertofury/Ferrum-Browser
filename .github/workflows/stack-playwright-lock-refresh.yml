@@ -1,0 +1,66 @@
+name: Stack Playwright lock integrity
+
+on:
+  push:
+    branches:
+      - automation/ferrum-stack-playwright-1-63-aug19
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-lock:
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check out exact proposal head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up exact Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.19.0
+          cache: npm
+
+      - name: Regenerate authoritative Playwright lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v24.19.0"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const expected='1.63.0-alpha-2026-08-20';
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          if(p.dependencies?.playwright !== expected) throw new Error('Unexpected Playwright proposal version');
+          NODE
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const expected='1.63.0-alpha-2026-08-20';
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          if(lock.packages?.['']?.dependencies?.playwright !== expected) throw new Error('Root lock declaration differs from proposal');
+          if(lock.packages?.['node_modules/playwright']?.version !== expected) throw new Error('Playwright lock resolution differs from proposal');
+          if(lock.packages?.['node_modules/playwright-core']?.version !== expected) throw new Error('Playwright core lock resolution differs from proposal');
+          NODE
+          npm ci --ignore-scripts --no-audit --no-fund
+          git diff --check -- package.json package-lock.json .agents-memory/STACK_CANDIDATE.json .github/workflows/stack-playwright-lock-refresh.yml
+          mkdir -p output/stack-playwright-lock
+          cp package-lock.json output/stack-playwright-lock/package-lock.json
+          sha256sum package-lock.json > output/stack-playwright-lock/package-lock.sha256
+          git diff -- package-lock.json > output/stack-playwright-lock/package-lock.patch
+          git rev-parse HEAD > output/stack-playwright-lock/source-head.txt
+          node --version > output/stack-playwright-lock/node-version.txt
+          npm --version > output/stack-playwright-lock/npm-version.txt
+
+      - name: Upload authoritative lock evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ferrum-playwright-aug20-lock
+          path: output/stack-playwright-lock
+          if-no-files-found: error
