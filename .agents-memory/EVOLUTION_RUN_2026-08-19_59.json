@@ -1,0 +1,443 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "runId": "2026-08-19-59",
+  "state": "VERIFIED_PRODUCT_MERGED",
+  "checkedAt": "2026-08-20T00:13:00Z",
+  "base": {
+    "main": "21026af8db356b00185184decd6d7c3b1ecfd296",
+    "verifiedProduct": "2fbb96eaff23a747b8dfce9041c9a6204791f439",
+    "verifiedWorkflowRun": 32299963354,
+    "verifiedTree": "57ffe2579b55f572d568e120d43d64a3a71cd5b2"
+  },
+  "proposal": {
+    "pr": 70,
+    "branch": "automation/evolution-run59-pack-metrics-20260819",
+    "head": "2861004f6183f0eeb28200a6e0474a149fb10656",
+    "scope": [
+      "src/core/workload-pack.mjs",
+      "src/core/agent-result.mjs",
+      "tests/workload-pack.test.mjs"
+    ],
+    "change": "Add truthful per-spec and aggregate workload-pack target/step/timing/evidence metrics to full and compact agent results without changing execution or raw evidence semantics",
+    "proofStatus": "success",
+    "workflowRuns": {
+      "ferrumCI": 32315983816,
+      "serviceFixture": 32315983820,
+      "serviceNetworkFault": 32315983892,
+      "statefulAPI": 32315983826
+    },
+    "tree": "85ac51f462650369e8812e5e8d6aa4b9810dfac5"
+  },
+  "baselineGap": {
+    "before": "workload pack agent results preserved child evidence but required opening member evidence to reconstruct target coverage, step count, per-spec timing, and cross-target sequence changes",
+    "expectedBenefit": "reduce agent interpretation/round trips and establish measurable mixed-target benchmark accounting with zero test/evidence reduction"
+  },
+  "ecosystemRotation": "hybrid GUI+CLI agent benchmarks, tool-selection benchmarks, long-horizon harnesses, deterministic evaluators, reproducible task identity",
+  "candidates": [
+    {
+      "project": "weavebench/WeaveBench",
+      "url": "https://github.com/weavebench/WeaveBench",
+      "owner": "weavebench",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "bb0e649651d9b5fa4fac2520720a12e22d402d39",
+      "maintenanceFreshness": "2026-07-22 current head; active 2026 benchmark",
+      "purpose": "Long-horizon channel-non-substitutable GUI+CLI/code benchmark",
+      "architecture": "114 tasks requiring coordinated GUI and CLI/code, full trajectories, cross-channel evidence, trajectory-aware verification",
+      "relevantFerrumCapability": "hybrid application benchmark design and evidence accounting",
+      "harvest": "explicit cross-channel transition/evidence accounting, task designs that cannot be solved by one channel alone, trajectory evidence against fabricated outcomes",
+      "integrationMode": "TRANSPLANT-IDEA",
+      "expectedMeasurableBenefit": "make Ferrum benchmark output directly expose target/channel coverage and reduce agent round trips before opening raw evidence",
+      "requiredDependencies": [],
+      "platformCoverage": "desktop/web/CLI benchmark concepts",
+      "compatibilityRisks": "agent-as-judge/VM stack is heavier and less deterministic than Ferrum-owned assertions",
+      "upstreamIssues": "benchmark runtime is not a drop-in deterministic tester",
+      "benchmarkOrProductionEvidence": "114 long-horizon tasks; reported best result remains far below saturation and trajectories are retained",
+      "smallestExperiment": "add truthful per-spec target/step/timing/evidence metrics to Ferrum workload packs without changing execution",
+      "acceptanceTest": "all existing pack evidence remains complete; metrics match real members exactly; full severe CI stays green",
+      "decision": "ADOPT",
+      "nextReviewTrigger": "revisit full hybrid-task concept after one Ferrum-owned channel-non-substitutable fixture is built"
+    },
+    {
+      "project": "rebeccaz4/gui-vs-cli",
+      "url": "https://github.com/rebeccaz4/gui-vs-cli",
+      "owner": "rebeccaz4",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "8fee6962dd43170b838c96fc3e0a35c6d1de52a0",
+      "maintenanceFreshness": "2026-06-17 release-era head",
+      "purpose": "Benchmark GUI versus CLI paths for agent tasks",
+      "architecture": "paired tasks comparing interaction modalities",
+      "relevantFerrumCapability": "agent path and modality benchmarking",
+      "harvest": "paired same-goal control/treatment design for GUI and structured-tool paths",
+      "integrationMode": "BENCHMARK",
+      "expectedMeasurableBenefit": "separate modality overhead from task difficulty",
+      "requiredDependencies": [],
+      "platformCoverage": "GUI/CLI research tasks",
+      "compatibilityRisks": "task set may not map directly onto Ferrum targets",
+      "upstreamIssues": "narrow research repository",
+      "benchmarkOrProductionEvidence": "published paired GUI-vs-CLI benchmark",
+      "smallestExperiment": "run one Ferrum-owned goal through browser/UI and process/API paths with identical final assertion",
+      "acceptanceTest": "same initial state/final assertion; report actions, elapsed, success and complete evidence for both paths",
+      "decision": "BENCHMARK",
+      "nextReviewTrigger": "after hybrid workload metrics land"
+    },
+    {
+      "project": "AMAP-ML/LongHorizon-Harness",
+      "url": "https://github.com/AMAP-ML/LongHorizon-Harness",
+      "owner": "AMAP-ML",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "be2e7b42523c4f35291f1ed57b683f6c03a29cdc",
+      "maintenanceFreshness": "2026-08-17 current head; timeout recovery changes",
+      "purpose": "Long-horizon agent harness with independent execution and auditing",
+      "architecture": "manager/executor/auditor with fresh contexts, verified progress persistence, multiple agent adapters",
+      "relevantFerrumCapability": "durable verified progress and independent evidence review",
+      "harvest": "independent auditor and only-verified-progress persistence concepts",
+      "integrationMode": "TRANSPLANT-IDEA",
+      "expectedMeasurableBenefit": "reduce false progress/completion in long-running Ferrum agent benchmarks",
+      "requiredDependencies": [],
+      "platformCoverage": "GUI+CLI agent harness",
+      "compatibilityRisks": "duplicating orchestration would add unnecessary state and dependencies",
+      "upstreamIssues": "still evolving recovery/timeout behavior",
+      "benchmarkOrProductionEvidence": "supports Codex/Claude/OpenClaw and frozen benchmark reproduction",
+      "smallestExperiment": "retain Ferrum-native execution but add independently derived benchmark summary from raw evidence",
+      "acceptanceTest": "summary can be regenerated from raw evidence and cannot mark progress absent authoritative assertions",
+      "decision": "TRANSPLANT-IDEA",
+      "nextReviewTrigger": "after first hybrid Ferrum benchmark pack"
+    },
+    {
+      "project": "X-PLUG/OSWorld-MCP",
+      "url": "https://github.com/X-PLUG/OSWorld-MCP",
+      "owner": "X-PLUG",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "f5d6aacadf01ea90b7c7af193b8120bf9028358b",
+      "maintenanceFreshness": "2026 benchmark line",
+      "purpose": "Evaluate MCP/tool invocation for computer-use agents",
+      "architecture": "158 validated tools, 25 distractor tools, 250 tool-beneficial tasks, multi-round agent execution",
+      "relevantFerrumCapability": "MCP tool-selection benchmark quality",
+      "harvest": "Tool Invocation Rate, completion-step accounting, distractor tools and beneficial-vs-unnecessary tool selection",
+      "integrationMode": "BENCHMARK",
+      "expectedMeasurableBenefit": "measure whether Ferrum agent surfaces reduce unnecessary tool calls rather than only whether calls technically succeed",
+      "requiredDependencies": [],
+      "platformCoverage": "desktop/tool benchmark concepts",
+      "compatibilityRisks": "large external tool suite is not Ferrum's deterministic authority",
+      "upstreamIssues": "model/tool ecosystem changes quickly",
+      "benchmarkOrProductionEvidence": "250 tool-beneficial tasks and explicit tool invocation metrics",
+      "smallestExperiment": "create a tiny Ferrum MCP beneficial-vs-distractor benchmark using existing tools",
+      "acceptanceTest": "measure task success, correct tool-selection ratio, unnecessary calls, elapsed time and evidence completeness",
+      "decision": "BENCHMARK",
+      "nextReviewTrigger": "after workload-pack metrics and one hybrid pack are stable"
+    },
+    {
+      "project": "finyorko/longcli-bench",
+      "url": "https://github.com/finyorko/longcli-bench",
+      "owner": "finyorko",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "2015f37b5c458f2562354de6b415e9182c91af64",
+      "maintenanceFreshness": "2026-08-13 current head; grader timeout fix",
+      "purpose": "Long-horizon CLI benchmark with regression/persistence tasks",
+      "architecture": "F2P/P2P task sets with grader timeouts, step score, time/token-cost and multiple attempts",
+      "relevantFerrumCapability": "CLI/process long-horizon benchmark metrics",
+      "harvest": "separate liveness timeout from performance criteria and track step/time/cost across attempts",
+      "integrationMode": "TRANSPLANT-IDEA",
+      "expectedMeasurableBenefit": "more truthful long-process benchmark failure classification",
+      "requiredDependencies": [],
+      "platformCoverage": "Linux/CLI",
+      "compatibilityRisks": "tasks are software-engineering workloads rather than tester fixtures",
+      "upstreamIssues": "some graders require long host timeouts",
+      "benchmarkOrProductionEvidence": "current commit explicitly corrects liveness guard timeout mismatches",
+      "smallestExperiment": "keep Ferrum step timeout and performance timing distinct in a long owned process task",
+      "acceptanceTest": "slower valid environment does not falsely fail performance criteria; genuine hangs remain bounded",
+      "decision": "TRANSPLANT-IDEA",
+      "nextReviewTrigger": "when adding first long-horizon CLI benchmark"
+    },
+    {
+      "project": "ServiceNow/BrowserGym",
+      "url": "https://github.com/ServiceNow/BrowserGym",
+      "owner": "ServiceNow",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "9e779f087de9a65668b6974d11f9ce9816026e96",
+      "maintenanceFreshness": "2026-03-17 current head; TimeWarp addition",
+      "purpose": "Web-agent research environment and benchmark aggregator",
+      "architecture": "task environments with reproducible browser observations/actions; TimeWarp temporal versions",
+      "relevantFerrumCapability": "web benchmark compatibility",
+      "harvest": "versioned task/environment identity and standardized task envelopes",
+      "integrationMode": "BENCHMARK",
+      "expectedMeasurableBenefit": "make Ferrum web benchmark results resistant to site/version drift",
+      "requiredDependencies": ["Python", "browser environments"],
+      "platformCoverage": "web/Linux",
+      "compatibilityRisks": "external websites/environments may drift and cost more than owned fixtures",
+      "upstreamIssues": "main less active since March",
+      "benchmarkOrProductionEvidence": "WebArena/WorkArena/TimeWarp support and research adoption",
+      "smallestExperiment": "adapt a self-contained temporal-version identity field to owned Ferrum web tasks",
+      "acceptanceTest": "same task on two pinned environment versions yields attributable version identity and deterministic verdict",
+      "decision": "BENCHMARK",
+      "nextReviewTrigger": "revisit when temporal browser compatibility becomes a measured Ferrum failure source"
+    },
+    {
+      "project": "ServiceNow/webarena-verified",
+      "url": "https://github.com/ServiceNow/webarena-verified",
+      "owner": "ServiceNow",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "6473f72db5dcefc97b5725b59e734504edc28a21",
+      "maintenanceFreshness": "2026-02-07 current head",
+      "purpose": "Verified WebArena dataset/evaluators",
+      "architecture": "version-controlled tasks plus deterministic structural/network-trace evaluation",
+      "relevantFerrumCapability": "deterministic replay/evaluator design",
+      "harvest": "offline structural comparison and captured-network evidence instead of LLM-only judging",
+      "integrationMode": "TRANSPLANT-IDEA",
+      "expectedMeasurableBenefit": "allow selected web task outcomes to be replayed/verified without re-running agent reasoning",
+      "requiredDependencies": ["Python", "captured traces"],
+      "platformCoverage": "web/Linux",
+      "compatibilityRisks": "replay can become stale if runtime/task identity is incomplete",
+      "upstreamIssues": "maintenance is slower than newer benchmark repos",
+      "benchmarkOrProductionEvidence": "verified task/evaluator dataset used in web-agent evaluation",
+      "smallestExperiment": "prototype offline structural verification for one Ferrum-owned deterministic web result",
+      "acceptanceTest": "replay verdict matches live assertion; stale runtime/task identity is rejected; raw trace retained",
+      "decision": "TRANSPLANT-IDEA",
+      "nextReviewTrigger": "revisit after hybrid pack metrics and evidence identity are stable"
+    },
+    {
+      "project": "WebChoreArena/WebChoreArena",
+      "url": "https://github.com/WebChoreArena/WebChoreArena",
+      "owner": "WebChoreArena",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "542abc538fd9558362119714989166904d82f5f4",
+      "maintenanceFreshness": "2026-07-09 current head",
+      "purpose": "Long-horizon tedious web tasks",
+      "architecture": "large reproducible task collection emphasizing multi-step chores",
+      "relevantFerrumCapability": "web long-horizon workload design",
+      "harvest": "long sequential tasks, reset/wait discipline, realistic repetitive interaction",
+      "integrationMode": "BENCHMARK",
+      "expectedMeasurableBenefit": "surface flake/recovery weaknesses that short self-tests miss",
+      "requiredDependencies": ["browser benchmark stack"],
+      "platformCoverage": "web",
+      "compatibilityRisks": "large suite unsuitable for every CI run; external setup cost",
+      "upstreamIssues": "current head is README-only update",
+      "benchmarkOrProductionEvidence": "532 reproducible web tasks reported by project",
+      "smallestExperiment": "port one self-contained long repetitive owned task pattern, not the external site stack",
+      "acceptanceTest": "repeat runs maintain 100% success, bounded waits, complete evidence and no leaked state",
+      "decision": "BENCHMARK",
+      "nextReviewTrigger": "revisit after owned long-horizon pack exists"
+    },
+    {
+      "project": "X-PLUG/ToolCUA",
+      "url": "https://github.com/X-PLUG/ToolCUA",
+      "owner": "X-PLUG",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "2643f8625144005fb932724f1e099d9a59ef1932",
+      "maintenanceFreshness": "2026-05-13 current head",
+      "purpose": "GUI-tool path orchestration for computer-use agents",
+      "architecture": "agent chooses structured tools versus GUI actions along a task path",
+      "relevantFerrumCapability": "agent path-efficiency benchmarking",
+      "harvest": "measure tool-vs-GUI path selection and transition efficiency",
+      "integrationMode": "WATCH",
+      "expectedMeasurableBenefit": "potentially lower agent steps while retaining GUI proof when structured tools are superior",
+      "requiredDependencies": [],
+      "platformCoverage": ["desktop/GUI/tool environments"],
+      "compatibilityRisks": "research code may be model-specific and less deterministic than Ferrum protocols",
+      "upstreamIssues": "limited maintenance since May",
+      "benchmarkOrProductionEvidence": "presented as follow-on to OSWorld-MCP",
+      "smallestExperiment": "compare one Ferrum task with both deterministic structured and GUI paths",
+      "acceptanceTest": "task success/evidence equal; fewer actions or elapsed time without hiding required visual proof",
+      "decision": "WATCH",
+      "nextReviewTrigger": "recheck on substantive upstream release or Ferrum path-selection need"
+    },
+    {
+      "project": "xlang-ai/OSWorld-V2",
+      "url": "https://github.com/xlang-ai/OSWorld-V2",
+      "owner": "xlang-ai",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "597c04976738b20e47267b55a0c76bfe0c815eb4",
+      "maintenanceFreshness": "2026-08-19 current head; offline subset added today",
+      "purpose": "General desktop agent benchmark",
+      "architecture": "release-pinned desktop tasks and current offline subset",
+      "relevantFerrumCapability": "general-app benchmark compatibility",
+      "harvest": "release/task identity, offline task subset, desktop lifecycle/evaluator discipline",
+      "integrationMode": "BENCHMARK",
+      "expectedMeasurableBenefit": "give Ferrum realistic desktop tasks with less network drift and explicit dataset identity",
+      "requiredDependencies": ["VM/runtime stack"],
+      "platformCoverage": "desktop Linux VM",
+      "compatibilityRisks": "full benchmark is heavy; task imports must not contaminate Ferrum scoring",
+      "upstreamIssues": "rapidly evolving release set",
+      "benchmarkOrProductionEvidence": "2026.08.08 release received offline subset on 2026-08-19",
+      "smallestExperiment": "adapt one small offline task concept to a Ferrum-owned fixture with pinned task identity",
+      "acceptanceTest": "repeatable fresh-runtime success/recovery/evidence metrics without normal CI slowdown",
+      "decision": "BENCHMARK",
+      "nextReviewTrigger": "recheck when selecting first external desktop benchmark subset"
+    },
+    {
+      "project": "browser-use/benchmark",
+      "url": "https://github.com/browser-use/benchmark",
+      "owner": "browser-use",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "bc6fd7849aa102c4204509de0a83da680212b22d",
+      "maintenanceFreshness": "2026-08-04 current head",
+      "purpose": "Compare browser agent runtimes/providers",
+      "architecture": "100-task browser benchmark with runtime/model result plots and trajectories",
+      "relevantFerrumCapability": "agent-runtime benchmark methodology",
+      "harvest": "hold task/model constant while comparing harness/runtime",
+      "integrationMode": "BENCHMARK",
+      "expectedMeasurableBenefit": "separate Ferrum harness effects from model/task effects in future agent trials",
+      "requiredDependencies": ["browser-use stack"],
+      "platformCoverage": "web",
+      "compatibilityRisks": "external benchmark scoring and service dependencies can vary",
+      "upstreamIssues": "repository relatively small; current focus includes cloud-vs-OSS comparison",
+      "benchmarkOrProductionEvidence": "current head rebuilds Cloud v4 vs open-source library accuracy comparison",
+      "smallestExperiment": "run identical owned browser task through two agent surfaces while keeping task/model fixed",
+      "acceptanceTest": "same task/model/initial state; report success, calls, elapsed, evidence completeness",
+      "decision": "BENCHMARK",
+      "nextReviewTrigger": "revisit when paired real-agent benchmark runner is available"
+    },
+    {
+      "project": "Lyt060814/CUA-Gym",
+      "url": "https://github.com/Lyt060814/CUA-Gym",
+      "owner": "Lyt060814",
+      "checkedAt": "2026-08-20T00:10:00Z",
+      "head": "8f9489e2f10bddb7927c9482fd30d586cfb6330c",
+      "maintenanceFreshness": "2026-05-14 current head; links migrated toward xlang-ai",
+      "purpose": "Scalable verifiable computer-use environments/tasks",
+      "architecture": "environment/task generation and verifier-oriented CUA training/evaluation",
+      "relevantFerrumCapability": "general-app fixture/evaluator generation",
+      "harvest": "verifiable environment/task composition rather than handcrafted success strings",
+      "integrationMode": "WATCH",
+      "expectedMeasurableBenefit": "reduce cost of adding future app-target benchmark fixtures while keeping deterministic verifiers",
+      "requiredDependencies": [],
+      "platformCoverage": ["computer-use environments"],
+      "compatibilityRisks": "project ownership/migration state is changing; generated tasks need strict provenance",
+      "upstreamIssues": "repository migration signal",
+      "benchmarkOrProductionEvidence": "research project for scalable CUA environment/task generation",
+      "smallestExperiment": "generate no product behavior yet; inspect verifier format against one Ferrum-owned task",
+      "acceptanceTest": "generated verifier must equal existing deterministic verdict and preserve full provenance",
+      "decision": "WATCH",
+      "nextReviewTrigger": "recheck after repository migration stabilizes or Ferrum fixture authoring becomes bottleneck"
+    }
+  ],
+  "deepDecisions": [
+    {
+      "project": "weavebench/WeaveBench",
+      "decision": "harvest metrics/evidence concepts only",
+      "why": "its channel-non-substitutable design and explicit transition/evidence accounting directly expose a Ferrum observability gap, but its agent-as-judge and VM stack are too heavy/nondeterministic to become Ferrum authority"
+    },
+    {
+      "project": "AMAP-ML/LongHorizon-Harness",
+      "decision": "transplant independent-audit/verified-state patterns later",
+      "why": "fresh-context executor plus independent auditor matches Ferrum durability goals, but Ferrum already owns execution/evidence contracts and should not replace them with a second orchestrator"
+    }
+  ],
+  "acceptanceGate": [
+    "exact PR head passes all triggered workflows including severe Ferrum CI",
+    "existing workload pack smoke still executes real child specs with full child evidence",
+    "unit coverage proves target counts, step counts, timing, evidence counts and adjacent target transitions without caps",
+    "compact result exposes metrics while preserving member evidence references",
+    "no existing target, browser, evidence, package, MCP or runtime coverage is weakened"
+  ],
+  "challengePass": {
+    "result": "NO_SECOND_PRODUCT_CHANGE",
+    "reason": "a true channel-non-substitutable hybrid task pack requires a purpose-built shared-state fixture and real-runtime proof; fabricating one during the metrics patch would conflate observability with benchmark validity"
+  },
+  "nextExperiments": [
+    "After PR70 converges, create one Ferrum-owned task whose passing final state genuinely requires both browser/GUI evidence and process/API evidence, then measure task success, target transitions, elapsed time and evidence completeness.",
+    "Prototype deterministic offline structural replay for one owned web task inspired by WebArena-Verified, with task/runtime identity and stale-input rejection.",
+    "Create a small MCP beneficial-vs-distractor benchmark inspired by OSWorld-MCP and record correct tool-selection ratio plus unnecessary calls."
+  ],
+  "guardrails": [
+    "metrics are additive; no viewport/count/data caps",
+    "raw parent and child evidence remains authoritative",
+    "targetTypeTransitions is an adjacency metric, not proof a task requires multiple channels",
+    "PR62 concurrent infrastructure work remains untouched",
+    "merge occurred only after exact-head proof completed and current main still matched the tested base"
+  ],
+  "endMarker": "FERRUM_RUN_2026-08-19_59_END",
+  "finalProduct": {
+    "commit": "08d0c39961392a403061aecf043e1d2d17c40ad5",
+    "tree": "85ac51f462650369e8812e5e8d6aa4b9810dfac5",
+    "proposalHead": "2861004f6183f0eeb28200a6e0474a149fb10656",
+    "proposalTree": "85ac51f462650369e8812e5e8d6aa4b9810dfac5",
+    "treeParity": true,
+    "pr": 70,
+    "change": "Workload-pack results now expose per-member target type, step count, duration and aggregate target/transition/timing/evidence-completeness metrics while preserving every raw parent/child evidence reference."
+  },
+  "verification": {
+    "exactHeadRuns": {
+      "32315983816": "success",
+      "32315983820": "success",
+      "32315983892": "success",
+      "32315983826": "success"
+    },
+    "ferrumCIJobs": {
+      "unit": "success",
+      "webdriver-grid": "success",
+      "windows-alt-browsers-brave": "success",
+      "windows-alt-browsers-opera-gx": "success",
+      "appium-android": "success",
+      "chromium-smoke-windows": "success",
+      "chromium-smoke-ubuntu": "success",
+      "lightpanda-smoke": "success"
+    },
+    "observations": [
+      "npm test, syntax, shell, MCP surface, independent MCP Inspector and evidence-integrity smoke passed on exact proposal head",
+      "existing real workload-pack extension smoke passed on Linux and Windows",
+      "full Linux and Windows browser/MV3/Spaces/Workbench/Electron/source desktop/fresh package/provenance paths passed",
+      "real Selenium Grid, Lightpanda and Android/Appium passed",
+      "service fixture, stateful API and service network-fault companion workflows passed",
+      "merged product tree equals exact tested proposal tree"
+    ]
+  },
+  "artifacts": {
+    "windowsDesktop": {
+      "id": 9388143949,
+      "sizeBytes": 166270862,
+      "sha256": "de74ca3abe7b8627a5c070e452cb7dbea65ecc86ed66242662cc41fdb49150a4"
+    },
+    "linuxDesktop": {
+      "id": 9388136183,
+      "sizeBytes": 145024829,
+      "sha256": "e8ca37986e8b7a5dd9c528b0a1f514648cc3031d40463345276b5a723608715f"
+    },
+    "windowsEvidence": {
+      "id": 9388142925,
+      "sizeBytes": 1916624,
+      "sha256": "296ec15d7d13192ac2100a344fb8072fe59de9f4c10e40bb712cb8d0414b09a5"
+    },
+    "linuxEvidence": {
+      "id": 9388135219,
+      "sizeBytes": 2256892,
+      "sha256": "49b23856613b5547ddad655c73928895ade77d856a8e28e33bd351231f8ee6e5"
+    },
+    "androidEvidence": {
+      "id": 9388141429,
+      "sizeBytes": 123700,
+      "sha256": "f747920116e845dff03610600b924300cb7187b16c213f3cc459b494395452ee"
+    },
+    "webdriverGridEvidence": {
+      "id": 9388095093,
+      "sizeBytes": 35674,
+      "sha256": "a196df12d269693fc4f559b090af518ed7a98b13375502197b675aeef5f98688"
+    },
+    "lightpandaEvidence": {
+      "id": 9388099284,
+      "sizeBytes": 13052,
+      "sha256": "3b5320e22b631f0d9cd841c010bcb42945e450d23b95891fef8a45e84f709b12"
+    },
+    "braveEvidence": {
+      "id": 9388105535,
+      "sizeBytes": 31808,
+      "sha256": "9a659bd20af0e769cd35586beacb715092a215e16a26960b07177ef0a328c977"
+    },
+    "operaGxEvidence": {
+      "id": 9388168761,
+      "sizeBytes": 3421516,
+      "sha256": "264280a343d9c4c2d68b7c4da6f6ebdfafcd416e5569210333e240f9cc04c0ab"
+    },
+    "windowsProvenance": {
+      "id": 9388149412,
+      "sizeBytes": 8417,
+      "sha256": "365d0b3e874cbd83319e76c54eb315ecf919a8ebe8fe14a0f16cfefe0af4108d"
+    },
+    "linuxProvenance": {
+      "id": 9388141384,
+      "sizeBytes": 8301,
+      "sha256": "a76a7f7436d7cdaf2adc65cfe3a1050ff862a5e88bc285b5279f04b0815fdcf5"
+    }
+  }
+}
