@@ -56,6 +56,9 @@ jobs:
           - name: next-rapier2d
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-rapier2d-0-20
+          - name: next-node-pkware
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-node-pkware-5-9-2
     steps:
       - name: Require private GameSync read token
         shell: bash
