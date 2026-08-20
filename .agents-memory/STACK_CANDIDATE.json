@@ -9,7 +9,7 @@
     "electronPackager": "20.3.0"
   },
   "proposedToolchain": {
-    "playwright": "1.63.0-alpha-2026-08-19",
+    "playwright": "1.63.0-alpha-2026-08-20",
     "electron": "43.4.0",
     "electronPackager": "20.3.0"
   }
