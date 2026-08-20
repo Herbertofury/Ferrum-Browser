@@ -26,12 +26,13 @@ jobs:
           set -euo pipefail
           node <<'NODE'
           const { execFileSync } = require('node:child_process');
+          const crypto = require('node:crypto');
           const fs = require('node:fs');
 
           // Exhaustive direct/foundational package watchlist from the active standalone,
           // monorepo root, Extension V2, Desktop, Feature Foundry, Asset Orchestrator,
           // shared/UI/rendering/MCP/search packages, server and HyperBowl manifests. URL-only
-          // packages such as SheetJS are audited separately because npm dist-tags are not authoritative for them.
+          // packages are audited separately from their authoritative upstream distribution.
           const packages = [
             '@chenglou/pretext','@dimforge/rapier2d-compat','@fontsource/ibm-plex-sans','@fontsource/jetbrains-mono','@fontsource/space-grotesk',
             '@hono/node-server','@huggingface/transformers','@modelcontextprotocol/client','@modelcontextprotocol/codemod','@modelcontextprotocol/core','@modelcontextprotocol/sdk','@modelcontextprotocol/server',
@@ -45,7 +46,13 @@ jobs:
           ];
 
           const npmView = (args) => JSON.parse(execFileSync('npm', ['view', ...args, '--json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }));
-          const report = { generatedAt: new Date().toISOString(), node: process.version, npm: execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim(), packages: {} };
+          const report = {
+            generatedAt: new Date().toISOString(),
+            node: process.version,
+            npm: execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim(),
+            packages: {},
+            externalPackages: {}
+          };
           for (const name of packages) {
             const distTags = npmView([name, 'dist-tags']);
             const selected = {};
@@ -58,6 +65,32 @@ jobs:
             }
             report.packages[name] = { distTags, selected };
           }
+
+          // SheetJS Community Edition is intentionally installed from the vendor CDN instead
+          // of npm. Resolve the current version from SheetJS's own installation docs, then
+          // download that exact tarball and record a byte-level SHA-256 identity. This keeps
+          // the URL-only Extension V2 dependency inside the same freshness evidence contract.
+          const sheetJsDocsUrl = 'https://docs.sheetjs.com/docs/getting-started/installation/nodejs/';
+          const sheetJsDocs = execFileSync('curl', ['-fsSL', '--retry', '3', '--retry-all-errors', sheetJsDocsUrl], {
+            encoding: 'utf8',
+            maxBuffer: 16 * 1024 * 1024
+          });
+          const sheetJsMatch = sheetJsDocs.match(/https:\/\/cdn\.sheetjs\.com\/xlsx-(\d+\.\d+\.\d+)\/xlsx-\1\.tgz/);
+          if (!sheetJsMatch) throw new Error('Could not resolve the current SheetJS tarball from the authoritative installation docs');
+          const sheetJsVersion = sheetJsMatch[1];
+          const sheetJsTarball = sheetJsMatch[0];
+          const sheetJsBytes = execFileSync('curl', ['-fsSL', '--retry', '3', '--retry-all-errors', sheetJsTarball], {
+            encoding: null,
+            maxBuffer: 256 * 1024 * 1024
+          });
+          report.externalPackages.sheetjs = {
+            source: sheetJsDocsUrl,
+            version: sheetJsVersion,
+            tarball: sheetJsTarball,
+            sizeBytes: sheetJsBytes.length,
+            sha256: crypto.createHash('sha256').update(sheetJsBytes).digest('hex')
+          };
+
           fs.writeFileSync('gamesync-upstream-registry.json', `${JSON.stringify(report, null, 2)}\n`, 'utf8');
           console.log(JSON.stringify(report, null, 2));
           NODE
@@ -70,6 +103,14 @@ jobs:
           const r = JSON.parse(fs.readFileSync('gamesync-upstream-registry.json', 'utf8'));
           console.log('## GameSync upstream npm registry freshness'); console.log(''); console.log(`Generated: \`${r.generatedAt}\``); console.log(`Node: \`${r.node}\`; npm: \`${r.npm}\``); console.log(''); console.log('| package | latest | next/beta/rc/canary/alpha |'); console.log('|---|---:|---|');
           for (const [name,row] of Object.entries(r.packages)) { const d=row.distTags||{}; const forward=['next','beta','rc','canary','alpha'].filter(k=>d[k]).map(k=>`${k}: ${d[k]}`).join('<br>')||'-'; console.log(`| \`${name}\` | \`${d.latest||'-'}\` | ${forward} |`); }
+          console.log('');
+          console.log('### Authoritative non-npm packages');
+          console.log('');
+          console.log('| package | version | distribution | SHA-256 |');
+          console.log('|---|---:|---|---|');
+          const sheetjs = r.externalPackages?.sheetjs;
+          if (!sheetjs) throw new Error('SheetJS external-package evidence is missing');
+          console.log(`| \`xlsx / SheetJS CE\` | \`${sheetjs.version}\` | ${sheetjs.tarball} | \`${sheetjs.sha256}\` |`);
           NODE
       - name: Upload registry freshness evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
