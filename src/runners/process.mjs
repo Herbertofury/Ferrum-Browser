@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnLogged, terminate, waitForExit } from '../core/process-utils.mjs';
+import { spawnLogged, terminate, waitForClose, waitForExit } from '../core/process-utils.mjs';
 
 function healthTerminalError(url, terminal) {
   if (terminal?.type === 'error') {
@@ -339,6 +339,7 @@ export async function runProcessTarget(spec, evidence) {
   const lines = [];
   let outcome = null;
   let httpRequests = 0;
+  let primaryError = null;
   const child = spawnLogged(command, args, {
     cwd: spec.target.cwd || process.cwd(),
     env: { ...process.env, ...(spec.target.env || {}) },
@@ -394,10 +395,23 @@ export async function runProcessTarget(spec, evidence) {
     }
     outcome = { pid: child.pid, logs: lines.length, running: child.exitCode === null, nodeReports: 0, httpRequests };
     return outcome;
+  } catch (error) {
+    primaryError = error;
+    throw error;
   } finally {
-    if (child.pid) await terminate(child).catch(() => {});
+    let closeError = null;
+    if (child.pid) {
+      await terminate(child).catch(() => {});
+      try {
+        await waitForClose(child, spec.timeouts?.stepMs || 5000);
+      } catch (error) {
+        closeError = error;
+        evidence.record('process-close-error', { message: error.message });
+      }
+    }
     const reports = await collectNodeDiagnosticReports(nodeReportDir, evidence);
     if (outcome) outcome.nodeReports = reports.length;
     await evidence.writeText('process.log', lines.map(line => `[${line.source}] ${line.text}`).join('\n') + '\n');
+    if (closeError && !primaryError) throw closeError;
   }
 }
