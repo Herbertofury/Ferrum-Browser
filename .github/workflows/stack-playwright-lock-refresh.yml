@@ -1,6 +1,9 @@
 name: Stack Playwright lock integrity
 
 on:
+  push:
+    branches:
+      - automation/ferrum-stack-playwright-1-63-aug19
   workflow_dispatch:
 
 permissions:
@@ -19,21 +22,40 @@ jobs:
           node-version: 24.19.0
           cache: npm
 
-      - name: Verify authoritative Playwright lock
+      - name: Regenerate authoritative Playwright lock
         shell: bash
         run: |
           set -euo pipefail
           test "$(node --version)" = "v24.19.0"
+          expected='1.63.0-alpha-2026-08-20'
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const expected='1.63.0-alpha-2026-08-19';
+          const expected='1.63.0-alpha-2026-08-20';
           const p=JSON.parse(fs.readFileSync('package.json','utf8'));
-          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
           if(p.dependencies?.playwright !== expected) throw new Error('Unexpected Playwright proposal version');
+          NODE
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const expected='1.63.0-alpha-2026-08-20';
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
           if(lock.packages?.['']?.dependencies?.playwright !== expected) throw new Error('Root lock declaration differs from proposal');
           if(lock.packages?.['node_modules/playwright']?.version !== expected) throw new Error('Playwright lock resolution differs from proposal');
           if(lock.packages?.['node_modules/playwright-core']?.version !== expected) throw new Error('Playwright core lock resolution differs from proposal');
           NODE
           npm ci --ignore-scripts --no-audit --no-fund
-          git diff --exit-code -- package-lock.json package.json
-          git diff --check
+          git diff --check -- package.json package-lock.json .agents-memory/STACK_CANDIDATE.json .github/workflows/stack-playwright-lock-refresh.yml
+          mkdir -p output/stack-playwright-lock
+          cp package-lock.json output/stack-playwright-lock/package-lock.json
+          sha256sum package-lock.json > output/stack-playwright-lock/package-lock.sha256
+          git diff -- package-lock.json > output/stack-playwright-lock/package-lock.patch
+          git rev-parse HEAD > output/stack-playwright-lock/source-head.txt
+          node --version > output/stack-playwright-lock/node-version.txt
+          npm --version > output/stack-playwright-lock/npm-version.txt
+
+      - name: Upload authoritative lock evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: ferrum-playwright-aug20-lock
+          path: output/stack-playwright-lock
+          if-no-files-found: error
