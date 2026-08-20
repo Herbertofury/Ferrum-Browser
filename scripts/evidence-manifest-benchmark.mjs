@@ -99,8 +99,8 @@ async function baselineListEvidence(root) {
       if (index >= directories.length) return;
       const entry = directories[index];
       try {
-        const summary = JSON.parse(await fs.readFile(path.join(root, entry.name, 'agent-summary.json'), 'utf8'));
-        results[index] = { ...summary, id: entry.name };
+        const summaryValue = JSON.parse(await fs.readFile(path.join(root, entry.name, 'agent-summary.json'), 'utf8'));
+        results[index] = { ...summaryValue, id: entry.name };
       } catch {}
     }
   };
@@ -182,20 +182,21 @@ async function measureHistory() {
   assert.deepEqual(legacyWarm, control);
   assert.deepEqual(candidateWarm, control);
 
+  const runners = [
+    { kind: 'baseline', run: () => baselineListEvidence(historyRoot) },
+    { kind: 'legacy', run: () => legacyCachedListEvidence(historyRoot) },
+    { kind: 'candidate', run: () => listEvidence({ root: historyRoot }) }
+  ];
   const baselineSamples = [];
   const legacySamples = [];
   const candidateSamples = [];
   for (let index = 0; index < measuredRuns; index += 1) {
-    const order = index % 3;
-    const runs = order === 0
-      ? [baselineListEvidence, legacyCachedListEvidence, listEvidence]
-      : order === 1
-        ? [legacyCachedListEvidence, listEvidence, baselineListEvidence]
-        : [listEvidence, baselineListEvidence, legacyCachedListEvidence];
-    for (const run of runs) {
-      const measured = await timed(() => run(historyRoot === undefined ? undefined : { root: historyRoot }));
-      if (run === listEvidence) candidateSamples.push(measured.ms);
-      else if (run === legacyCachedListEvidence) legacySamples.push(measured.ms);
+    const offset = index % runners.length;
+    const ordered = [...runners.slice(offset), ...runners.slice(0, offset)];
+    for (const runner of ordered) {
+      const measured = await timed(runner.run);
+      if (runner.kind === 'candidate') candidateSamples.push(measured.ms);
+      else if (runner.kind === 'legacy') legacySamples.push(measured.ms);
       else baselineSamples.push(measured.ms);
     }
   }
