@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - automation/ferrum-stack-playwright-1-63-aug19
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -27,7 +30,6 @@ jobs:
         run: |
           set -euo pipefail
           test "$(node --version)" = "v24.19.0"
-          expected='1.63.0-alpha-2026-08-20'
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const expected='1.63.0-alpha-2026-08-20';
