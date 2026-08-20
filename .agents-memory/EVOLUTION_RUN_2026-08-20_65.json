@@ -99,6 +99,11 @@
       {"name": "ferrum-provenance-Windows", "id": 9406816745, "bytes": 8276, "sha256": "fc3019605b1ecbc932a9980ad4c8aeb2ed085ed6a4034a4bc48123bebc387638"}
     ]
   },
+  "recoveryValidation": {
+    "purpose": "Create a user-authored exact validation head after the GitHub-token STATUS synchronization commit, because workflow-generated commits do not receive the same pull-request execution surface.",
+    "statusAtParent": "STATUS synchronized to run 65 on commit 36acb0310379588c88b344b15c87342e3fced60b",
+    "requiredFreshGates": ["Synchronize verified STATUS", "Ferrum CI", "Stack Playwright lock integrity"]
+  },
   "risk": {
     "summary": "Filesystem watcher behavior is platform-specific, so exact-byte fallback remains the correctness backstop when watcher coverage is unavailable or unhealthy.",
     "rollback": "Revert the cache invalidation/watch changes as one coherent unit only if a later exact runtime regression cannot be fixed forward; do not restore stat-only reuse without the deterministic collision regression."
