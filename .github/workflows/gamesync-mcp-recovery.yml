@@ -1,0 +1,121 @@
+name: GameSync MCP SDK cross-repo recovery
+
+# Additive full-fidelity recovery lane for the GameSync-Next MCP SDK Stack
+# proposal while private-repository Actions execution is unavailable. This
+# never mutates GameSync refs and fails closed without explicit read access.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mcp-sdk-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+      CANDIDATE_BRANCH: automation/stack-mcp-sdk-1-30
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Set FERRUM_GAMESYNC_READ_TOKEN or GH_PAT with read access to Herbertofury/GameSync-Next.'
+            exit 2
+          fi
+
+      - name: Check out current MCP SDK candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/GameSync-Next
+          ref: ${{ env.CANDIDATE_BRANCH }}
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact Node 26.7.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Capture exact candidate identity and reject stale main
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_HEAD="$(git rev-parse HEAD)"
+          printf 'SOURCE_HEAD=%s\n' "$SOURCE_HEAD" >> "$GITHUB_ENV"
+          test "$(node --version)" = "v26.7.0"
+          git fetch origin main
+          test "$(git merge-base HEAD origin/main)" = "$(git rev-parse origin/main)"
+
+      - name: Regenerate authoritative MCP SDK lock graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const workspace = lock.packages?.['packages/mcp-local'];
+          const sdk = lock.packages?.['node_modules/@modelcontextprotocol/sdk'];
+          if (workspace?.dependencies?.['@modelcontextprotocol/sdk'] !== '^1.30.0') throw new Error('MCP workspace lock declaration is not ^1.30.0');
+          if (sdk?.version !== '1.30.0') throw new Error(`Expected MCP SDK lock version 1.30.0, got ${sdk?.version}`);
+          if (!sdk?.resolved?.endsWith('/@modelcontextprotocol/sdk/-/sdk-1.30.0.tgz') || !sdk?.integrity) throw new Error('MCP SDK lock entry lacks immutable registry identity');
+          NODE
+          git diff --check -- package-lock.json
+
+      - name: Frozen install regenerated graph
+        run: npm ci
+
+      - name: Exercise real MCP stdio runtime
+        run: |
+          node --check packages/mcp-local/server.mjs
+          node --check scripts/stack/mcp-local-runtime-smoke.mjs
+          node scripts/stack/mcp-local-runtime-smoke.mjs
+
+      - name: Audit critical vulnerabilities
+        run: npm audit --audit-level=critical
+
+      - name: Build affected and consuming surfaces
+        run: |
+          npm run build:packages
+          npm --workspace apps/server run build
+          npm --workspace apps/desktop run build
+          npm --workspace apps/extension-v2 run build
+          npm run pw:list
+          node --test scripts/audit-gamesync-parity.test.mjs
+
+      - name: Recheck candidate identity and patch integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main...HEAD
+          git fetch origin "$CANDIDATE_BRANCH" --depth=1
+          if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
+            echo '::error::MCP SDK candidate advanced during recovery; refusing stale evidence.'
+            exit 3
+          fi
+          mkdir -p output/mcp-sdk
+          cp package-lock.json output/mcp-sdk/package-lock.json
+          git diff -- package-lock.json > output/mcp-sdk/package-lock.patch
+          sha256sum package-lock.json > output/mcp-sdk/package-lock.sha256
+          printf '%s\n' "$SOURCE_HEAD" > output/mcp-sdk/source-head.txt
+          node --version > output/mcp-sdk/node-version.txt
+          npm --version > output/mcp-sdk/npm-version.txt
+
+      - name: Upload MCP SDK recovery evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gamesync-next-mcp-sdk-recovery
+          path: output/mcp-sdk
+          if-no-files-found: warn
