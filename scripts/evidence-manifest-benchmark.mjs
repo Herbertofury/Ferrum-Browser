@@ -19,6 +19,9 @@ const largeBytes = 1024 * 1024;
 const historyRunCount = 2000;
 const measuredRuns = 7;
 const listConcurrency = 32;
+const minimumMedianGainPct = 35;
+const minimumP95GainPct = 30;
+const legacySummaryCache = new Map();
 
 function percentile(values, ratio) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -36,6 +39,10 @@ function summary(values) {
 
 function gainPercent(baseline, candidate) {
   return Number((((baseline - candidate) / baseline) * 100).toFixed(2));
+}
+
+function legacySummaryIdentity(stat) {
+  return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
 }
 
 async function createFixture() {
@@ -92,13 +99,54 @@ async function baselineListEvidence(root) {
       if (index >= directories.length) return;
       const entry = directories[index];
       try {
-        const summary = JSON.parse(await fs.readFile(path.join(root, entry.name, 'agent-summary.json'), 'utf8'));
-        results[index] = { ...summary, id: entry.name };
+        const summaryValue = JSON.parse(await fs.readFile(path.join(root, entry.name, 'agent-summary.json'), 'utf8'));
+        results[index] = { ...summaryValue, id: entry.name };
       } catch {}
     }
   };
 
   await Promise.all(Array.from({ length: Math.min(listConcurrency, directories.length) }, () => worker()));
+  return results
+    .filter(Boolean)
+    .sort((a, b) => String(b.endedAt || b.startedAt || '').localeCompare(String(a.endedAt || a.startedAt || '')));
+}
+
+async function legacyCachedListEvidence(root) {
+  const entries = await fs.readdir(root, { withFileTypes: true });
+  const directories = entries.filter(entry => entry.isDirectory());
+  const results = new Array(directories.length);
+  const seen = new Set();
+  let cursor = 0;
+
+  const worker = async () => {
+    while (true) {
+      const index = cursor++;
+      if (index >= directories.length) return;
+      const entry = directories[index];
+      const file = path.join(root, entry.name, 'agent-summary.json');
+      seen.add(file);
+      try {
+        const stat = await fs.stat(file, { bigint: true });
+        if (!stat.isFile()) continue;
+        const identity = legacySummaryIdentity(stat);
+        const cached = legacySummaryCache.get(file);
+        let parsed;
+        if (cached?.identity === identity) parsed = structuredClone(cached.summary);
+        else {
+          let summaryValue = null;
+          try { summaryValue = JSON.parse(await fs.readFile(file, 'utf8')); } catch {}
+          legacySummaryCache.set(file, { identity, summary: summaryValue });
+          parsed = summaryValue == null ? null : structuredClone(summaryValue);
+        }
+        if (parsed) results[index] = { ...parsed, id: entry.name };
+      } catch {}
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(listConcurrency, directories.length) }, () => worker()));
+  for (const file of legacySummaryCache.keys()) {
+    if (!seen.has(file)) legacySummaryCache.delete(file);
+  }
   return results
     .filter(Boolean)
     .sort((a, b) => String(b.endedAt || b.startedAt || '').localeCompare(String(a.endedAt || a.startedAt || '')));
@@ -128,46 +176,86 @@ async function measureManifestOnce() {
 
 async function measureHistory() {
   const control = await baselineListEvidence(historyRoot);
-  const warm = await listEvidence({ root: historyRoot });
+  const legacyWarm = await legacyCachedListEvidence(historyRoot);
+  const candidateWarm = await listEvidence({ root: historyRoot });
   assert.equal(control.length, historyRunCount);
-  assert.deepEqual(warm, control);
+  assert.deepEqual(legacyWarm, control);
+  assert.deepEqual(candidateWarm, control);
 
+  const runners = [
+    { kind: 'baseline', run: () => baselineListEvidence(historyRoot) },
+    { kind: 'legacy', run: () => legacyCachedListEvidence(historyRoot) },
+    { kind: 'candidate', run: () => listEvidence({ root: historyRoot }) }
+  ];
   const baselineSamples = [];
+  const legacySamples = [];
   const candidateSamples = [];
   for (let index = 0; index < measuredRuns; index += 1) {
-    if (index % 2 === 0) {
-      const baseline = await timed(() => baselineListEvidence(historyRoot));
-      const candidate = await timed(() => listEvidence({ root: historyRoot }));
-      assert.deepEqual(candidate.value, baseline.value);
-      baselineSamples.push(baseline.ms);
-      candidateSamples.push(candidate.ms);
-    } else {
-      const candidate = await timed(() => listEvidence({ root: historyRoot }));
-      const baseline = await timed(() => baselineListEvidence(historyRoot));
-      assert.deepEqual(candidate.value, baseline.value);
-      baselineSamples.push(baseline.ms);
-      candidateSamples.push(candidate.ms);
+    const offset = index % runners.length;
+    const ordered = [...runners.slice(offset), ...runners.slice(0, offset)];
+    for (const runner of ordered) {
+      const measured = await timed(runner.run);
+      if (runner.kind === 'candidate') candidateSamples.push(measured.ms);
+      else if (runner.kind === 'legacy') legacySamples.push(measured.ms);
+      else baselineSamples.push(measured.ms);
     }
   }
 
   const changedId = 'run-00010';
   const changedPath = path.join(historyRoot, changedId, 'agent-summary.json');
   const changed = JSON.parse(await fs.readFile(changedPath, 'utf8'));
-  await fs.writeFile(changedPath, JSON.stringify({ ...changed, status: changed.status === 'passed' ? 'failed' : 'passed' }));
-  const afterChange = await listEvidence({ root: historyRoot });
-  assert.equal(afterChange.find(item => item.id === changedId)?.status, changed.status === 'passed' ? 'failed' : 'passed');
+  const originalStat = fs.stat;
+  const frozenStat = await originalStat(changedPath, { bigint: true });
+  const beforeBytes = await fs.readFile(changedPath);
+  const afterBytes = Buffer.from(JSON.stringify({ ...changed, status: changed.status === 'passed' ? 'failed' : 'passed' }));
+  assert.equal(afterBytes.length, beforeBytes.length, 'collision benchmark requires same-size rewrite');
+  await fs.writeFile(changedPath, afterBytes);
+  fs.stat = async (target, options) => {
+    if (path.resolve(String(target)) === path.resolve(changedPath)) return frozenStat;
+    return originalStat(target, options);
+  };
+  let legacyCollisionStatus;
+  let candidateCollisionStatus;
+  try {
+    legacyCollisionStatus = (await legacyCachedListEvidence(historyRoot)).find(item => item.id === changedId)?.status;
+    candidateCollisionStatus = (await listEvidence({ root: historyRoot })).find(item => item.id === changedId)?.status;
+  } finally {
+    fs.stat = originalStat;
+  }
+  const expectedChangedStatus = changed.status === 'passed' ? 'failed' : 'passed';
+  assert.equal(legacyCollisionStatus, changed.status, 'legacy stat-only cache control should reproduce stale result under forced identity collision');
+  assert.equal(candidateCollisionStatus, expectedChangedStatus, 'collision-safe cache must observe changed bytes under forced stat collision');
 
   const baseline = summary(baselineSamples);
-  const cachedWarm = summary(candidateSamples);
+  const legacyCachedWarm = summary(legacySamples);
+  const collisionSafeCachedWarm = summary(candidateSamples);
+  const medianGainPct = gainPercent(baseline.medianMs, collisionSafeCachedWarm.medianMs);
+  const p95GainPct = gainPercent(baseline.p95Ms, collisionSafeCachedWarm.p95Ms);
+  assert.ok(medianGainPct >= minimumMedianGainPct, `collision-safe cache median gain ${medianGainPct}% is below ${minimumMedianGainPct}%`);
+  assert.ok(p95GainPct >= minimumP95GainPct, `collision-safe cache p95 gain ${p95GainPct}% is below ${minimumP95GainPct}%`);
+
   return {
     fixtureRuns: historyRunCount,
     measuredRuns,
     baseline,
-    cachedWarm,
-    medianGainPct: gainPercent(baseline.medianMs, cachedWarm.medianMs),
-    p95GainPct: gainPercent(baseline.p95Ms, cachedWarm.p95Ms),
+    legacyCachedWarm,
+    collisionSafeCachedWarm,
+    legacyMedianGainPct: gainPercent(baseline.medianMs, legacyCachedWarm.medianMs),
+    legacyP95GainPct: gainPercent(baseline.p95Ms, legacyCachedWarm.p95Ms),
+    medianGainPct,
+    p95GainPct,
+    medianDeltaVsLegacyPct: gainPercent(legacyCachedWarm.medianMs, collisionSafeCachedWarm.medianMs),
+    p95DeltaVsLegacyPct: gainPercent(legacyCachedWarm.p95Ms, collisionSafeCachedWarm.p95Ms),
+    deterministicCollision: {
+      sameSizeBytes: beforeBytes.length,
+      frozenIdentity: legacySummaryIdentity(frozenStat),
+      legacyStatus: legacyCollisionStatus,
+      candidateStatus: candidateCollisionStatus,
+      expectedChangedStatus
+    },
     baselineSamplesMs: baselineSamples.map(value => Number(value.toFixed(3))),
-    cachedWarmSamplesMs: candidateSamples.map(value => Number(value.toFixed(3)))
+    legacyCachedSamplesMs: legacySamples.map(value => Number(value.toFixed(3))),
+    collisionSafeCachedSamplesMs: candidateSamples.map(value => Number(value.toFixed(3)))
   };
 }
 
@@ -182,7 +270,7 @@ try {
   const historyList = await measureHistory();
 
   const result = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     platform: process.platform,
     arch: process.arch,
     node: process.version,

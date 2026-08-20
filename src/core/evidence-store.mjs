@@ -1,11 +1,13 @@
 import crypto from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, watch } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const MANIFEST_NAME = 'evidence-manifest.json';
 const LIST_EVIDENCE_CONCURRENCY = 32;
 const EVIDENCE_DESCRIPTOR_CONCURRENCY = 32;
+const WATCHER_SETTLE_TURNS = 2;
+const WATCHER_RESCAN_LIMIT = 3;
 let evidenceSummaryCache = null;
 
 export function resolveEvidenceRoot(root) {
@@ -121,35 +123,175 @@ function cloneSummary(summary) {
   return summary == null ? null : structuredClone(summary);
 }
 
-function evidenceCacheFor(base) {
-  if (evidenceSummaryCache?.base === base) return evidenceSummaryCache.entries;
-  const entries = new Map();
-  evidenceSummaryCache = { base, entries };
-  return entries;
+function closeWatcher(watcher) {
+  try { watcher?.close(); } catch {}
 }
 
-async function readEvidenceSummary(file, cache) {
+function closeEvidenceSummaryCache(state) {
+  closeWatcher(state?.rootWatcher);
+  if (state?.fileWatchers) {
+    for (const watcher of state.fileWatchers.values()) closeWatcher(watcher);
+    state.fileWatchers.clear();
+  }
+}
+
+function watchedSummaryPath(base, filename) {
+  if (filename == null) return null;
+  const relative = String(filename).replaceAll('\\', '/');
+  if (!relative) return null;
+  const file = path.resolve(base, relative);
+  if (file !== base && !file.startsWith(base + path.sep)) return null;
+  return path.basename(file) === 'agent-summary.json' ? file : null;
+}
+
+function invalidateWatchedFile(state, file) {
+  state.epoch += 1;
+  state.entries.delete(file);
+  const watcher = state.fileWatchers.get(file);
+  if (watcher) {
+    state.fileWatchers.delete(file);
+    closeWatcher(watcher);
+  }
+}
+
+function ensureFileWatcher(state, file) {
+  if (state.mode !== 'per-file' || state.fileWatchers.has(file) || state.unwatchableFiles.has(file)) return;
+  try {
+    const watcher = watch(file, { persistent: false }, () => invalidateWatchedFile(state, file));
+    state.fileWatchers.set(file, watcher);
+    watcher.on('error', () => {
+      state.unwatchableFiles.add(file);
+      invalidateWatchedFile(state, file);
+    });
+    watcher.on('close', () => {
+      if (state.fileWatchers.get(file) === watcher) state.fileWatchers.delete(file);
+    });
+  } catch {
+    state.unwatchableFiles.add(file);
+  }
+}
+
+function createEvidenceSummaryCache(base) {
+  const state = {
+    base,
+    entries: new Map(),
+    mode: process.platform === 'win32' ? 'per-file' : 'recursive-root',
+    rootWatcher: null,
+    rootWatcherHealthy: false,
+    fileWatchers: new Map(),
+    unwatchableFiles: new Set(),
+    epoch: 0
+  };
+
+  if (state.mode === 'recursive-root') {
+    try {
+      state.rootWatcher = watch(base, { recursive: true, persistent: false }, (_eventType, filename) => {
+        state.epoch += 1;
+        const file = watchedSummaryPath(base, filename);
+        if (file) state.entries.delete(file);
+        else if (filename == null) state.entries.clear();
+      });
+      state.rootWatcher.on('error', () => {
+        state.rootWatcherHealthy = false;
+        state.entries.clear();
+      });
+      state.rootWatcher.on('close', () => {
+        state.rootWatcherHealthy = false;
+      });
+      state.rootWatcherHealthy = true;
+    } catch {
+      state.rootWatcherHealthy = false;
+    }
+  }
+
+  return state;
+}
+
+function evidenceCacheFor(base) {
+  if (evidenceSummaryCache?.base === base) return evidenceSummaryCache;
+  closeEvidenceSummaryCache(evidenceSummaryCache);
+  evidenceSummaryCache = createEvidenceSummaryCache(base);
+  return evidenceSummaryCache;
+}
+
+function watcherCanProtect(state, file) {
+  if (state.mode === 'recursive-root') return state.rootWatcherHealthy;
+  return state.fileWatchers.has(file);
+}
+
+function hasActiveWatcher(state) {
+  return state.rootWatcherHealthy || state.fileWatchers.size > 0;
+}
+
+async function settleEvidenceWatcher(state) {
+  if (!hasActiveWatcher(state)) return;
+  for (let turn = 0; turn < WATCHER_SETTLE_TURNS; turn += 1) {
+    await new Promise(resolve => setImmediate(resolve));
+  }
+}
+
+async function readSummaryBytes(file) {
+  try { return await fs.readFile(file); }
+  catch (error) { if (error?.code === 'ENOENT') return null; throw error; }
+}
+
+function parseSummaryBytes(bytes) {
+  try { return JSON.parse(bytes.toString('utf8')); }
+  catch { return null; }
+}
+
+function cacheSummary(state, file, identity, bytes, summary) {
+  state.entries.set(file, { identity, bytes, summary });
+  ensureFileWatcher(state, file);
+}
+
+async function readEvidenceSummary(file, state) {
+  const cache = state.entries;
   let stat;
   try { stat = await fs.stat(file, { bigint: true }); }
   catch (error) {
     if (error?.code === 'ENOENT') {
       cache.delete(file);
+      invalidateWatchedFile(state, file);
       return null;
     }
     throw error;
   }
   if (!stat.isFile()) {
     cache.delete(file);
+    invalidateWatchedFile(state, file);
     return null;
   }
 
   const identity = summaryIdentity(stat);
   const cached = cache.get(file);
-  if (cached?.identity === identity) return cloneSummary(cached.summary);
+  if (cached?.identity === identity) {
+    if (watcherCanProtect(state, file)) return cloneSummary(cached.summary);
 
-  let summary = null;
-  try { summary = await readJson(file); } catch {}
-  cache.set(file, { identity, summary });
+    const bytes = await readSummaryBytes(file);
+    if (!bytes) {
+      cache.delete(file);
+      invalidateWatchedFile(state, file);
+      return null;
+    }
+    if (cached.bytes?.equals(bytes)) {
+      ensureFileWatcher(state, file);
+      return cloneSummary(cached.summary);
+    }
+
+    const summary = parseSummaryBytes(bytes);
+    cacheSummary(state, file, identity, bytes, summary);
+    return cloneSummary(summary);
+  }
+
+  const bytes = await readSummaryBytes(file);
+  if (!bytes) {
+    cache.delete(file);
+    invalidateWatchedFile(state, file);
+    return null;
+  }
+  const summary = parseSummaryBytes(bytes);
+  cacheSummary(state, file, identity, bytes, summary);
   return cloneSummary(summary);
 }
 
@@ -169,14 +311,12 @@ export async function writeEvidenceManifest(dir) {
   return manifest;
 }
 
-export async function listEvidence({ root } = {}) {
-  const base = resolveEvidenceRoot(root);
-  let entries;
-  try { entries = await fs.readdir(base, { withFileTypes: true }); }
-  catch (error) { if (error?.code === 'ENOENT') return []; throw error; }
+async function scanEvidence(base, state) {
+  let directoryEntries;
+  try { directoryEntries = await fs.readdir(base, { withFileTypes: true }); }
+  catch (error) { if (error?.code === 'ENOENT') return { results: [], seen: new Set() }; throw error; }
 
-  const cache = evidenceCacheFor(base);
-  const directories = entries.filter(entry => entry.isDirectory());
+  const directories = directoryEntries.filter(entry => entry.isDirectory());
   const results = new Array(directories.length);
   const seen = new Set();
   let cursor = 0;
@@ -189,7 +329,7 @@ export async function listEvidence({ root } = {}) {
       const file = path.join(base, entry.name, 'agent-summary.json');
       seen.add(file);
       try {
-        const summary = await readEvidenceSummary(file, cache);
+        const summary = await readEvidenceSummary(file, state);
         if (summary) results[index] = { ...summary, id: entry.name };
       } catch {}
     }
@@ -197,12 +337,39 @@ export async function listEvidence({ root } = {}) {
 
   const workerCount = Math.min(LIST_EVIDENCE_CONCURRENCY, directories.length);
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
-  for (const file of cache.keys()) {
-    if (!seen.has(file)) cache.delete(file);
-  }
-  if (!cache.size && evidenceSummaryCache?.entries === cache) evidenceSummaryCache = null;
+  return { results, seen };
+}
 
-  return results
+export async function listEvidence({ root } = {}) {
+  const base = resolveEvidenceRoot(root);
+  const state = evidenceCacheFor(base);
+  await settleEvidenceWatcher(state);
+
+  let scanned = { results: [], seen: new Set() };
+  for (let attempt = 0; attempt < WATCHER_RESCAN_LIMIT; attempt += 1) {
+    const startEpoch = state.epoch;
+    scanned = await scanEvidence(base, state);
+    await settleEvidenceWatcher(state);
+    if (!hasActiveWatcher(state) || state.epoch === startEpoch) break;
+  }
+
+  for (const file of state.entries.keys()) {
+    if (!scanned.seen.has(file)) state.entries.delete(file);
+  }
+  for (const [file, watcher] of state.fileWatchers) {
+    if (scanned.seen.has(file)) continue;
+    state.fileWatchers.delete(file);
+    closeWatcher(watcher);
+  }
+  for (const file of state.unwatchableFiles) {
+    if (!scanned.seen.has(file)) state.unwatchableFiles.delete(file);
+  }
+  if (!state.entries.size && evidenceSummaryCache === state && !hasActiveWatcher(state)) {
+    closeEvidenceSummaryCache(state);
+    evidenceSummaryCache = null;
+  }
+
+  return scanned.results
     .filter(Boolean)
     .sort((a, b) => String(b.endedAt || b.startedAt || '').localeCompare(String(a.endedAt || a.startedAt || '')));
 }
