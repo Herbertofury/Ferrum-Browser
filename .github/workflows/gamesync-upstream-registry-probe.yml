@@ -30,11 +30,11 @@ jobs:
 
           // Exhaustive direct/foundational package watchlist from the active standalone,
           // monorepo root, Extension V2, Desktop, Feature Foundry, Asset Orchestrator,
-          // server and HyperBowl manifests. URL-only packages such as SheetJS are audited
-          // separately because npm dist-tags are not authoritative for them.
+          // shared packages, server and HyperBowl manifests. URL-only packages such as
+          // SheetJS are audited separately because npm dist-tags are not authoritative for them.
           const packages = [
             '@dimforge/rapier2d-compat','@fontsource/ibm-plex-sans','@fontsource/jetbrains-mono','@fontsource/space-grotesk',
-            '@hono/node-server','@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber',
+            '@hono/node-server','@huggingface/transformers','@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber',
             '@sqlite.org/sqlite-wasm','@tauri-apps/cli','@types/better-sqlite3','@types/decompress','@types/node','@types/react',
             '@types/react-dom','@types/three','@types/ws','@vitejs/plugin-react','@xyflow/react','archiver','better-sqlite3',
             'cannon-es','chalk','cheerio','chrome-remote-interface','comlink','commander','decompress','delegate-it','dexie',
