@@ -29,6 +29,9 @@ jobs:
           - name: gamesync-idb-keyval
             repository: Herbertofury/Gamesync
             branch: automation/stack-idb-keyval-6-3
+          - name: gamesync-web-vitals
+            repository: Herbertofury/Gamesync
+            branch: automation/stack-web-vitals-6
           - name: next-vite
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-vite-8-2
