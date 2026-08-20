@@ -36,7 +36,7 @@
     "smoke:dashboard": "node ./scripts/dashboard-smoke.mjs"
   },
   "dependencies": {
-    "playwright": "1.63.0-alpha-2026-08-19"
+    "playwright": "1.63.0-alpha-2026-08-20"
   },
   "devDependencies": {
     "@electron/packager": "20.3.0",
