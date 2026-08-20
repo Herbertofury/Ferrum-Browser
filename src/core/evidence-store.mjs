@@ -6,6 +6,7 @@ import path from 'node:path';
 const MANIFEST_NAME = 'evidence-manifest.json';
 const LIST_EVIDENCE_CONCURRENCY = 32;
 const EVIDENCE_DESCRIPTOR_CONCURRENCY = 32;
+const evidenceSummaryCaches = new Map();
 
 export function resolveEvidenceRoot(root) {
   return path.resolve(root || 'artifacts');
@@ -112,6 +113,35 @@ async function readManifest(dir) {
   catch (error) { if (error?.code === 'ENOENT') return null; throw error; }
 }
 
+function summaryIdentity(stat) {
+  return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
+}
+
+async function readEvidenceSummary(file, cache) {
+  let stat;
+  try { stat = await fs.stat(file, { bigint: true }); }
+  catch (error) {
+    if (error?.code === 'ENOENT') {
+      cache.delete(file);
+      return null;
+    }
+    throw error;
+  }
+  if (!stat.isFile()) {
+    cache.delete(file);
+    return null;
+  }
+
+  const identity = summaryIdentity(stat);
+  const cached = cache.get(file);
+  if (cached?.identity === identity) return cached.summary;
+
+  let summary = null;
+  try { summary = await readJson(file); } catch {}
+  cache.set(file, { identity, summary });
+  return summary;
+}
+
 export async function writeEvidenceManifest(dir) {
   const base = path.resolve(dir);
   const files = await walkDescriptors(base);
@@ -134,8 +164,15 @@ export async function listEvidence({ root } = {}) {
   try { entries = await fs.readdir(base, { withFileTypes: true }); }
   catch (error) { if (error?.code === 'ENOENT') return []; throw error; }
 
+  let cache = evidenceSummaryCaches.get(base);
+  if (!cache) {
+    cache = new Map();
+    evidenceSummaryCaches.set(base, cache);
+  }
+
   const directories = entries.filter(entry => entry.isDirectory());
   const results = new Array(directories.length);
+  const seen = new Set();
   let cursor = 0;
 
   const worker = async () => {
@@ -143,16 +180,22 @@ export async function listEvidence({ root } = {}) {
       const index = cursor++;
       if (index >= directories.length) return;
       const entry = directories[index];
-      const dir = path.join(base, entry.name);
+      const file = path.join(base, entry.name, 'agent-summary.json');
+      seen.add(file);
       try {
-        const summary = await readJson(path.join(dir, 'agent-summary.json'));
-        results[index] = { ...summary, id: entry.name };
+        const summary = await readEvidenceSummary(file, cache);
+        if (summary) results[index] = { ...summary, id: entry.name };
       } catch {}
     }
   };
 
   const workerCount = Math.min(LIST_EVIDENCE_CONCURRENCY, directories.length);
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  for (const file of cache.keys()) {
+    if (!seen.has(file)) cache.delete(file);
+  }
+  if (!cache.size) evidenceSummaryCaches.delete(base);
+
   return results
     .filter(Boolean)
     .sort((a, b) => String(b.endedAt || b.startedAt || '').localeCompare(String(a.endedAt || a.startedAt || '')));
