@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { EvidenceWriter } from '../src/core/evidence.mjs';
-import { evidenceFilePath, listEvidence, readEvidence, readEvidenceText, verifyEvidence } from '../src/core/evidence-store.mjs';
+import { evidenceFilePath, listEvidence, readEvidence, readEvidenceText, verifyEvidence, writeEvidenceManifest } from '../src/core/evidence-store.mjs';
 
 async function fixture() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-store-'));
@@ -79,6 +79,36 @@ test('finalized evidence gets a content-addressed manifest that detects tamperin
     const tampered = await verifyEvidence(writer.id, { root });
     assert.equal(tampered.status, 'failed');
     assert.ok(tampered.issues.some(issue => issue.path === 'logs/output.log' && issue.kind === 'digest-mismatch'));
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('evidence manifest descriptors cover every nested file exactly once in deterministic order', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-descriptors-'));
+  const id = 'parallel-descriptor-fixture';
+  const dir = path.join(root, id);
+  const fileCount = 257;
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    const writes = [];
+    for (let index = 0; index < fileCount; index += 1) {
+      const shard = path.join(dir, 'nested', String(index % 17).padStart(2, '0'));
+      await fs.mkdir(shard, { recursive: true });
+      writes.push(fs.writeFile(path.join(shard, `${String(index).padStart(4, '0')}.txt`), `payload-${index}\n`, 'utf8'));
+    }
+    await Promise.all(writes);
+
+    const manifest = await writeEvidenceManifest(dir);
+    const paths = manifest.files.map(file => file.path);
+    assert.equal(manifest.totalFiles, fileCount);
+    assert.equal(new Set(paths).size, fileCount);
+    assert.deepEqual(paths, [...paths].sort());
+    assert.ok(manifest.files.every(file => /^sha256:[a-f0-9]{64}$/.test(file.digest)));
+    assert.ok(manifest.files.every(file => file.mediaType === 'text/plain'));
+
+    const verified = await verifyEvidence(id, { root });
+    assert.equal(verified.status, 'passed');
+    assert.equal(verified.checkedFiles, fileCount);
+    assert.deepEqual(verified.issues, []);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 

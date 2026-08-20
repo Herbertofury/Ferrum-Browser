@@ -1,0 +1,34 @@
+name: Ferrum evidence manifest benchmark
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/evidence-manifest-benchmark.mjs'
+      - 'src/core/evidence-store.mjs'
+      - 'tests/evidence-store.test.mjs'
+      - '.github/workflows/evidence-manifest-benchmark.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  manifest-benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.19.0
+      - name: Benchmark complete SHA-256 evidence manifest write and verification
+        run: node ./scripts/evidence-manifest-benchmark.mjs
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: ferrum-evidence-manifest-benchmark-${{ runner.os }}
+          path: artifacts/evidence-manifest-benchmark/
+          if-no-files-found: error
