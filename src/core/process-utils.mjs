@@ -38,6 +38,41 @@ export async function waitForExit(child, timeoutMs = 0) {
   });
 }
 
+function stdioClosed(child) {
+  return [child.stdout, child.stderr].every(stream => !stream || stream.readableEnded || stream.closed || stream.destroyed);
+}
+
+export async function waitForClose(child, timeoutMs = 0) {
+  if ((child.exitCode !== null || child.signalCode !== null) && stdioClosed(child)) {
+    return { code: child.exitCode, signal: child.signalCode };
+  }
+  return await new Promise((resolve, reject) => {
+    let timer;
+    const cleanup = () => {
+      clearTimeout(timer);
+      child.off('error', onError);
+      child.off('close', onClose);
+    };
+    const onError = error => {
+      cleanup();
+      reject(error);
+    };
+    const onClose = (code, signal) => {
+      cleanup();
+      resolve({ code, signal });
+    };
+    child.once('error', onError);
+    child.once('close', onClose);
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        cleanup();
+        reject(new Error(`Process stdio did not close within ${timeoutMs}ms`));
+      }, timeoutMs);
+      timer.unref?.();
+    }
+  });
+}
+
 export async function terminate(child, graceMs = 5000) {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
   child.kill('SIGTERM');
