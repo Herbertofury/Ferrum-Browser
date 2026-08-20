@@ -43,6 +43,10 @@ function plantedProperty() {
   });
 }
 
+function semanticCounterexample(value) {
+  return fc.stringify(value).replace(/\s*\/\*replayPath="[^"]*"\*\//g, '');
+}
+
 async function proveShrinkingAndReplay() {
   const first = await fc.check(plantedProperty(), {
     seed: FIXED_SEED,
@@ -52,6 +56,7 @@ async function proveShrinkingAndReplay() {
   assert.equal(first.failed, true, 'fast-check must detect the planted lifecycle defect');
   assert.ok(first.counterexamplePath, 'failing run must expose a replay path');
   const counterexample = fc.stringify(first.counterexample);
+  const semantic = semanticCounterexample(first.counterexample);
 
   const replay = await fc.check(plantedProperty(), {
     seed: first.seed,
@@ -61,7 +66,11 @@ async function proveShrinkingAndReplay() {
     interruptAfterTimeLimit: 5_000
   });
   assert.equal(replay.failed, true, 'seed/path replay must reproduce the planted defect');
-  assert.equal(fc.stringify(replay.counterexample), counterexample, 'replay must target the same minimized counterexample');
+  assert.equal(
+    semanticCounterexample(replay.counterexample),
+    semantic,
+    'seed/path replay must reproduce the same minimized semantic command sequence'
+  );
 
   return {
     seed: first.seed,
@@ -69,7 +78,9 @@ async function proveShrinkingAndReplay() {
     numRuns: first.numRuns,
     numShrinks: first.numShrinks,
     numSkips: first.numSkips,
-    counterexample
+    counterexample,
+    semanticCounterexample: semantic,
+    replayCounterexample: fc.stringify(replay.counterexample)
   };
 }
 
