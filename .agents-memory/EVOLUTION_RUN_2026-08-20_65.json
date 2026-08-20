@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-08-20-65",
+  "checkedAt": "2026-08-20T12:50:00Z",
+  "decision": "MERGED_VERIFIED_IMPROVEMENT",
+  "base": {
+    "canonicalMain": "60960279411c0ac28bc8a28f9cfcf645168f6c90",
+    "verifiedProduct": "4068747e8c3fce19155cfe1087aa7cd534bba910",
+    "verifiedCheckpoint": ".agents-memory/EVOLUTION_RUN_2026-08-20_64.json"
+  },
+  "proposal": {
+    "pullRequest": 80,
+    "branch": "automation/evidence-summary-cache-collision-20260820",
+    "head": "8dbcaebb0bb74df13b773b60dea1850002310b58",
+    "tree": "b5c85e072b1126a71d8970997a09be01ae799ee6",
+    "base": "60960279411c0ac28bc8a28f9cfcf645168f6c90"
+  },
+  "verifiedProduct": {
+    "commit": "56879a6410f41b3142ad97f21d4ffefb9ca1b5d3",
+    "tree": "b5c85e072b1126a71d8970997a09be01ae799ee6",
+    "proposalTreeParity": true,
+    "scopeFiles": [
+      "src/core/evidence-store.mjs",
+      "tests/evidence-history-cache.test.mjs",
+      "scripts/evidence-manifest-benchmark.mjs"
+    ]
+  },
+  "improvement": {
+    "name": "Collision-safe evidence-history cache invalidation",
+    "problem": "A same-size agent-summary.json rewrite could retain the same observable filesystem stat tuple long enough for the process-local evidence-history cache to return stale parsed state.",
+    "implementation": [
+      "Preserve the complete uncapped 32-worker evidence-history scan and process-local parse cache.",
+      "Use a non-persistent recursive evidence-root watcher on Linux and other supported hosts to invalidate changed agent-summary.json entries.",
+      "Use non-recursive per-summary file watchers on Windows after real Node 24.19.0 CI exposed instability in recursive fs.watch during benchmark-tree teardown.",
+      "Advance a watcher epoch and rescan when mutation is observed during a list operation.",
+      "Fall back to exact byte comparison before same-stat cache reuse whenever watching is unavailable or unhealthy.",
+      "Retain structured-clone isolation, malformed/incomplete skip behavior, deletion pruning, chronological results and all evidence files."
+    ],
+    "acceptance": [
+      "Deterministically freeze the old summary stat tuple across a same-size passed-to-failed rewrite and require the repaired cache to return the current bytes while the legacy stat-only control reproduces stale data.",
+      "Maintain at least 35% median and 30% p95 gain versus direct reads on the 2,000-run history fixture on both Linux and Windows.",
+      "Pass the complete Ferrum severe runtime matrix on the exact final proposal head without reducing timeouts, evidence, browsers, targets or tests."
+    ],
+    "benchmark": {
+      "workflowRun": 32369906922,
+      "linux": {
+        "artifactId": 9406718438,
+        "sizeBytes": 969,
+        "sha256": "8234f3684cb424e589e60783a043669c84a56e20a2bb4aca8bb6ee1907fad733",
+        "directReadMedianMs": 150.543,
+        "directReadP95Ms": 179.873,
+        "collisionSafeMedianMs": 62.670,
+        "collisionSafeP95Ms": 71.249,
+        "medianGainPct": 58.37,
+        "p95GainPct": 60.39
+      },
+      "windows": {
+        "artifactId": 9406752822,
+        "sizeBytes": 967,
+        "sha256": "4e4421d7a688ff488a73f32938793ce23dd6144612b4257868453e768b8b1da6",
+        "directReadMedianMs": 93.824,
+        "directReadP95Ms": 105.025,
+        "collisionSafeMedianMs": 42.616,
+        "collisionSafeP95Ms": 46.844,
+        "medianGainPct": 54.58,
+        "p95GainPct": 55.40
+      },
+      "forcedStatCollision": "legacy stat-only cache returned stale passed; repaired cache returned current failed on both platforms"
+    }
+  },
+  "verification": {
+    "workflows": [
+      {"name": "Ferrum CI", "runId": 32369906986, "conclusion": "success"},
+      {"name": "Evidence manifest benchmark", "runId": 32369906922, "conclusion": "success"},
+      {"name": "Perfetto Trace Compatibility", "runId": 32369907019, "conclusion": "success"},
+      {"name": "Stack Playwright lock integrity", "runId": 32369906884, "conclusion": "success"},
+      {"name": "Ferrum service fixture", "runId": 32369906931, "conclusion": "success"},
+      {"name": "Ferrum stateful API benchmark", "runId": 32369906942, "conclusion": "success"},
+      {"name": "Ferrum service network fault benchmark", "runId": 32369906881, "conclusion": "success"}
+    ],
+    "coverage": [
+      "unit tests, syntax, shell checks, MCP surface and independent MCP Inspector, evidence integrity",
+      "Linux Chromium/MV3/workloads/Spaces/Workbench/Electron/source desktop/packaged desktop/provenance",
+      "Windows Chromium/Chrome/Edge/MV3/workloads/Spaces/Workbench/Electron/source desktop/packaged desktop/provenance",
+      "independent Brave and Opera GX, real Selenium Grid WebDriver, Lightpanda and real Android/Appium",
+      "cross-platform evidence-history collision benchmark plus Perfetto, service fixture, stateful API and network-fault companion verification"
+    ],
+    "artifactDigests": [
+      {"name": "ferrum-desktop-Windows.tar.gz", "id": 9406808694, "bytes": 166283564, "sha256": "44b8750f767cff34a2b8da21f9f945ff7e1d6bb0a069d22978084083c6391bb4"},
+      {"name": "ferrum-desktop-Linux.tar.gz", "id": 9406765362, "bytes": 145033314, "sha256": "b9bb3613828276efcb61c55a398765c1c3a6a0e8d9acd24ff858016ff8959ee6"},
+      {"name": "ferrum-evidence-Windows", "id": 9406807254, "bytes": 1921914, "sha256": "f3195584934eb0974151e11b95a95e6096724e4fdb5ce7607360ab6c0ac36ae2"},
+      {"name": "ferrum-evidence-Linux", "id": 9406764410, "bytes": 2253304, "sha256": "e44d668c7f26831c23efe5e9cb2b97c5a33bdf1d9e2a68c571f23c000e9ec408"},
+      {"name": "ferrum-evidence-Appium-Android", "id": 9406815443, "bytes": 127141, "sha256": "35df516ff4c1c725550bd8835bcb7ec1453141d1929e08c4d64d3c4d5a2ba71a"},
+      {"name": "ferrum-evidence-WebDriver-Grid", "id": 9406752126, "bytes": 35704, "sha256": "bbf6fbcb544771fd857a99569ea50aa9a275965f9be4957ff51be298c3c12a32"},
+      {"name": "ferrum-evidence-Lightpanda", "id": 9406724665, "bytes": 13069, "sha256": "7c68a3158bcecd3bd450a8882fba88551fdf809638fa3b07468b9409617da92f"},
+      {"name": "ferrum-evidence-Windows-brave", "id": 9406766537, "bytes": 31888, "sha256": "a29ab5aef14e3096aaa56d76bdce6821a12a7a5b29ac5f341ba8e2894909dc85"},
+      {"name": "ferrum-evidence-Windows-opera-gx", "id": 9406779473, "bytes": 99991, "sha256": "bccb7faf2604893eff63fe8d24d483aaeed3450c3f7cf264bd66347231ab3837"},
+      {"name": "ferrum-provenance-Linux", "id": 9406769446, "bytes": 8162, "sha256": "6f8739ac036786d217f4321ffa3804f3d70f7539f6e07b77c80c9d2c8868ac1f"},
+      {"name": "ferrum-provenance-Windows", "id": 9406816745, "bytes": 8276, "sha256": "fc3019605b1ecbc932a9980ad4c8aeb2ed085ed6a4034a4bc48123bebc387638"}
+    ]
+  },
+  "risk": {
+    "summary": "Filesystem watcher behavior is platform-specific, so exact-byte fallback remains the correctness backstop when watcher coverage is unavailable or unhealthy.",
+    "rollback": "Revert the cache invalidation/watch changes as one coherent unit only if a later exact runtime regression cannot be fixed forward; do not restore stat-only reuse without the deterministic collision regression."
+  }
+}
