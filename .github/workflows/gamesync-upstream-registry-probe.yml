@@ -34,10 +34,10 @@ jobs:
           // packages such as SheetJS are audited separately because npm dist-tags are not authoritative for them.
           const packages = [
             '@chenglou/pretext','@dimforge/rapier2d-compat','@fontsource/ibm-plex-sans','@fontsource/jetbrains-mono','@fontsource/space-grotesk',
-            '@hono/node-server','@huggingface/transformers','@modelcontextprotocol/sdk','@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber',
-            '@sqlite.org/sqlite-wasm','@tauri-apps/cli','@types/better-sqlite3','@types/decompress','@types/node','@types/react',
-            '@types/react-dom','@types/three','@types/ws','@vitejs/plugin-react','@xyflow/react','archiver','babylonjs','better-sqlite3',
-            'cannon-es','chalk','cheerio','chrome-remote-interface','comlink','commander','decompress','delegate-it','dexie',
+            '@hono/node-server','@huggingface/transformers','@modelcontextprotocol/client','@modelcontextprotocol/codemod','@modelcontextprotocol/core','@modelcontextprotocol/sdk','@modelcontextprotocol/server',
+            '@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber','@sqlite.org/sqlite-wasm','@tauri-apps/cli','@types/better-sqlite3',
+            '@types/decompress','@types/node','@types/react','@types/react-dom','@types/three','@types/ws','@vitejs/plugin-react','@xyflow/react','archiver','babylonjs',
+            'better-sqlite3','cannon-es','chalk','cheerio','chrome-remote-interface','comlink','commander','decompress','delegate-it','dexie',
             'docx','dompurify','fastdom','flexsearch','glob','hono','howler','idb','idb-keyval','jszip','libheif-js','linkedom',
             'lucide-react','mammoth','mime-types','morphdom','node-pkware','ora','oxlint','p-limit','pixi.js','playcanvas','playwright',
             'pngjs','puppeteer-core','quick-lru','react','react-dom','sharp','three','tsx','typescript','utif','vite','wasm-pack','web-vitals',
