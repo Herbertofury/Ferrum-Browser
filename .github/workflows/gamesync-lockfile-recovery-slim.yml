@@ -59,6 +59,9 @@ jobs:
           - name: next-node-pkware
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-node-pkware-5-9-2
+          - name: next-mcp-sdk
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-mcp-sdk-1-30
     steps:
       - name: Require private GameSync read token
         shell: bash
