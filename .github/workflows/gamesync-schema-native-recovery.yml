@@ -1,0 +1,136 @@
+name: GameSync native Zod schema recovery
+
+# Dedicated public-runner recovery lane for GameSync-Next's migration away from
+# the archived zod-to-json-schema package. This workflow never mutates GameSync
+# refs. It fails closed until a read-only private GameSync token is configured.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  schema-native-json:
+    runs-on: ubuntu-slim
+    timeout-minutes: 18
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+      CANDIDATE_BRANCH: automation/stack-schema-native-json
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Set FERRUM_GAMESYNC_READ_TOKEN or GH_PAT with read access to Herbertofury/GameSync-Next.'
+            exit 2
+          fi
+
+      - name: Check out exact current schema candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/GameSync-Next
+          ref: ${{ env.CANDIDATE_BRANCH }}
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact Node 26.7.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Capture exact candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_HEAD="$(git rev-parse HEAD)"
+          test "$(node --version)" = "v26.7.0"
+          git fetch origin main
+          test "$(git rev-list --count HEAD..origin/main)" = "0"
+          test "$(git merge-base HEAD origin/main)" = "$(git rev-parse origin/main)"
+          printf 'SOURCE_HEAD=%s\n' "$SOURCE_HEAD" >> "$GITHUB_ENV"
+          printf '%s\n' "$SOURCE_HEAD"
+
+      - name: Regenerate authoritative native-schema lock graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node <<'NODE'
+          const lock = require('./package-lock.json');
+          const workspace = lock.packages?.['packages/schema'];
+          if (!workspace) throw new Error('packages/schema workspace missing from lockfile');
+          if (workspace.dependencies?.zod !== '^4.3.6') throw new Error(`unexpected Zod lock declaration: ${workspace.dependencies?.zod}`);
+          if (workspace.dependencies?.['zod-to-json-schema']) throw new Error('retired zod-to-json-schema remains in workspace lock declaration');
+          if (lock.packages?.['node_modules/zod-to-json-schema']) throw new Error('retired zod-to-json-schema remains installed in lock graph');
+          NODE
+          npm ci --ignore-scripts --no-audit --no-fund
+          git diff --check -- package-lock.json
+
+      - name: Verify exact schema toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const zod = require('./node_modules/zod/package.json');
+          if (zod.version !== '4.3.6') throw new Error(`zod resolved ${zod.version}, expected 4.3.6`);
+          try {
+            require.resolve('zod-to-json-schema');
+            throw new Error('retired zod-to-json-schema is still resolvable');
+          } catch (error) {
+            if (error?.code !== 'MODULE_NOT_FOUND') throw error;
+          }
+          NODE
+
+      - name: Generate and verify native JSON Schema contract
+        run: |
+          npm --workspace packages/schema run schema:gen
+          node scripts/stack/schema-native-json.verify.mjs
+
+      - name: Build affected product consumers
+        run: |
+          npm run build:packages
+          npm --workspace apps/server run build
+          npm --workspace apps/desktop run build
+          npm --workspace apps/feature-foundry run build
+          npm --workspace apps/extension-v2 run build
+
+      - name: Run current parity verification
+        run: |
+          node --test scripts/audit-gamesync-parity.test.mjs
+          node scripts/prepare-gamesync-parity-snapshot.mjs
+          GAMESYNC_JS_APP_PATH="$GITHUB_WORKSPACE/output/parity/gamesync-main-snapshot/app" npm run audit:gamesync-parity
+
+      - name: Recheck exact candidate identity and package integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main...HEAD
+          git fetch origin "$CANDIDATE_BRANCH" --depth=1
+          if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
+            echo '::error::Schema candidate advanced during recovery; refusing stale evidence.'
+            exit 3
+          fi
+          mkdir -p output/schema-native-json
+          cp package-lock.json output/schema-native-json/package-lock.json
+          git diff -- package-lock.json > output/schema-native-json/package-lock.patch
+          sha256sum package-lock.json > output/schema-native-json/package-lock.sha256
+          sha256sum packages/schema/schema.json > output/schema-native-json/schema-json.sha256
+          printf '%s\n' "$SOURCE_HEAD" > output/schema-native-json/source-head.txt
+          node --version > output/schema-native-json/node-version.txt
+          npm --version > output/schema-native-json/npm-version.txt
+
+      - name: Upload authoritative schema migration evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gamesync-next-schema-native-recovery
+          path: output/schema-native-json
+          if-no-files-found: warn
