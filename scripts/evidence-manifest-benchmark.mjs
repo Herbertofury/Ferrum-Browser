@@ -3,9 +3,10 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
+import { fileURLToPath } from 'node:url';
 import { writeEvidenceManifest, verifyEvidence } from '../src/core/evidence-store.mjs';
 
-const repoRoot = path.resolve(new URL('..', import.meta.url).pathname);
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const artifactsRoot = path.join(repoRoot, 'artifacts', 'evidence-manifest-benchmark');
 const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-manifest-bench-'));
 const evidenceId = 'manifest-benchmark';
