@@ -1,0 +1,61 @@
+name: Stack Playwright lock refresh
+
+on:
+  push:
+    branches:
+      - automation/ferrum-stack-playwright-1-63-aug19
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check out proposal branch
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up exact Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.19.0
+          cache: npm
+
+      - name: Verify proposal identity and refresh authoritative lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v24.19.0"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          if(p.dependencies?.playwright !== '1.63.0-alpha-2026-08-19') throw new Error('Unexpected Playwright proposal version');
+          NODE
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          if(lock.packages?.['']?.dependencies?.playwright !== '1.63.0-alpha-2026-08-19') throw new Error('Root lock declaration did not converge');
+          if(lock.packages?.['node_modules/playwright']?.version !== '1.63.0-alpha-2026-08-19') throw new Error('Playwright lock resolution did not converge');
+          if(lock.packages?.['node_modules/playwright-core']?.version !== '1.63.0-alpha-2026-08-19') throw new Error('Playwright core lock resolution did not converge');
+          NODE
+          npm ci --ignore-scripts --no-audit --no-fund
+          git diff --check
+          changed="$(git diff --name-only)"
+          test "$changed" = "package-lock.json" || { echo "Unexpected changed files: $changed"; exit 1; }
+
+      - name: Commit authoritative lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- package-lock.json; then
+            echo "Lockfile already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "stack: regenerate Playwright lockfile"
+          git push origin HEAD:automation/ferrum-stack-playwright-1-63-aug19
