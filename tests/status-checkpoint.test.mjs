@@ -25,10 +25,37 @@ function isSuccess(value) {
   return normalized === 'success' || normalized === 'all success' || normalized === 'passed';
 }
 
+function workflowFromArray(workflows, name) {
+  if (!Array.isArray(workflows)) return null;
+  const wanted = String(name).trim().toLowerCase();
+  return workflows.find((workflow) => String(workflow?.name ?? '').trim().toLowerCase() === wanted) ?? null;
+}
+
 function normalizeVerifiedCheckpoint(entry) {
   const verifiedProduct = entry?.verifiedProduct;
   const proposal = entry?.proposal;
   const verification = entry?.verification;
+
+  const modernCi = workflowFromArray(verification?.workflows, 'Ferrum CI');
+  const modernWorkflowRun = Number(modernCi?.runId ?? modernCi?.workflowRun ?? 0);
+  const modernVerifiedProof =
+    String(entry?.decision ?? '').toUpperCase().includes('VERIFIED') &&
+    verifiedProduct?.commit &&
+    typeof verifiedProduct?.tree === 'string' && verifiedProduct.tree.length > 0 &&
+    verifiedProduct?.proposalTreeParity === true &&
+    typeof proposal?.head === 'string' && proposal.head.length > 0 &&
+    typeof proposal?.tree === 'string' && proposal.tree === verifiedProduct.tree &&
+    isSuccess(modernCi?.conclusion) &&
+    Number.isSafeInteger(modernWorkflowRun) &&
+    modernWorkflowRun > 0;
+  if (modernVerifiedProof) {
+    return {
+      commit: verifiedProduct.commit,
+      workflowRun: modernWorkflowRun,
+      verifiedAt: entry?.checkedAt ?? verifiedProduct?.verifiedAt ?? null,
+    };
+  }
+
   const verificationWorkflowRun = Number(verification?.workflowRun ?? 0);
   const verificationProof =
     verifiedProduct?.commit &&
@@ -398,6 +425,23 @@ test('checkpoint normalization recognizes verified product evolution schemas', (
       },
     }),
     { commit: 'latest-full-gate-product', workflowRun: 55, verifiedAt: null },
+  );
+
+  assert.deepEqual(
+    normalizeVerifiedCheckpoint({
+      decision: 'MERGED_VERIFIED_IMPROVEMENT',
+      checkedAt: '2026-08-19T21:35:00-06:00',
+      proposal: { head: 'run63-proposal', tree: 'run63-tree' },
+      verifiedProduct: { commit: 'run63-product', tree: 'run63-tree', proposalTreeParity: true },
+      improvement: { name: 'descriptive metadata' },
+      verification: {
+        workflows: [
+          { name: 'Ferrum CI', runId: 63, conclusion: 'success' },
+          { name: 'Perfetto Trace Compatibility', runId: 64, conclusion: 'success' },
+        ],
+      },
+    }),
+    { commit: 'run63-product', workflowRun: 63, verifiedAt: '2026-08-19T21:35:00-06:00' },
   );
 });
 
