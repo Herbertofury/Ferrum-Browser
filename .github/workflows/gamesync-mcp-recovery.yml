@@ -1,6 +1,6 @@
-name: GameSync MCP SDK cross-repo recovery
+name: GameSync MCP v2 cross-repo recovery
 
-# Additive full-fidelity recovery lane for the GameSync-Next MCP SDK Stack
+# Additive full-fidelity recovery lane for the GameSync-Next MCP v2 Stack
 # proposal while private-repository Actions execution is unavailable. This
 # never mutates GameSync refs and fails closed without explicit read access.
 on:
@@ -32,7 +32,7 @@ jobs:
             exit 2
           fi
 
-      - name: Check out current MCP SDK candidate
+      - name: Check out current MCP v2 candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Herbertofury/GameSync-Next
@@ -57,7 +57,7 @@ jobs:
           git fetch origin main
           test "$(git merge-base HEAD origin/main)" = "$(git rev-parse origin/main)"
 
-      - name: Regenerate authoritative MCP SDK lock graph
+      - name: Regenerate authoritative MCP v2 lock graph
         shell: bash
         run: |
           set -euo pipefail
@@ -66,17 +66,38 @@ jobs:
           import fs from 'node:fs';
           const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
           const workspace = lock.packages?.['packages/mcp-local'];
-          const sdk = lock.packages?.['node_modules/@modelcontextprotocol/sdk'];
-          if (workspace?.dependencies?.['@modelcontextprotocol/sdk'] !== '^1.30.0') throw new Error('MCP workspace lock declaration is not ^1.30.0');
-          if (sdk?.version !== '1.30.0') throw new Error(`Expected MCP SDK lock version 1.30.0, got ${sdk?.version}`);
-          if (!sdk?.resolved?.endsWith('/@modelcontextprotocol/sdk/-/sdk-1.30.0.tgz') || !sdk?.integrity) throw new Error('MCP SDK lock entry lacks immutable registry identity');
+          const client = lock.packages?.['node_modules/@modelcontextprotocol/client'];
+          const server = lock.packages?.['node_modules/@modelcontextprotocol/server'];
+          if (workspace?.dependencies?.['@modelcontextprotocol/client'] !== '^2.0.0') throw new Error('MCP workspace client lock declaration is not ^2.0.0');
+          if (workspace?.dependencies?.['@modelcontextprotocol/server'] !== '^2.0.0') throw new Error('MCP workspace server lock declaration is not ^2.0.0');
+          if (workspace?.dependencies?.['@modelcontextprotocol/sdk']) throw new Error('Legacy monolithic MCP SDK remains in workspace lock declaration');
+          for (const [name, row] of [['client', client], ['server', server]]) {
+            if (row?.version !== '2.0.0') throw new Error(`Expected MCP ${name} lock version 2.0.0, got ${row?.version}`);
+            if (!row?.resolved?.endsWith(`/${name}-2.0.0.tgz`) || !row?.integrity) throw new Error(`MCP ${name} lock entry lacks immutable registry identity`);
+          }
           NODE
+          if grep -R --line-number --fixed-strings '@modelcontextprotocol/sdk' packages/mcp-local scripts/stack/mcp-local-runtime-smoke.mjs; then
+            echo '::error::Legacy monolithic MCP SDK import remains in migrated local MCP surface.'
+            exit 4
+          fi
           git diff --check -- package-lock.json
 
       - name: Frozen install regenerated graph
         run: npm ci
 
-      - name: Exercise real MCP stdio runtime
+      - name: Verify installed MCP v2 identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          for (const name of ['client', 'server']) {
+            const pkg = JSON.parse(fs.readFileSync(`node_modules/@modelcontextprotocol/${name}/package.json`, 'utf8'));
+            if (pkg.version !== '2.0.0') throw new Error(`Expected installed MCP ${name} 2.0.0, got ${pkg.version}`);
+          }
+          NODE
+
+      - name: Exercise real MCP v2 stdio runtime
         run: |
           node --check packages/mcp-local/server.mjs
           node --check scripts/stack/mcp-local-runtime-smoke.mjs
@@ -101,7 +122,7 @@ jobs:
           git diff --check origin/main...HEAD
           git fetch origin "$CANDIDATE_BRANCH" --depth=1
           if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
-            echo '::error::MCP SDK candidate advanced during recovery; refusing stale evidence.'
+            echo '::error::MCP v2 candidate advanced during recovery; refusing stale evidence.'
             exit 3
           fi
           mkdir -p output/mcp-sdk
@@ -111,11 +132,17 @@ jobs:
           printf '%s\n' "$SOURCE_HEAD" > output/mcp-sdk/source-head.txt
           node --version > output/mcp-sdk/node-version.txt
           npm --version > output/mcp-sdk/npm-version.txt
+          node --input-type=module <<'NODE' > output/mcp-sdk/mcp-package-versions.json
+          import fs from 'node:fs';
+          const out = {};
+          for (const name of ['client', 'server']) out[name] = JSON.parse(fs.readFileSync(`node_modules/@modelcontextprotocol/${name}/package.json`, 'utf8')).version;
+          console.log(JSON.stringify(out, null, 2));
+          NODE
 
-      - name: Upload MCP SDK recovery evidence
+      - name: Upload MCP v2 recovery evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: gamesync-next-mcp-sdk-recovery
+          name: gamesync-next-mcp-v2-recovery
           path: output/mcp-sdk
           if-no-files-found: warn
