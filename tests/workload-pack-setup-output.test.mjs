@@ -18,7 +18,8 @@ test('workload pack setup retains output written after the setup parent exits bu
     const grandchildScript = "setTimeout(() => { process.stdout.write('setup late ok\\n'); }, 300);";
     const parentScript = [
       "const { spawn } = require('node:child_process');",
-      `spawn(process.execPath, ['-e', ${JSON.stringify(grandchildScript)}], { stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true });`,
+      `const grandchild = spawn(process.execPath, ['-e', ${JSON.stringify(grandchildScript)}], { detached: true, stdio: ['ignore', 'inherit', 'inherit'], windowsHide: true });`,
+      "grandchild.unref();",
       "console.log('setup parent exiting');"
     ].join('\n');
 
