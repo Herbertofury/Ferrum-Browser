@@ -10,6 +10,49 @@ function resolvePath(baseDir, value) {
   return path.isAbsolute(value) ? value : path.resolve(baseDir, value);
 }
 
+export function summarizePackRuns(runs = []) {
+  const targetTypes = [];
+  const targetTypeCounts = {};
+  let previousTargetType = null;
+  let targetTypeTransitions = 0;
+  let totalSteps = 0;
+  let totalSpecDurationMs = 0;
+  let evidenceDirsRetained = 0;
+  let passedWithEvidence = 0;
+  let failedWithEvidence = 0;
+
+  for (const item of runs) {
+    const targetType = item.targetType || null;
+    if (targetType) {
+      if (!targetTypes.includes(targetType)) targetTypes.push(targetType);
+      targetTypeCounts[targetType] = (targetTypeCounts[targetType] || 0) + 1;
+      if (previousTargetType && previousTargetType !== targetType) targetTypeTransitions++;
+      previousTargetType = targetType;
+    }
+    const steps = Number(item.steps || 0);
+    if (Number.isFinite(steps)) totalSteps += steps;
+    const durationMs = Number(item.durationMs || 0);
+    if (Number.isFinite(durationMs)) totalSpecDurationMs += durationMs;
+    if (item.evidenceDir) evidenceDirsRetained++;
+    if (item.status === 'passed' && item.evidenceId && item.evidenceDir) passedWithEvidence++;
+    if (item.status === 'failed' && item.evidenceDir) failedWithEvidence++;
+  }
+
+  return {
+    specCount: runs.length,
+    totalSteps,
+    targetTypes,
+    targetTypeCounts,
+    targetTypeTransitions,
+    totalSpecDurationMs,
+    evidence: {
+      evidenceDirsRetained,
+      passedWithEvidence,
+      failedWithEvidence
+    }
+  };
+}
+
 export async function loadWorkloadPack(packPath, { variables = {} } = {}) {
   const abs = path.resolve(packPath);
   const raw = JSON.parse(await fs.readFile(abs, 'utf8'));
@@ -81,6 +124,9 @@ export async function runWorkloadPack(packPath, options = {}) {
       const specPath = pack.specs[index];
       evidence.record('pack-spec-start', { index, specPath });
       const spec = await loadSpec(specPath, { variables });
+      const targetType = spec.target?.type || null;
+      const steps = spec.steps?.length || 0;
+      const started = performance.now();
       try {
         const result = await runSpec(spec, {
           ...options,
@@ -88,11 +134,38 @@ export async function runWorkloadPack(packPath, options = {}) {
           artifactsRoot,
           spaceMode: options.space ? (options.spaceMode || 'clone') : options.spaceMode
         });
-        const item = { index, specPath, status: 'passed', evidenceId: result.id, evidenceDir: result.evidenceDir, result };
+        const item = {
+          index,
+          specPath,
+          status: 'passed',
+          targetType,
+          steps,
+          durationMs: result.durationMs ?? (performance.now() - started),
+          evidenceId: result.id,
+          evidenceDir: result.evidenceDir,
+          result
+        };
         runs.push(item);
-        evidence.record('pack-spec-pass', { index, specPath, evidenceId: result.id, evidenceDir: result.evidenceDir });
+        evidence.record('pack-spec-pass', {
+          index,
+          specPath,
+          targetType,
+          steps,
+          durationMs: item.durationMs,
+          evidenceId: result.id,
+          evidenceDir: result.evidenceDir
+        });
       } catch (error) {
-        const item = { index, specPath, status: 'failed', evidenceDir: error.evidenceDir || null, error: error.message };
+        const item = {
+          index,
+          specPath,
+          status: 'failed',
+          targetType,
+          steps,
+          durationMs: performance.now() - started,
+          evidenceDir: error.evidenceDir || null,
+          error: error.message
+        };
         runs.push(item);
         evidence.record('pack-spec-fail', item);
         throw error;
@@ -106,7 +179,8 @@ export async function runWorkloadPack(packPath, options = {}) {
         setup,
         specs: runs.map(({ result, ...item }) => item),
         passed: runs.filter(item => item.status === 'passed').length,
-        failed: 0
+        failed: 0,
+        metrics: summarizePackRuns(runs)
       }
     });
   } catch (error) {
@@ -120,7 +194,8 @@ export async function runWorkloadPack(packPath, options = {}) {
         setup,
         specs: runs.map(({ result, ...item }) => item),
         passed: runs.filter(item => item.status === 'passed').length,
-        failed: runs.filter(item => item.status === 'failed').length
+        failed: runs.filter(item => item.status === 'failed').length,
+        metrics: summarizePackRuns(runs)
       }
     });
     error.evidenceDir = evidence.dir;

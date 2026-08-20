@@ -84,11 +84,13 @@ export function compactPackResult(result) {
     id: result.id,
     name: result.name,
     status: result.status,
+    durationMs: result.durationMs ?? null,
     evidenceDir: result.evidenceDir,
     repository: result.result?.repository || result.metadata?.repository || null,
     pack: result.result?.pack || null,
     passed: result.result?.passed ?? null,
     failed: result.result?.failed ?? null,
+    metrics: result.result?.metrics || null,
     specs: result.result?.specs || [],
     failure: result.failure || null
   };
