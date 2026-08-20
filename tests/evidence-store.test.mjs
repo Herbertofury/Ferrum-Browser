@@ -57,6 +57,29 @@ test('evidence history bounded parallel scan returns every finalized run and ski
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
+test('evidence history cache invalidates changed summaries and prunes deleted runs', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-cache-'));
+  const id = 'run-cache';
+  const dir = path.join(root, id);
+  const summaryPath = path.join(dir, 'agent-summary.json');
+  try {
+    await fs.mkdir(dir);
+    await fs.writeFile(summaryPath, JSON.stringify({ id, status: 'passed', endedAt: '2026-08-19T01:00:00.000Z' }));
+
+    const first = await listEvidence({ root });
+    const second = await listEvidence({ root });
+    assert.equal(first[0].status, 'passed');
+    assert.deepEqual(second, first);
+
+    await fs.writeFile(summaryPath, JSON.stringify({ id, status: 'failed', endedAt: '2026-08-19T01:00:00.000Z' }));
+    const changed = await listEvidence({ root });
+    assert.equal(changed[0].status, 'failed');
+
+    await fs.rm(dir, { recursive: true, force: true });
+    assert.deepEqual(await listEvidence({ root }), []);
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});
+
 test('finalized evidence gets a content-addressed manifest that detects tampering', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-evidence-integrity-'));
   try {
