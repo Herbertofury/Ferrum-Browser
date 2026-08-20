@@ -25,6 +25,34 @@ function firstDefined(...values) {
   return values.find((value) => value !== undefined && value !== null && value !== '');
 }
 
+function workflowProofKey(name, index) {
+  const normalized = String(name ?? '').trim().toLowerCase();
+  if (normalized === 'ferrum ci' || normalized.includes('ferrum ci')) return 'ci';
+  if (normalized.includes('evidence') && normalized.includes('benchmark')) return 'evidenceBenchmark';
+  if (normalized.includes('perfetto')) return 'perfetto';
+  if (normalized.includes('stateful') && normalized.includes('api')) return 'statefulApi';
+  if (normalized.includes('network') && normalized.includes('fault')) return 'networkFault';
+  if (normalized.includes('service') && normalized.includes('fixture')) return 'serviceFixture';
+  if (normalized.includes('native') && normalized.includes('windows')) return 'nativeWindows';
+  if (normalized.includes('tauri')) return 'tauri';
+  return `workflow${index}`;
+}
+
+function normalizeWorkflowProofs(rawWorkflows) {
+  if (!Array.isArray(rawWorkflows)) return rawWorkflows && typeof rawWorkflows === 'object' ? rawWorkflows : {};
+  const normalized = {};
+  for (const [index, workflow] of rawWorkflows.entries()) {
+    if (!workflow || typeof workflow !== 'object') continue;
+    const runId = Number(firstDefined(workflow.runId, workflow.workflowRun, workflow.id));
+    if (!Number.isFinite(runId) || runId <= 0) continue;
+    const key = workflowProofKey(workflow.name, index);
+    normalized[key] = runId;
+    const conclusion = firstDefined(workflow.conclusion, workflow.workflowConclusion, workflow.result);
+    if (conclusion !== undefined) normalized[`${key}Conclusion`] = conclusion;
+  }
+  return normalized;
+}
+
 function latestIsoTimestamp(...values) {
   const candidates = values
     .filter(Boolean)
@@ -48,9 +76,16 @@ function normalizeCandidate(record, filename) {
 
     const proof = entry.proof ?? record.proof ?? {};
     const verification = entry.verification ?? record.verification ?? {};
-    const workflows = proof.workflows ?? verification.workflows ?? {};
+    const workflows = normalizeWorkflowProofs(proof.workflows ?? verification.workflows ?? {});
     const product = firstDefined(entry.product, entry.commit, entry.codeCommit, entry.verifiedCodeCommit);
-    const proposal = firstDefined(entry.proposal, entry.proposalHead, entry.verifiedProposalHead, verification.proposalHead);
+    const proposal = firstDefined(
+      entry.proposal,
+      entry.proposalHead,
+      entry.verifiedProposalHead,
+      verification.proposalHead,
+      record.proposal?.head,
+      record.proposal?.proposalHead,
+    );
     const tree = firstDefined(entry.mergedTree, entry.tree, entry.verifiedTree, verification.tree);
     const workflowRun = Number(firstDefined(
       workflows.ci,
@@ -61,16 +96,24 @@ function normalizeCandidate(record, filename) {
       record.verifiedWorkflowRun,
     ));
     const conclusion = firstDefined(
+      workflows.ciConclusion,
       proof.conclusion,
       verification.workflowConclusion,
       verification.ferrumCiConclusion,
       entry.workflowConclusion,
       entry.conclusion,
     );
-    const treeParity = firstDefined(entry.treeParity, verification.treeParity, tree ? true : undefined);
+    const treeParity = firstDefined(
+      entry.treeParity,
+      entry.proposalTreeParity,
+      entry.productTreeParity,
+      verification.treeParity,
+      record.proposal?.tree && tree ? record.proposal.tree === tree : undefined,
+      tree ? true : undefined,
+    );
 
     if (!product || !proposal || !tree || !Number.isFinite(workflowRun)) continue;
-    if (!stateLooksVerified(record.state ?? entry.state ?? 'VERIFIED')) continue;
+    if (!stateLooksVerified(record.state ?? record.decision ?? entry.state ?? 'VERIFIED')) continue;
     if (!successConclusion(conclusion)) continue;
     if (treeParity === false) continue;
 
@@ -211,7 +254,7 @@ async function verifiedCompanionEvidence(candidate, repository, apiBase) {
   const companions = {};
   for (const [name, rawRunId] of Object.entries(candidate.proofWorkflows ?? {})) {
     const runId = Number(rawRunId);
-    if (name === 'ci' || !Number.isFinite(runId)) continue;
+    if (name === 'ci' || name.endsWith('Conclusion') || !Number.isFinite(runId)) continue;
     const run = await githubJson(`${apiBase}/repos/${repository}/actions/runs/${runId}`);
     if (run.status !== 'completed' || run.conclusion !== 'success') {
       throw new Error(`Ferrum companion workflow ${name} (${runId}) is not completed success`);
