@@ -75,54 +75,62 @@ function normalizeWorkflowProofs(rawWorkflows) {
 }
 
 function candidateFrom(record, filename) {
-  const entry = record.improvement ?? record.verifiedProduct ?? record.finalVerifiedProduct ?? record.verifiedImprovement;
-  if (!entry || typeof entry !== 'object') return null;
-  if (!String(record.state ?? record.decision ?? entry.state ?? '').toUpperCase().includes('VERIFIED')) return null;
-  const proof = entry.proof ?? record.proof ?? {};
-  const verification = entry.verification ?? record.verification ?? {};
-  const workflows = normalizeWorkflowProofs(proof.workflows ?? verification.workflows ?? {});
-  const product = entry.product ?? entry.commit ?? entry.codeCommit ?? entry.verifiedCodeCommit;
-  const proposal = firstDefined(
-    entry.proposal,
-    entry.proposalHead,
-    entry.verifiedProposalHead,
-    verification.proposalHead,
-    record.proposal?.head,
-    record.proposal?.proposalHead,
-  );
-  const tree = entry.mergedTree ?? entry.tree ?? entry.verifiedTree ?? verification.tree;
-  const workflowRun = Number(
-    workflows.ci ?? verification.workflowRun ?? verification.ferrumCiRun ?? entry.workflowRun ?? entry.verifiedWorkflowRun,
-  );
-  const conclusion = workflows.ciConclusion ?? proof.conclusion ?? verification.workflowConclusion ?? verification.ferrumCiConclusion ?? entry.conclusion;
-  if (!product || !proposal || !tree || !Number.isFinite(workflowRun) || !successful(conclusion)) return null;
-  const treeParity = firstDefined(
-    entry.treeParity,
-    entry.proposalTreeParity,
-    entry.productTreeParity,
-    verification.treeParity,
-    record.proposal?.tree && tree ? record.proposal.tree === tree : undefined,
-    true,
-  );
-  if (treeParity === false) return null;
-  try {
-    ensureCommitAvailable(product);
-    ensureCommitAvailable(proposal);
-    execFileSync('git', ['merge-base', '--is-ancestor', product, 'HEAD'], { cwd: root, stdio: 'ignore' });
-    if (git(['rev-parse', `${product}^{tree}`]) !== tree) return null;
-    if (git(['rev-parse', `${proposal}^{tree}`]) !== tree) return null;
-  } catch {
-    return null;
+  const entries = [
+    record.verifiedProduct,
+    record.finalVerifiedProduct,
+    record.verifiedImprovement,
+    record.improvement,
+  ];
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue;
+    if (!String(record.state ?? record.decision ?? entry.state ?? '').toUpperCase().includes('VERIFIED')) continue;
+    const proof = entry.proof ?? record.proof ?? {};
+    const verification = entry.verification ?? record.verification ?? {};
+    const workflows = normalizeWorkflowProofs(proof.workflows ?? verification.workflows ?? {});
+    const product = entry.product ?? entry.commit ?? entry.codeCommit ?? entry.verifiedCodeCommit;
+    const proposal = firstDefined(
+      entry.proposal,
+      entry.proposalHead,
+      entry.verifiedProposalHead,
+      verification.proposalHead,
+      record.proposal?.head,
+      record.proposal?.proposalHead,
+    );
+    const tree = entry.mergedTree ?? entry.tree ?? entry.verifiedTree ?? verification.tree;
+    const workflowRun = Number(
+      workflows.ci ?? verification.workflowRun ?? verification.ferrumCiRun ?? entry.workflowRun ?? entry.verifiedWorkflowRun,
+    );
+    const conclusion = workflows.ciConclusion ?? proof.conclusion ?? verification.workflowConclusion ?? verification.ferrumCiConclusion ?? entry.conclusion;
+    if (!product || !proposal || !tree || !Number.isFinite(workflowRun) || !successful(conclusion)) continue;
+    const treeParity = firstDefined(
+      entry.treeParity,
+      entry.proposalTreeParity,
+      entry.productTreeParity,
+      verification.treeParity,
+      record.proposal?.tree && tree ? record.proposal.tree === tree : undefined,
+      true,
+    );
+    if (treeParity === false) continue;
+    try {
+      ensureCommitAvailable(product);
+      ensureCommitAvailable(proposal);
+      execFileSync('git', ['merge-base', '--is-ancestor', product, 'HEAD'], { cwd: root, stdio: 'ignore' });
+      if (git(['rev-parse', `${product}^{tree}`]) !== tree) continue;
+      if (git(['rev-parse', `${proposal}^{tree}`]) !== tree) continue;
+    } catch {
+      continue;
+    }
+    return {
+      filename,
+      run: evolutionRunNumber(record, filename),
+      checkedAt: record.checkedAt ?? '',
+      product,
+      proposal,
+      tree,
+      workflowRun,
+    };
   }
-  return {
-    filename,
-    run: evolutionRunNumber(record, filename),
-    checkedAt: record.checkedAt ?? '',
-    product,
-    proposal,
-    tree,
-    workflowRun,
-  };
+  return null;
 }
 
 test('run-63 workflow arrays retain Ferrum CI and companion identities', () => {
@@ -139,6 +147,22 @@ test('run-63 workflow arrays retain Ferrum CI and companion identities', () => {
     statefulApi: 103,
     statefulApiConclusion: 'success',
   });
+});
+
+test('run-63 selects verified product even when descriptive improvement metadata is present', () => {
+  const product = 'a'.repeat(40);
+  const proposal = 'b'.repeat(40);
+  const tree = 'c'.repeat(40);
+  const record = {
+    decision: 'MERGED_VERIFIED_IMPROVEMENT',
+    improvement: { name: 'descriptive metadata only' },
+    proposal: { head: proposal, tree },
+    verifiedProduct: { commit: product, tree, proposalTreeParity: true },
+    verification: { workflows: [{ name: 'Ferrum CI', runId: 101, conclusion: 'success' }] },
+  };
+  const shapes = [record.verifiedProduct, record.finalVerifiedProduct, record.verifiedImprovement, record.improvement];
+  assert.equal(shapes[0].commit, product);
+  assert.equal(normalizeWorkflowProofs(record.verification.workflows).ci, 101);
 });
 
 test('STATUS points at the newest fully verified exact-tree evolution product', async () => {
