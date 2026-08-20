@@ -30,16 +30,16 @@ jobs:
 
           // Exhaustive direct/foundational package watchlist from the active standalone,
           // monorepo root, Extension V2, Desktop, Feature Foundry, Asset Orchestrator,
-          // shared/UI packages, server and HyperBowl manifests. URL-only packages such as
-          // SheetJS are audited separately because npm dist-tags are not authoritative for them.
+          // shared/UI/rendering/MCP packages, server and HyperBowl manifests. URL-only
+          // packages such as SheetJS are audited separately because npm dist-tags are not authoritative for them.
           const packages = [
             '@chenglou/pretext','@dimforge/rapier2d-compat','@fontsource/ibm-plex-sans','@fontsource/jetbrains-mono','@fontsource/space-grotesk',
-            '@hono/node-server','@huggingface/transformers','@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber',
+            '@hono/node-server','@huggingface/transformers','@modelcontextprotocol/sdk','@playwright/browser-chromium','@playwright/test','@react-three/drei','@react-three/fiber',
             '@sqlite.org/sqlite-wasm','@tauri-apps/cli','@types/better-sqlite3','@types/decompress','@types/node','@types/react',
-            '@types/react-dom','@types/three','@types/ws','@vitejs/plugin-react','@xyflow/react','archiver','better-sqlite3',
+            '@types/react-dom','@types/three','@types/ws','@vitejs/plugin-react','@xyflow/react','archiver','babylonjs','better-sqlite3',
             'cannon-es','chalk','cheerio','chrome-remote-interface','comlink','commander','decompress','delegate-it','dexie',
             'docx','dompurify','fastdom','flexsearch','glob','hono','howler','idb','idb-keyval','jszip','libheif-js','linkedom',
-            'lucide-react','mammoth','mime-types','morphdom','node-pkware','ora','oxlint','p-limit','playcanvas','playwright',
+            'lucide-react','mammoth','mime-types','morphdom','node-pkware','ora','oxlint','p-limit','pixi.js','playcanvas','playwright',
             'pngjs','puppeteer-core','quick-lru','react','react-dom','sharp','three','tsx','typescript','utif','vite','web-vitals',
             'wink-eng-lite-web-model','wink-nlp','ws','wxt'
           ];
