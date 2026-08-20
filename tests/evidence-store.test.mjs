@@ -62,6 +62,7 @@ test('evidence history cache invalidates changed summaries, isolates callers, an
   const id = 'run-cache';
   const dir = path.join(root, id);
   const summaryPath = path.join(dir, 'agent-summary.json');
+  const originalStat = fs.stat;
   try {
     await fs.mkdir(dir);
     await fs.writeFile(summaryPath, JSON.stringify({
@@ -78,18 +79,31 @@ test('evidence history cache invalidates changed summaries, isolates callers, an
     const second = await listEvidence({ root });
     assert.equal(second[0].metadata.nested.value, 'original');
 
-    await fs.writeFile(summaryPath, JSON.stringify({
+    const frozenStat = await originalStat(summaryPath, { bigint: true });
+    const originalBytes = await fs.readFile(summaryPath);
+    const changedBytes = Buffer.from(JSON.stringify({
       id,
       status: 'failed',
       endedAt: '2026-08-19T01:00:00.000Z',
       metadata: { nested: { value: 'original' } }
     }));
+    assert.equal(changedBytes.length, originalBytes.length, 'regression requires a same-size rewrite');
+    await fs.writeFile(summaryPath, changedBytes);
+
+    fs.stat = async (target, options) => {
+      if (path.resolve(String(target)) === path.resolve(summaryPath)) return frozenStat;
+      return originalStat(target, options);
+    };
     const changed = await listEvidence({ root });
-    assert.equal(changed[0].status, 'failed');
+    assert.equal(changed[0].status, 'failed', 'changed bytes must invalidate cache even when stat identity is unchanged');
+    fs.stat = originalStat;
 
     await fs.rm(dir, { recursive: true, force: true });
     assert.deepEqual(await listEvidence({ root }), []);
-  } finally { await fs.rm(root, { recursive: true, force: true }); }
+  } finally {
+    fs.stat = originalStat;
+    await fs.rm(root, { recursive: true, force: true });
+  }
 });
 
 test('finalized evidence gets a content-addressed manifest that detects tampering', async () => {
@@ -153,7 +167,7 @@ test('legacy evidence without a manifest reports unverifiable instead of fake su
     const result = await verifyEvidence(id, { root });
     assert.equal(result.status, 'unverifiable');
     assert.equal(result.manifestPresent, false);
-    assert.deepEqual(result.issues, [{ kind: 'manifest-missing', path: 'evidence-manifest.json' }]);
+    assert.deepEqual(result.issues, [{ kind: 'manifest-missing', path: MANIFEST_NAME }]);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
