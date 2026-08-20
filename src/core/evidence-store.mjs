@@ -5,6 +5,7 @@ import path from 'node:path';
 
 const MANIFEST_NAME = 'evidence-manifest.json';
 const LIST_EVIDENCE_CONCURRENCY = 32;
+const EVIDENCE_DESCRIPTOR_CONCURRENCY = 32;
 
 export function resolveEvidenceRoot(root) {
   return path.resolve(root || 'artifacts');
@@ -75,18 +76,35 @@ async function walkFiles(base, dir = base, out = []) {
   return out;
 }
 
-async function walkDescriptors(base, dir = base, out = []) {
+async function collectDescriptorFiles(base, dir = base, out = []) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const file = path.join(dir, entry.name);
-    if (entry.isDirectory()) await walkDescriptors(base, file, out);
+    if (entry.isDirectory()) await collectDescriptorFiles(base, file, out);
     else if (entry.isFile()) {
       const relativePath = path.relative(base, file).replaceAll('\\', '/');
-      if (relativePath === MANIFEST_NAME) continue;
-      out.push(await fileDescriptor(base, file));
+      if (relativePath !== MANIFEST_NAME) out.push(file);
     }
   }
   return out;
+}
+
+async function walkDescriptors(base) {
+  const files = await collectDescriptorFiles(base);
+  const descriptors = new Array(files.length);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (true) {
+      const index = cursor++;
+      if (index >= files.length) return;
+      descriptors[index] = await fileDescriptor(base, files[index]);
+    }
+  };
+
+  const workerCount = Math.min(EVIDENCE_DESCRIPTOR_CONCURRENCY, files.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return descriptors;
 }
 
 async function readManifest(dir) {
