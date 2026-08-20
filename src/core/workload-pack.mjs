@@ -3,7 +3,7 @@ import path from 'node:path';
 import { EvidenceWriter } from './evidence.mjs';
 import { expandVariables, loadSpec } from './spec.mjs';
 import { runSpec } from './runner.mjs';
-import { spawnLogged, terminate, waitForExit } from './process-utils.mjs';
+import { spawnLogged, terminate, waitForClose } from './process-utils.mjs';
 
 function resolvePath(baseDir, value) {
   if (!value) return value;
@@ -88,7 +88,7 @@ async function runSetupStep(step, evidence, variables, index) {
     evidence.record('pack-setup-log', { index, ...line });
   });
   try {
-    const exit = await waitForExit(child, Number(step.timeoutMs || 300000));
+    const exit = await waitForClose(child, Number(step.timeoutMs || 300000));
     await evidence.writeText(`setup/${index}.log`, lines.map(line => `[${line.source}] ${line.text}`).join('\n') + '\n');
     if (exit.code !== 0) throw new Error(`pack setup[${index}] exited with code ${exit.code}${exit.signal ? ` signal ${exit.signal}` : ''}`);
     evidence.record('pack-setup-pass', { index, exit, lines: lines.length });
