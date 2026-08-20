@@ -167,7 +167,7 @@ test('legacy evidence without a manifest reports unverifiable instead of fake su
     const result = await verifyEvidence(id, { root });
     assert.equal(result.status, 'unverifiable');
     assert.equal(result.manifestPresent, false);
-    assert.deepEqual(result.issues, [{ kind: 'manifest-missing', path: MANIFEST_NAME }]);
+    assert.deepEqual(result.issues, [{ kind: 'manifest-missing', path: 'evidence-manifest.json' }]);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
