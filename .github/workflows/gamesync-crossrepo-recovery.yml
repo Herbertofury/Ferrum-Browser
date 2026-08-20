@@ -51,6 +51,9 @@ jobs:
           - name: next-server-tooling
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-server-tooling-2026-08
+          - name: next-rapier2d
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-rapier2d-0-20
     steps:
       - name: Require private GameSync read token
         shell: bash
