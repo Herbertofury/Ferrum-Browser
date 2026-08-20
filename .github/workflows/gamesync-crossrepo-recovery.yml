@@ -48,6 +48,9 @@ jobs:
           - name: next-extension-runtime-libs
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-extension-runtime-libs-2026-08
+          - name: next-server-tooling
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-server-tooling-2026-08
     steps:
       - name: Require private GameSync read token
         shell: bash
