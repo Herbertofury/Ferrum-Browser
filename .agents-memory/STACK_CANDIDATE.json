@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "projectId": "ferrum-browser",
+  "checkpointType": "stack-candidate",
+  "state": "verification-in-progress",
+  "baseVerifiedToolchain": {
+    "playwright": "1.63.0-alpha-2026-08-20",
+    "electron": "43.4.0",
+    "electronPackager": "20.3.0"
+  },
+  "proposedToolchain": {
+    "playwright": "1.63.0-alpha-2026-08-21",
+    "electron": "43.4.0",
+    "electronPackager": "20.3.0"
+  },
+  "authoritativeLock": {
+    "sourceWorkflowRun": 32461500902,
+    "artifactId": 9439100575,
+    "sha256": "aa125453771cdf37aa70a42116bd49e0c843b330fc829bfd60c628797b06ae9f"
+  },
+  "registryFreshnessRun": 32460964357
+}
