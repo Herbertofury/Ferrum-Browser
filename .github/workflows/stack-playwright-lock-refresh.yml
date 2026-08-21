@@ -3,7 +3,7 @@ name: Stack Playwright lock integrity
 on:
   push:
     branches:
-      - automation/ferrum-stack-playwright-1-63-aug19
+      - automation/stack-playwright-1-63-aug21
   pull_request:
     branches:
       - main
@@ -35,14 +35,14 @@ jobs:
           test "$(node --version)" = "v24.19.0"
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const expected='1.63.0-alpha-2026-08-20';
+          const expected='1.63.0-alpha-2026-08-21';
           const p=JSON.parse(fs.readFileSync('package.json','utf8'));
           if(p.dependencies?.playwright !== expected) throw new Error('Unexpected Playwright proposal version');
           NODE
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
-          const expected='1.63.0-alpha-2026-08-20';
+          const expected='1.63.0-alpha-2026-08-21';
           const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
           if(lock.packages?.['']?.dependencies?.playwright !== expected) throw new Error('Root lock declaration differs from proposal');
           if(lock.packages?.['node_modules/playwright']?.version !== expected) throw new Error('Playwright lock resolution differs from proposal');
@@ -61,6 +61,6 @@ jobs:
       - name: Upload authoritative lock evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: ferrum-playwright-aug20-lock
+          name: ferrum-playwright-aug21-lock
           path: output/stack-playwright-lock
           if-no-files-found: error
