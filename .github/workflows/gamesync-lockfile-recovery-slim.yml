@@ -26,6 +26,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: gamesync-vite
+            repository: Herbertofury/Gamesync
+            branch: automation/stack-vite-8-2
           - name: gamesync-idb-keyval
             repository: Herbertofury/Gamesync
             branch: automation/stack-idb-keyval-6-3
