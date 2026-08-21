@@ -1,9 +1,7 @@
 name: GameSync lockfile recovery on ubuntu-slim
 
-# Additive recovery lane for authoritative npm lockfile regeneration while the
-# standard hosted VM pool is not dispatching. This never mutates GameSync refs.
-# Candidate branches are resolved at checkout time and rechecked before evidence
-# is accepted so worker branch movement cannot silently stale the generated lock.
+# Additive recovery lane for authoritative npm lockfile/package-manager verification while
+# the private GameSync runner pool is unavailable. This never mutates GameSync refs.
 on:
   push:
     branches:
@@ -35,6 +33,10 @@ jobs:
           - name: gamesync-web-vitals
             repository: Herbertofury/Gamesync
             branch: automation/stack-web-vitals-6
+          - name: gamesync-npm12
+            repository: Herbertofury/Gamesync
+            branch: automation/stack-npm-12
+            npm-version: 12.0.2
           - name: next-vite
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-vite-8-2
@@ -68,6 +70,10 @@ jobs:
           - name: next-mcp-sdk
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-mcp-sdk-1-30
+          - name: next-npm12
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-npm-12
+            npm-version: 12.0.2
     steps:
       - name: Require private GameSync read token
         shell: bash
@@ -93,14 +99,29 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
+      - name: Install proposal package-manager version
+        if: matrix.npm-version != null
+        working-directory: ${{ runner.temp }}
+        shell: bash
+        run: npm install --global npm@${{ matrix.npm-version }} --ignore-scripts --no-audit --no-fund
+
       - name: Regenerate and verify authoritative lock graph
         shell: bash
         run: |
           set -euo pipefail
           SOURCE_HEAD="$(git rev-parse HEAD)"
           test "$(node --version)" = "v26.7.0"
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          npm ci --ignore-scripts --no-audit --no-fund
+          if [[ -n '${{ matrix.npm-version }}' ]]; then
+            test "$(npm --version)" = '${{ matrix.npm-version }}'
+            node scripts/stack/verify-npm12-policy.mjs
+            npm install --package-lock-only --no-audit --no-fund
+            npm ci --no-audit --no-fund
+            node scripts/stack/verify-npm12-policy.mjs
+            npm install-scripts ls --json
+          else
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+            npm ci --ignore-scripts --no-audit --no-fund
+          fi
           git diff --check -- package-lock.json
           git fetch origin "${{ matrix.branch }}" --depth=1
           if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
