@@ -36,7 +36,7 @@ jobs:
           - name: gamesync-npm12
             repository: Herbertofury/Gamesync
             branch: automation/stack-npm-12
-            npm-version: 12.0.2
+            npm_version: 12.0.2
           - name: next-vite
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-vite-8-2
@@ -73,7 +73,7 @@ jobs:
           - name: next-npm12
             repository: Herbertofury/GameSync-Next
             branch: automation/stack-npm-12
-            npm-version: 12.0.2
+            npm_version: 12.0.2
     steps:
       - name: Require private GameSync read token
         shell: bash
@@ -100,10 +100,10 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install proposal package-manager version
-        if: matrix.npm-version != null
+        if: matrix.npm_version != null
         working-directory: ${{ runner.temp }}
         shell: bash
-        run: npm install --global npm@${{ matrix.npm-version }} --ignore-scripts --no-audit --no-fund
+        run: npm install --global npm@${{ matrix.npm_version }} --ignore-scripts --no-audit --no-fund
 
       - name: Regenerate and verify authoritative lock graph
         shell: bash
@@ -111,8 +111,8 @@ jobs:
           set -euo pipefail
           SOURCE_HEAD="$(git rev-parse HEAD)"
           test "$(node --version)" = "v26.7.0"
-          if [[ -n '${{ matrix.npm-version }}' ]]; then
-            test "$(npm --version)" = '${{ matrix.npm-version }}'
+          if [[ -n '${{ matrix.npm_version }}' ]]; then
+            test "$(npm --version)" = '${{ matrix.npm_version }}'
             node scripts/stack/verify-npm12-policy.mjs
             npm install --package-lock-only --no-audit --no-fund
             npm ci --no-audit --no-fund
