@@ -76,7 +76,7 @@ jobs:
           test '${{ steps.resolve.outputs.tauri_build }}' = '2.6.3'
 
       - name: Upload Tauri Rust freshness evidence
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gamesync-tauri-rust-registry
           path: output/tauri-rust-registry.json
@@ -101,7 +101,7 @@ jobs:
           }
 
       - name: Check out exact Desktop runtime proposal
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Herbertofury/GameSync-Next
           ref: ${{ env.CANDIDATE_BRANCH }}
@@ -198,7 +198,7 @@ jobs:
           test -s output/desktop-cargo-lock.patch
 
       - name: Upload authoritative Desktop Cargo recovery bundle
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gamesync-next-desktop-cargo-recovery
           path: output/
