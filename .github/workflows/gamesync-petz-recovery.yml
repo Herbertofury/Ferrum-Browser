@@ -1,0 +1,212 @@
+name: GameSync Petz persistence recovery
+
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  petz-persistence-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+      CANDIDATE_BRANCH: automation/petz-bridge-persistence-20260818
+      FERRUM_PRODUCT: 56879a6410f41b3142ad97f21d4ffefb9ca1b5d3
+      FERRUM_TREE: b5c85e072b1126a71d8970997a09be01ae799ee6
+      FERRUM_TESTED_PROPOSAL: 8dbcaebb0bb74df13b773b60dea1850002310b58
+      FERRUM_CI: '32369906986'
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Set FERRUM_GAMESYNC_READ_TOKEN or GH_PAT with read access to Herbertofury/GameSync-Next and Herbertofury/Gamesync.'
+            exit 2
+          fi
+
+      - name: Check out current Petz proposal
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/GameSync-Next
+          ref: ${{ env.CANDIDATE_BRANCH }}
+          path: candidate
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Check out current standalone parity source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/Gamesync
+          ref: main
+          path: gamesync-source
+          fetch-depth: 1
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Capture exact private-source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate_head="$(git -C candidate rev-parse HEAD)"
+          parity_head="$(git -C gamesync-source rev-parse HEAD)"
+          printf 'CANDIDATE_HEAD=%s\n' "$candidate_head" >> "$GITHUB_ENV"
+          printf 'PARITY_HEAD=%s\n' "$parity_head" >> "$GITHUB_ENV"
+          mkdir -p output/petz-recovery
+          printf '%s\n' "$candidate_head" > output/petz-recovery/candidate-head.txt
+          printf '%s\n' "$parity_head" > output/petz-recovery/parity-head.txt
+
+      - name: Set up exact Node 24.19.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+
+      - name: Verify exact Petz source and affected host
+        working-directory: candidate
+        shell: bash
+        env:
+          GAMESYNC_JS_APP_PATH: ${{ github.workspace }}/gamesync-source/app
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v24.19.0"
+          git fetch origin main
+          test "$(git merge-base HEAD origin/main)" = "$(git rev-parse origin/main)"
+          npm ci
+          npm audit --audit-level=critical
+          npm --workspace packages/petz-engine run typecheck
+          npm --workspace packages/petz-engine run build
+          npm --workspace packages/petz-bridge run typecheck
+          npm --workspace packages/petz-bridge run build
+          node --test scripts/petz/persistence-regression.mjs
+          npm --workspace apps/extension-v2 run build
+          node --test scripts/audit-gamesync-parity.test.mjs
+          npm run audit:gamesync-parity
+          git diff --check origin/main...HEAD
+          git fetch origin "$CANDIDATE_BRANCH" --depth=1
+          test "$(git rev-parse FETCH_HEAD)" = "$CANDIDATE_HEAD"
+          test "$(git -C ../gamesync-source rev-parse HEAD)" = "$PARITY_HEAD"
+
+      - name: Check out verified Ferrum run-65 product
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Herbertofury/Ferrum-Browser
+          ref: ${{ env.FERRUM_PRODUCT }}
+          path: ferrum
+          fetch-depth: 1
+
+      - name: Verify Ferrum run-65 identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C ferrum rev-parse HEAD)" = "$FERRUM_PRODUCT"
+          test "$(git -C ferrum rev-parse 'HEAD^{tree}')" = "$FERRUM_TREE"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          const pkg = JSON.parse(await fs.readFile('ferrum/package.json', 'utf8'));
+          const engine = await fs.readFile('ferrum/src/runners/step-engine.mjs', 'utf8');
+          if (pkg.dependencies?.playwright !== '1.63.0-alpha-2026-08-20') throw new Error(`Unexpected Playwright ${pkg.dependencies?.playwright}`);
+          if (pkg.devDependencies?.electron !== '43.4.0') throw new Error(`Unexpected Electron ${pkg.devDependencies?.electron}`);
+          if (pkg.devDependencies?.['@electron/packager'] !== '20.3.0') throw new Error(`Unexpected Packager ${pkg.devDependencies?.['@electron/packager']}`);
+          if (!engine.includes('terminate-service-worker')) throw new Error('Forced service-worker termination capability missing');
+          console.log(JSON.stringify({
+            ferrumProduct: process.env.FERRUM_PRODUCT,
+            ferrumTree: process.env.FERRUM_TREE,
+            testedProposal: process.env.FERRUM_TESTED_PROPOSAL,
+            ferrumCi: Number(process.env.FERRUM_CI),
+            playwright: pkg.dependencies.playwright,
+            electron: pkg.devDependencies.electron,
+            packager: pkg.devDependencies['@electron/packager']
+          }, null, 2));
+          NODE
+
+      - name: Install Ferrum and Chromium
+        working-directory: ferrum
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: Generate exact-build Petz host workload
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          const spec = {
+            version: 1,
+            name: 'gamesync-next-petz-persistence-recovery',
+            target: { type: 'extension', path: path.resolve('candidate/apps/extension-v2/.output/chrome-mv3'), headless: true },
+            timeouts: { startupMs: 45000, stepMs: 45000 },
+            steps: [
+              { action: 'extension-page', path: 'app-popup.html' },
+              { action: 'assert-service-worker' },
+              { action: 'assert-service-worker-diagnostics', minWorkers: 1, maxFailedRequests: 0 },
+              { action: 'service-worker-diagnostics', name: 'petz-before-worker-termination' },
+              { action: 'terminate-service-worker' },
+              { action: 'evaluate', script: "(async()=>{const recovery=await chrome.runtime.sendMessage({type:'__ferrum_worker_recovery__'}).catch(error=>({expectedError:String(error?.message||error)}));return{recovery};})()" },
+              { action: 'assert-service-worker' },
+              { action: 'assert-service-worker-diagnostics', minWorkers: 1, maxFailedRequests: 0 },
+              { action: 'service-worker-diagnostics', name: 'petz-after-worker-recovery' },
+              { action: 'extension-page', path: 'app-options.html' },
+              { action: 'snapshot', name: 'petz-options-before-restart', interactiveOnly: true },
+              { action: 'assert-console-clean' },
+              { action: 'restart' },
+              { action: 'assert-service-worker' },
+              { action: 'assert-service-worker-diagnostics', minWorkers: 1, maxFailedRequests: 0 },
+              { action: 'service-worker-diagnostics', name: 'petz-after-restart' },
+              { action: 'extension-page', path: 'app-popup.html' },
+              { action: 'snapshot', name: 'petz-popup-after-restart', interactiveOnly: true },
+              { action: 'assert-console-clean' }
+            ]
+          };
+          await fs.writeFile('output/petz-recovery/workload.json', `${JSON.stringify(spec, null, 2)}\n`);
+          NODE
+
+      - name: Exercise exact Petz host build in Ferrum
+        shell: bash
+        run: |
+          set -euo pipefail
+          node ferrum/bin/ferrum.mjs test output/petz-recovery/workload.json --headless --artifacts output/petz-recovery/evidence | tee output/petz-recovery/ferrum-run.json
+
+      - name: Verify exact build identity, worker recovery and restart
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          const root = path.resolve('output/petz-recovery/evidence');
+          const dirs = (await fs.readdir(root, { withFileTypes: true })).filter(e => e.isDirectory()).map(e => e.name).sort();
+          if (!dirs.length) throw new Error('No Ferrum evidence directory');
+          const dir = path.join(root, dirs.at(-1));
+          const result = JSON.parse(await fs.readFile(path.join(dir, 'result.json'), 'utf8'));
+          const inventory = JSON.parse(await fs.readFile(path.join(dir, 'extension-inventory.json'), 'utf8'));
+          if (result.status !== 'passed') throw new Error(`Ferrum result ${result.status}`);
+          if (!inventory.sha256 || !inventory.files?.length) throw new Error('Missing extension inventory');
+          const loaded = result.events.filter(e => e.type === 'extension-loaded');
+          const terminated = result.events.filter(e => e.type === 'service-worker-termination');
+          const restarted = result.events.filter(e => e.type === 'extension-restart-proof');
+          if (!loaded.length || !terminated.length || !restarted.length) throw new Error('Missing load/worker-termination/restart proof');
+          const extensionId = loaded.at(-1).extensionId;
+          if (!extensionId || terminated.at(-1).extensionId !== extensionId || restarted.at(-1).extensionId !== extensionId) throw new Error('Extension identity changed across recovery/restart');
+          const summary = { candidateHead: process.env.CANDIDATE_HEAD, parityHead: process.env.PARITY_HEAD, extensionSha256: inventory.sha256, extensionId, ferrumProduct: process.env.FERRUM_PRODUCT, ferrumTree: process.env.FERRUM_TREE, ferrumCi: Number(process.env.FERRUM_CI) };
+          await fs.writeFile('output/petz-recovery/summary.json', `${JSON.stringify(summary, null, 2)}\n`);
+          console.log(JSON.stringify(summary, null, 2));
+          NODE
+          git -C candidate fetch origin "$CANDIDATE_BRANCH" --depth=1
+          test "$(git -C candidate rev-parse FETCH_HEAD)" = "$CANDIDATE_HEAD"
+
+      - name: Upload Petz recovery evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: gamesync-petz-persistence-recovery
+          path: output/petz-recovery
+          if-no-files-found: error

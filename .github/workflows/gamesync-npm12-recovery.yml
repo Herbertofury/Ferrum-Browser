@@ -1,0 +1,97 @@
+name: GameSync npm 12 cross-repo recovery
+
+# Additive package-manager recovery for the paired npm 12 Stack proposals.
+# This workflow never mutates GameSync refs and fails closed before private checkout
+# unless a read-only cross-repository token is configured.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  npm12-policy-and-build:
+    name: npm12-${{ matrix.name }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 18
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gamesync
+            repository: Herbertofury/Gamesync
+            branch: automation/stack-npm-12
+            build: npm run build && npm run test:bounty
+          - name: gamesync-next
+            repository: Herbertofury/GameSync-Next
+            branch: automation/stack-npm-12
+            build: npm run build:packages && npm --workspace apps/server run build && npm --workspace apps/desktop run build && npm --workspace apps/feature-foundry run build && npm --workspace apps/extension-v2 run build && npm --workspace packages/hyperbowl-game run build && npm run pw:list && node --test scripts/audit-gamesync-parity.test.mjs
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROSS_REPO_TOKEN:-}" ]]; then
+            echo '::error::Set FERRUM_GAMESYNC_READ_TOKEN or GH_PAT with read access to both private GameSync repositories.'
+            exit 2
+          fi
+
+      - name: Check out exact current proposal branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.branch }}
+          fetch-depth: 0
+          token: ${{ env.CROSS_REPO_TOKEN }}
+
+      - name: Set up exact Node 26.7.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 26.7.0
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install exact npm 12 outside project policy
+        working-directory: ${{ runner.temp }}
+        run: npm install --global npm@12.0.2 --ignore-scripts --no-audit --no-fund
+
+      - name: Verify npm 12 policy and exact frozen dependency graph
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_HEAD="$(git rev-parse HEAD)"
+          test "$(node --version)" = "v26.7.0"
+          test "$(npm --version)" = "12.0.2"
+          node scripts/stack/verify-npm12-policy.mjs
+          npm ci --no-audit --no-fund
+          node scripts/stack/verify-npm12-policy.mjs
+          npm install-scripts ls --json
+          git diff --exit-code -- package-lock.json
+          npm audit --audit-level=critical
+          ${{ matrix.build }}
+          git fetch origin "${{ matrix.branch }}" --depth=1
+          if [[ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_HEAD" ]]; then
+            echo '::error::Candidate branch advanced during npm 12 verification; refusing stale evidence.'
+            exit 3
+          fi
+          mkdir -p output/npm12
+          printf '%s\n' "$SOURCE_HEAD" > output/npm12/source-head.txt
+          node --version > output/npm12/node-version.txt
+          npm --version > output/npm12/npm-version.txt
+          sha256sum package-lock.json > output/npm12/package-lock.sha256
+          node scripts/stack/verify-npm12-policy.mjs > output/npm12/policy.json
+
+      - name: Upload npm 12 recovery evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm12-recovery-${{ matrix.name }}
+          path: output/npm12
+          if-no-files-found: warn
