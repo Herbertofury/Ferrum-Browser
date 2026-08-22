@@ -1,0 +1,205 @@
+name: GameSync Desktop Cargo recovery
+
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+    paths:
+      - .github/workflows/gamesync-desktop-cargo-recovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tauri-rust-freshness:
+    runs-on: ubuntu-slim
+    outputs:
+      tauri: ${{ steps.resolve.outputs.tauri }}
+      tauri_build: ${{ steps.resolve.outputs.tauri_build }}
+    steps:
+      - name: Resolve current stable Tauri Rust crates from crates.io
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+          from pathlib import Path
+
+          def fetch(crate):
+              request = urllib.request.Request(
+                  f'https://crates.io/api/v1/crates/{crate}',
+                  headers={'User-Agent': 'Ferrum-GameSync-Stack-Recovery/1.0'},
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          def stable(payload):
+              for row in payload.get('versions', []):
+                  value = str(row.get('num', ''))
+                  if row.get('yanked'):
+                      continue
+                  if re.fullmatch(r'\d+\.\d+\.\d+', value):
+                      return value
+              raise RuntimeError('No non-yanked stable version found')
+
+          crates = {}
+          for crate in ('tauri', 'tauri-build'):
+              payload = fetch(crate)
+              crates[crate] = {
+                  'stable': stable(payload),
+                  'maxVersion': payload.get('crate', {}).get('max_version'),
+                  'newestVersion': payload.get('crate', {}).get('newest_version'),
+                  'repository': payload.get('crate', {}).get('repository'),
+              }
+
+          Path('output/tauri-rust-registry.json').write_text(
+              json.dumps({'source': 'crates.io', 'crates': crates}, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as out:
+              out.write(f"tauri={crates['tauri']['stable']}\n")
+              out.write(f"tauri_build={crates['tauri-build']['stable']}\n")
+          print(json.dumps(crates, indent=2))
+          PY
+
+      - name: Require selected stable Tauri targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test '${{ steps.resolve.outputs.tauri }}' = '2.11.5'
+          test '${{ steps.resolve.outputs.tauri_build }}' = '2.6.3'
+
+      - name: Upload Tauri Rust freshness evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: gamesync-tauri-rust-registry
+          path: output/tauri-rust-registry.json
+          if-no-files-found: error
+
+  recover-desktop-cargo-lock:
+    needs: tauri-rust-freshness
+    runs-on: ubuntu-slim
+    env:
+      CROSS_REPO_TOKEN: ${{ secrets.FERRUM_GAMESYNC_READ_TOKEN || secrets.GH_PAT }}
+      TAURI_VERSION: ${{ needs.tauri-rust-freshness.outputs.tauri }}
+      TAURI_BUILD_VERSION: ${{ needs.tauri-rust-freshness.outputs.tauri_build }}
+      CANDIDATE_BRANCH: automation/stack-desktop-runtime-2-21
+    steps:
+      - name: Require private GameSync read token
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CROSS_REPO_TOKEN" || {
+            echo 'FERRUM_GAMESYNC_READ_TOKEN or GH_PAT is required for private GameSync checkout.' >&2
+            exit 1
+          }
+
+      - name: Check out exact Desktop runtime proposal
+        uses: actions/checkout@v7
+        with:
+          repository: Herbertofury/GameSync-Next
+          ref: ${{ env.CANDIDATE_BRANCH }}
+          token: ${{ env.CROSS_REPO_TOKEN }}
+          path: candidate
+          fetch-depth: 0
+
+      - name: Capture exact candidate identity and reject stale main
+        id: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C candidate fetch origin main "$CANDIDATE_BRANCH"
+          head="$(git -C candidate rev-parse HEAD)"
+          remote_head="$(git -C candidate rev-parse "origin/$CANDIDATE_BRANCH")"
+          main="$(git -C candidate rev-parse origin/main)"
+          base="$(git -C candidate merge-base HEAD origin/main)"
+          test "$head" = "$remote_head"
+          test "$base" = "$main"
+          printf 'head=%s\nmain=%s\n' "$head" "$main" >> "$GITHUB_OUTPUT"
+          printf 'candidate=%s\nmain=%s\n' "$head" "$main"
+
+      - name: Verify candidate declares current Tauri Rust targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "tauri-build = { version = \"$TAURI_BUILD_VERSION\", features = [] }" candidate/apps/desktop/src-tauri/Cargo.toml
+          grep -F "tauri = { version = \"$TAURI_VERSION\", features = [] }" candidate/apps/desktop/src-tauri/Cargo.toml
+
+      - name: Install stable Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustc --version --verbose
+          cargo --version --verbose
+
+      - name: Regenerate authoritative Desktop Cargo lock graph
+        working-directory: candidate/apps/desktop/src-tauri
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo update -p tauri --precise "$TAURI_VERSION"
+          cargo update -p tauri-build --precise "$TAURI_BUILD_VERSION"
+          cargo metadata --locked --format-version 1 > ../../../../cargo-desktop-metadata.json
+          cargo tree --locked -p "tauri@$TAURI_VERSION" > ../../../../cargo-desktop-tauri-tree.txt
+          cargo tree --locked -p "tauri-build@$TAURI_BUILD_VERSION" >> ../../../../cargo-desktop-tauri-tree.txt
+          cargo check --locked --all-targets
+
+      - name: Verify exact regenerated Cargo identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          lock = Path('candidate/apps/desktop/src-tauri/Cargo.lock').read_text(encoding='utf-8')
+          for name, expected in {
+              'tauri': os.environ['TAURI_VERSION'],
+              'tauri-build': os.environ['TAURI_BUILD_VERSION'],
+          }.items():
+              match = re.search(r'\[\[package\]\]\nname = "' + re.escape(name) + r'"\nversion = "([^"]+)"', lock)
+              if not match:
+                  raise SystemExit(f'missing {name} from regenerated Cargo.lock')
+              if match.group(1) != expected:
+                  raise SystemExit(f'{name}: expected {expected}, got {match.group(1)}')
+          PY
+
+      - name: Recheck source head did not move during regeneration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C candidate fetch origin "$CANDIDATE_BRANCH"
+          test "$(git -C candidate rev-parse HEAD)" = "$(git -C candidate rev-parse "origin/$CANDIDATE_BRANCH")"
+
+      - name: Produce reproducible Cargo recovery evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          cp candidate/apps/desktop/src-tauri/Cargo.lock output/Cargo.lock
+          cp cargo-desktop-metadata.json output/cargo-desktop-metadata.json
+          cp cargo-desktop-tauri-tree.txt output/cargo-desktop-tauri-tree.txt
+          git -C candidate diff -- apps/desktop/src-tauri/Cargo.lock > output/desktop-cargo-lock.patch
+          sha256sum output/Cargo.lock output/desktop-cargo-lock.patch output/cargo-desktop-metadata.json output/cargo-desktop-tauri-tree.txt > output/SHA256SUMS
+          printf '%s\n' \
+            "candidate=${{ steps.candidate.outputs.head }}" \
+            "main=${{ steps.candidate.outputs.main }}" \
+            "tauri=$TAURI_VERSION" \
+            "tauri-build=$TAURI_BUILD_VERSION" > output/provenance.txt
+          test -s output/desktop-cargo-lock.patch
+
+      - name: Upload authoritative Desktop Cargo recovery bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: gamesync-next-desktop-cargo-recovery
+          path: output/
+          if-no-files-found: error
