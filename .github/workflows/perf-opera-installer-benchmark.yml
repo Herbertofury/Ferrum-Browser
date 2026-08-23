@@ -14,48 +14,27 @@ permissions:
 
 jobs:
   measure:
-    name: ${{ matrix.variant }} #${{ matrix.repeat }}
+    name: winget-source #${{ matrix.repeat }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        variant:
-          - winget-current
-          - winget-source
-          - chocolatey
         repeat: [1, 2, 3, 4, 5]
     steps:
       - name: Measure clean Opera GX install
         shell: pwsh
         env:
-          VARIANT: ${{ matrix.variant }}
           REPEAT: ${{ matrix.repeat }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $variant = $env:VARIANT
           $repeat = [int]$env:REPEAT
 
           $wingetVersion = (& winget --version 2>$null | Select-Object -First 1)
-          $chocoVersion = (& choco --version 2>$null | Select-Object -First 1)
           $timer = [System.Diagnostics.Stopwatch]::StartNew()
-
-          switch ($variant) {
-            'winget-current' {
-              winget install --exact --id Opera.OperaGX --accept-source-agreements --accept-package-agreements --silent --disable-interactivity
-              if ($LASTEXITCODE -ne 0) { throw "winget-current failed with exit code $LASTEXITCODE" }
-            }
-            'winget-source' {
-              winget install --exact --id Opera.OperaGX --source winget --accept-source-agreements --accept-package-agreements --silent --disable-interactivity --no-progress
-              if ($LASTEXITCODE -ne 0) { throw "winget-source failed with exit code $LASTEXITCODE" }
-            }
-            'chocolatey' {
-              choco install opera-gx -y --no-progress
-              if ($LASTEXITCODE -ne 0) { throw "chocolatey failed with exit code $LASTEXITCODE" }
-            }
-            default { throw "Unknown benchmark variant: $variant" }
-          }
-
+          winget install --exact --id Opera.OperaGX --source winget --accept-source-agreements --accept-package-agreements --silent --disable-interactivity
+          if ($LASTEXITCODE -ne 0) { throw "winget-source failed with exit code $LASTEXITCODE" }
           $timer.Stop()
+
           $candidates = @(
             "$env:LOCALAPPDATA\Programs\Opera GX\opera.exe",
             "$env:LOCALAPPDATA\Programs\Opera GX\launcher.exe",
@@ -68,42 +47,40 @@ jobs:
           }
           if (-not $opera) { throw 'Opera GX executable was not found after installation' }
 
-          $fileVersion = (Get-Item $opera).VersionInfo.FileVersion
           $result = [ordered]@{
-            variant = $variant
+            variant = 'winget-source'
             repeat = $repeat
             elapsedMs = [double]$timer.Elapsed.TotalMilliseconds
             operaExecutable = $opera
-            operaFileVersion = $fileVersion
+            operaFileVersion = (Get-Item $opera).VersionInfo.FileVersion
             wingetVersion = [string]$wingetVersion
-            chocolateyVersion = [string]$chocoVersion
             imageOs = [string]$env:ImageOS
             imageVersion = [string]$env:ImageVersion
             runnerOs = [string]$env:RUNNER_OS
           }
           New-Item -ItemType Directory -Force -Path output | Out-Null
-          $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 "output/result-$variant-$repeat.json"
+          $result | ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 "output/result-winget-source-$repeat.json"
           $result | ConvertTo-Json -Compress | Write-Host
           Write-Host "PERF_INSTALL_MS=$($timer.Elapsed.TotalMilliseconds)"
 
       - name: Upload benchmark sample
         uses: actions/upload-artifact@v7
         with:
-          name: opera-installer-${{ matrix.variant }}-${{ matrix.repeat }}
+          name: opera-installer-winget-source-${{ matrix.repeat }}
           path: output/*.json
           compression-level: 0
           retention-days: 1
           if-no-files-found: error
 
   summarize:
-    name: Summarize installer benchmark
+    name: Summarize WinGet source benchmark
     needs: measure
     runs-on: ubuntu-24.04
     steps:
       - name: Download benchmark samples
         uses: actions/download-artifact@v8
         with:
-          pattern: opera-installer-*
+          pattern: opera-installer-winget-source-*
           path: output/samples
           merge-multiple: true
 
@@ -118,7 +95,7 @@ jobs:
           const root = 'output/samples';
           const names = (await fs.readdir(root)).filter((name) => name.endsWith('.json')).sort();
           const samples = await Promise.all(names.map(async (name) => JSON.parse(await fs.readFile(path.join(root, name), 'utf8'))));
-
+          const timings = samples.map((sample) => Number(sample.elapsedMs));
           function quantile(values, p) {
             const sorted = [...values].sort((a, b) => a - b);
             const index = (sorted.length - 1) * p;
@@ -127,35 +104,28 @@ jobs:
             if (lower === upper) return sorted[lower];
             return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower);
           }
-
-          const grouped = Object.groupBy(samples, (sample) => sample.variant);
-          const summary = {};
-          for (const [variant, rows] of Object.entries(grouped)) {
-            const timings = rows.map((row) => Number(row.elapsedMs));
-            summary[variant] = {
-              samples: timings.length,
-              medianMs: quantile(timings, 0.5),
-              p95Ms: quantile(timings, 0.95),
-              minMs: Math.min(...timings),
-              maxMs: Math.max(...timings),
-              operaVersions: [...new Set(rows.map((row) => row.operaFileVersion))].sort(),
-              wingetVersions: [...new Set(rows.map((row) => row.wingetVersion))].sort(),
-              chocolateyVersions: [...new Set(rows.map((row) => row.chocolateyVersion))].sort(),
-              imageVersions: [...new Set(rows.map((row) => row.imageVersion))].sort(),
-              rawMs: timings,
-            };
-          }
-
-          await fs.writeFile('output/opera-installer-summary.json', `${JSON.stringify(summary, null, 2)}\n`);
+          const summary = {
+            variant: 'winget-source',
+            samples: timings.length,
+            medianMs: quantile(timings, 0.5),
+            p95Ms: quantile(timings, 0.95),
+            minMs: Math.min(...timings),
+            maxMs: Math.max(...timings),
+            operaVersions: [...new Set(samples.map((sample) => sample.operaFileVersion))].sort(),
+            wingetVersions: [...new Set(samples.map((sample) => sample.wingetVersion))].sort(),
+            imageVersions: [...new Set(samples.map((sample) => sample.imageVersion))].sort(),
+            rawMs: timings,
+          };
+          await fs.writeFile('output/opera-installer-winget-source-summary.json', `${JSON.stringify(summary, null, 2)}\n`);
           console.log(JSON.stringify(summary, null, 2));
           NODE
 
       - name: Upload benchmark summary
         uses: actions/upload-artifact@v7
         with:
-          name: opera-installer-benchmark-summary
+          name: opera-installer-winget-source-summary
           path: |
-            output/opera-installer-summary.json
+            output/opera-installer-winget-source-summary.json
             output/samples/*.json
           compression-level: 0
           retention-days: 7
