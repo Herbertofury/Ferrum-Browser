@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "runId": "2026-08-23-67",
+  "checkedAt": "2026-08-23T21:21:18Z",
+  "decision": "MERGED_VERIFIED_IMPROVEMENT",
+  "base": {
+    "canonicalMain": "fc2a8c13fbf2e6694dd5bbc9d9ce9e54095dfab9",
+    "canonicalMainTree": "cff0f5088d8f4de242d377766c981909f96af881",
+    "verifiedProduct": "7cbf7f5d972f5e27a58ced7b0f32d9d816ef54f1",
+    "verifiedProductTree": "ccbe12002d2161c43c06ecc8f9288b9ecebee98c",
+    "verifiedCheckpoint": ".agents-memory/EVOLUTION_RUN_2026-08-21_66.json"
+  },
+  "proposal": {
+    "pullRequest": 84,
+    "branch": "automation/windows-portable-artifact-names-20260821",
+    "head": "3783a589e38fc245b43085ec351cc8c72c44d429",
+    "tree": "6c60661027cc9df94f542aab41b9ed0aab4d7ee6",
+    "base": "fc2a8c13fbf2e6694dd5bbc9d9ce9e54095dfab9"
+  },
+  "verifiedProduct": {
+    "commit": "f4efb3f4f1f8b188bd0637137779fef46d8eaf6b",
+    "tree": "6c60661027cc9df94f542aab41b9ed0aab4d7ee6",
+    "proposalTreeParity": true,
+    "mergeComparison": "proposal head -> merged product has zero changed files",
+    "scopeFiles": [
+      "src/core/paths.mjs",
+      "tests/paths-windows-portability.test.mjs",
+      "examples/self-test-web.json"
+    ]
+  },
+  "improvement": {
+    "name": "Windows-portable generated evidence names",
+    "problem": "Ferrum safeName could emit Win32 reserved device names such as CON, PRN, AUX, NUL, COM1-COM9, and LPT1-LPT9, including those names followed by an extension, and could leave a trailing period. Those outputs are not portable through ordinary Windows filename APIs/UI and could break user-authored screenshot/evidence names.",
+    "implementation": [
+      "Detect reserved Win32 device-name stems after Ferrum existing character and length normalization and prefix them with an underscore.",
+      "Strip trailing periods after normalization while preserving the pre-existing 80-character maximum.",
+      "Keep already-safe names unchanged.",
+      "Add deterministic mappings for reserved bare names, reserved names with extensions, trailing periods, blank-after-normalization output, normal names, and the length bound.",
+      "Extend the existing real Chromium self-test with a screenshot action named CON so the same code path is exercised in real Linux and Windows browser evidence rather than only as a helper test."
+    ],
+    "acceptance": [
+      "Microsoft Win32 naming contract establishes the before-state as invalid for reserved device names and trailing periods.",
+      "Unit regressions pass on the exact proposal head.",
+      "Real Windows Chromium smoke creates and retains screenshots/_CON.png from a user-authored screenshot name CON.",
+      "The downloaded exact Windows evidence artifact hashes identically to the GitHub provider digest and its manifest records _CON.png as image/png with SHA-256.",
+      "Full affected Ferrum CI and companion workflows remain green on the exact proposal head.",
+      "Merged product tree is byte-identical to the tested proposal tree."
+    ],
+    "runtimeProof": {
+      "windowsEvidenceArtifact": {
+        "id": 9500337314,
+        "bytes": 1970580,
+        "providerSha256": "0660749f00e76b23db56ce9fe1f4a3f64f6ec3b22b732edb09a1a56ecbb2e600",
+        "redownloadSha256": "0660749f00e76b23db56ce9fe1f4a3f64f6ec3b22b732edb09a1a56ecbb2e600"
+      },
+      "reservedScreenshot": {
+        "path": "screenshots/_CON.png",
+        "bytes": 7563,
+        "sha256": "3dca1c12b2b1e0bca0f6c663e3313733341d583e57633f75db31842f72e27b02",
+        "manifestMediaType": "image/png",
+        "observedInMultipleWindowsSelfTestRuns": true
+      }
+    }
+  },
+  "verification": {
+    "workflows": [
+      {"name": "Ferrum CI", "runId": 32666975101, "conclusion": "success"},
+      {"name": "Stack Playwright lock integrity", "runId": 32666975103, "conclusion": "success"},
+      {"name": "Ferrum stateful API benchmark", "runId": 32666975105, "conclusion": "success"},
+      {"name": "Ferrum service fixture", "runId": 32666975096, "conclusion": "success"},
+      {"name": "Ferrum service network fault benchmark", "runId": 32666975100, "conclusion": "success"}
+    ],
+    "coverage": [
+      "unit tests, syntax and shell checks, MCP surface and independent MCP Inspector, evidence integrity",
+      "Linux Chromium/MV3/workloads/Spaces/Workbench/Electron/source desktop/fresh packaged desktop/provenance",
+      "Windows Chromium/Chrome/Edge/MV3/workloads/Spaces/Workbench/Electron/source desktop/fresh packaged desktop/provenance including the reserved screenshot path",
+      "independent Brave and Opera GX, real Selenium Grid WebDriver, Lightpanda, and real Android/Appium"
+    ],
+    "artifactDigests": [
+      {"name": "ferrum-evidence-Windows", "id": 9500337314, "bytes": 1970580, "sha256": "0660749f00e76b23db56ce9fe1f4a3f64f6ec3b22b732edb09a1a56ecbb2e600"},
+      {"name": "ferrum-desktop-Windows.tar.gz", "id": 9500337790, "bytes": 166285492, "sha256": "cddc9f1b7bc8c3a2033974b83441fd63ce5ac436f3414c46d41d815cdabee847"},
+      {"name": "ferrum-provenance-Windows", "id": 9500340709, "bytes": 8126, "sha256": "7ae196f74c86aa72a3d0a86fae75ceeffe9384358fc50ab6d4ab49ededbd3379"},
+      {"name": "ferrum-evidence-Linux", "id": 9500326711, "bytes": 2316956, "sha256": "269ae34c063906fc382c1f207f734aaa8c63da1f77839a81ddff3180d0f7ac6e"},
+      {"name": "ferrum-desktop-Linux.tar.gz", "id": 9500327020, "bytes": 145035251, "sha256": "5312c6365733e04d235335e4b225e43152e95c0d2d85e32edf7d036ed5f0f999"},
+      {"name": "ferrum-provenance-Linux", "id": 9500328923, "bytes": 8051, "sha256": "fbaea3d889985fcbecbdc12fb1cd2e7caa13533d317b1d7948bc5156e855aa51"},
+      {"name": "ferrum-evidence-WebDriver-Grid", "id": 9500311283, "bytes": 35686, "sha256": "814d4f0a7cffc2fadbafc09cdad2c1b96487e1998ad10887b6d0b1c9195d5bcf"},
+      {"name": "ferrum-evidence-Lightpanda", "id": 9500311185, "bytes": 13058, "sha256": "ec97f9e6a00090ec93939cdc5fe665e3f12c4d39ada37650472cac995de5f9fe"},
+      {"name": "ferrum-evidence-Windows-brave", "id": 9500331155, "bytes": 33845, "sha256": "6587a5eb67037624a37e76fc7c80828ad15b3a73ab1efe5f2f7cf99aaa9cf64f"},
+      {"name": "ferrum-evidence-Windows-opera-gx", "id": 9500329638, "bytes": 3227843, "sha256": "ee11f33eca421d247027807ddaaf2bea9a4f6c015770ef7d0af6927fc283bee2"},
+      {"name": "ferrum-evidence-Appium-Android", "id": 9500348302, "bytes": 126805, "sha256": "f452bf44ad4773b97da6084b8f86a87216ab6a495ec6c96785f5fd28342a14da"}
+    ]
+  },
+  "repositoryState": {
+    "openIssuesObserved": 0,
+    "preservedConcurrentPullRequests": [
+      {"number": 62, "status": "DRAFT_HOLD_EXTERNAL_AUTHORIZATION_BLOCKER", "action": "left untouched"}
+    ]
+  },
+  "ecosystemRotation": "property/state-machine testing, coverage-guided fuzzing, API fuzzing, mutation testing, continuous fuzzing orchestration",
+  "candidates": [
+    {"project":"fast-check","url":"https://github.com/dubzzz/fast-check","versionOrHead":"v4.9.0/0d3c254; head 62c090caea9be31fcd34dad206f48c7722fc1c45","maintenanceFreshness":"head observed 2026-08-23","relevantFerrumCapability":"pure-boundary property tests and lifecycle models","harvest":"shrinking, seed/path/replayPath, commands/modelRun","integrationMode":"isolated pinned dev experiment first","risk":"randomized noise/dependency churn if retained without unique proof","smallestExperiment":"fixed-seed properties for validateSpec, expandVariables, safeName, evidence containment, then one simplified lifecycle model","acceptanceTest":"failure shrinks and replays, then reproduces as deterministic node:test regression before product work","decision":"EXPERIMENT","nextReviewTrigger":"run the bounded property trial"},
+    {"project":"Schemathesis","url":"https://github.com/schemathesis/schemathesis","versionOrHead":"4.25.0 line; head 9f9c267fecc5f65a1d41112ed16475f77d2f7970","maintenanceFreshness":"head observed 2026-08-23","relevantFerrumCapability":"stateful OpenAPI/service fault discovery","harvest":"seeded generation, stateful sequences, crash/replay files, conformance classes","integrationMode":"optional subprocess benchmark on Ferrum-owned fixture","risk":"Python/runtime cost and fixture reset discipline","smallestExperiment":"same existing Ferrum stateful API fixture under identical reset/timeouts","acceptanceTest":"unique actionable replayable fault or materially broader stable state coverage","decision":"BENCHMARK","nextReviewTrigger":"after fast-check trial or OpenAPI-heavy target"},
+    {"project":"Jazzer.js","url":"https://github.com/CodeIntelligenceTesting/jazzer.js","versionOrHead":"head 4c14e1bf63d82475ea057d6208e6f2eac87fa680; v4.x","maintenanceFreshness":"head observed 2026-06-19","relevantFerrumCapability":"coverage-guided pure-ESM parser/path/redaction fuzzing","harvest":"libFuzzer coverage guidance, corpus, crash input replay, ESM/async targets","integrationMode":"isolated comparator only after property gap","risk":"native/instrumentation complexity and Node-version qualification","smallestExperiment":"one direct-ESM pure-boundary target at fixed time/corpus versus fast-check","acceptanceTest":"unique actionable branch/failure value with exact corpus replay","decision":"EXPERIMENT","nextReviewTrigger":"fast-check leaves a demonstrated coverage-sensitive gap"},
+    {"project":"StrykerJS","url":"https://github.com/stryker-mutator/stryker-js","versionOrHead":"v9.6.1/e1abfbe; head de5ae70f3cb488fd85e1f4c9a6850b84980bb671","maintenanceFreshness":"head observed 2026-08-15","relevantFerrumCapability":"test-quality measurement on pure core modules","harvest":"surviving-mutant reports","integrationMode":"narrow benchmark only","risk":"high runtime and misleading integration-heavy scores","smallestExperiment":"mutate only spec.mjs or paths.mjs","acceptanceTest":"survivor reveals a real missing invariant that becomes deterministic regression at bounded cost","decision":"BENCHMARK","nextReviewTrigger":"after property trial or escaped regression"},
+    {"project":"EvoMaster","url":"https://github.com/WebFuzzing/EvoMaster","versionOrHead":"head 16763fcfb0ff18b03e748b98d1e6b1044fde0312; 6.x line","maintenanceFreshness":"head observed 2026-08-21","relevantFerrumCapability":"deep REST/GraphQL/RPC and database-aware service fuzzing","harvest":"generated state sequences, auth/database-aware search, flaky-oracle handling","integrationMode":"isolated benchmark after Schemathesis","risk":"JVM/container/search-budget and driver complexity","smallestExperiment":"same fixed resettable OpenAPI fixture used for Schemathesis","acceptanceTest":"stable unique failures or materially broader state coverage justifies setup","decision":"BENCHMARK","nextReviewTrigger":"Schemathesis baseline complete or GraphQL/RPC/database-heavy target arrives"},
+    {"project":"AFL++","url":"https://github.com/AFLplusplus/AFLplusplus","versionOrHead":"head dbdcf2c0c7af2eda4532097124199a6d396b98ca","maintenanceFreshness":"head observed 2026-08-21","relevantFerrumCapability":"future native driver/parser fuzzing","harvest":"coverage schedules, corpus minimization, native crash replay","integrationMode":"watch/benchmark for native subsystem","risk":"toolchain complexity with no current JS-core justification","smallestExperiment":"future real native Ferrum boundary only","acceptanceTest":"unique native defects or coverage extension with stable replay","decision":"WATCH","nextReviewTrigger":"substantial Rust/C/C++ subsystem exists"},
+    {"project":"LibAFL","url":"https://github.com/AFLplusplus/LibAFL","versionOrHead":"head eab2dab784c3d6adcea2e980edfe610e11f708ce","maintenanceFreshness":"head observed 2026-08-18","relevantFerrumCapability":"future composable custom native fuzz orchestration","harvest":"modular observers/feedback/schedulers/executors and structured inputs","integrationMode":"watch/reference","risk":"large engineering surface without current need","smallestExperiment":"none until a native adapter has a measured need","acceptanceTest":"beat simpler candidate on identical native target workload","decision":"WATCH","nextReviewTrigger":"native subsystem or AFL++ limitation"},
+    {"project":"Fuzzilli","url":"https://github.com/googleprojectzero/fuzzilli","versionOrHead":"head bb5fb21102f20573386f15367129ed7c47a01c21","maintenanceFreshness":"head observed 2026-08-20","relevantFerrumCapability":"JS-engine fuzzing technique reference","harvest":"coverage-guided generation/mutation and corpus semantics","integrationMode":"reference only","risk":"targets JS engines rather than Ferrum application-testing boundaries","smallestExperiment":"none","acceptanceTest":"direct use only if Ferrum later embeds a custom JS engine surface","decision":"WATCH","nextReviewTrigger":"engine-level testing becomes an actual Ferrum responsibility"},
+    {"project":"Hypothesis","url":"https://github.com/HypothesisWorks/hypothesis","versionOrHead":"6.165.10 line; head 41004301f02bcb35b7953518ed16705c4cf0211c","maintenanceFreshness":"head observed 2026-08-16","relevantFerrumCapability":"property-test replay/failure persistence reference","harvest":"minimal counterexamples, example database, stateful testing patterns","integrationMode":"technique reference rather than Python dependency","risk":"language mismatch and overlap with fast-check","smallestExperiment":"compare replay/failure artifact semantics with fast-check trial","acceptanceTest":"harvest only patterns that improve deterministic repro/diagnostics","decision":"TRANSPLANT-IDEA","nextReviewTrigger":"fast-check reveals replay/persistence gaps"},
+    {"project":"RESTler","url":"https://github.com/microsoft/restler-fuzzer","versionOrHead":"head 6d984deedbc54aad957fa3da0c7e9e5df23a2aee","maintenanceFreshness":"head observed 2026-02-13","relevantFerrumCapability":"producer-consumer REST dependency sequencing","harvest":"dependency inference, request grammars, bug buckets, replay logs","integrationMode":"architecture transplant/benchmark","risk":"heavier/lower freshness than leading API candidate","smallestExperiment":"same resettable OpenAPI fixture only if dependencies matter","acceptanceTest":"stable dependency-sequence failure unavailable to simpler candidate","decision":"TRANSPLANT-IDEA","nextReviewTrigger":"resource dependency graph becomes material"},
+    {"project":"ClusterFuzzLite","url":"https://github.com/google/clusterfuzzlite","versionOrHead":"head 52ecc61cb587ee99c26825a112a21abf19c7448c","maintenanceFreshness":"head observed 2026-02-12","relevantFerrumCapability":"future fuzz corpus/crash-artifact lifecycle","harvest":"short PR fuzz versus long batch fuzz, corpus and crash artifact retention","integrationMode":"orchestration technique transplant only","risk":"no first-class JavaScript/Node target fit and container/build overhead","smallestExperiment":"none until a native fuzz target proves value","acceptanceTest":"adopt lifecycle only after a Ferrum-native fuzz target demonstrates value","decision":"TRANSPLANT-IDEA","nextReviewTrigger":"Node support or native target arrives"}
+  ],
+  "maximumImprovementChallenge": {
+    "question": "Is adding a fuzz/property dependency the highest-value change this run?",
+    "answer": "No. The code review exposed an immediate cross-platform correctness gap already reachable through existing real browser evidence. Fixing the Windows-illegal name output added zero dependencies, changed only nonportable outputs, and could be proven through the existing Windows Chromium lane plus exact evidence redownload.",
+    "result": "Merged the narrow portability fix and deferred fuzz-framework adoption until a candidate demonstrates unique actionable coverage."
+  },
+  "nextExperiments": [
+    "Bounded pinned fast-check trial on pure Ferrum boundaries with retained seed/path/replayPath and deterministic regression promotion for any real defect.",
+    "Direct-ESM Jazzer.js comparator only if fast-check leaves a measured coverage-sensitive gap.",
+    "Schemathesis differential against the existing resettable stateful API fixture with exact crash/replay retention; EvoMaster only if a real state-coverage gap remains.",
+    "Narrow StrykerJS mutation-quality probe on one pure module only if it can reveal a missing invariant at bounded cost."
+  ],
+  "guardrails": [
+    "No reduced target coverage, evidence, fidelity, diagnostic detail, runtime proof, restart/persistence validation, data scope, or test frequency.",
+    "Randomized and coverage-guided tests must preserve seed/corpus identity and deterministic replay and never replace deterministic regressions.",
+    "Generated API/network traffic must use resettable Ferrum-owned fixtures before external target qualification.",
+    "PR #62 and concurrent work were preserved untouched."
+  ],
+  "researchCursor": "fast-check pure-boundary property/model trial -> Jazzer.js only for demonstrated coverage gap -> Schemathesis stateful API differential -> Stryker mutation-quality probe",
+  "endMarker": "FERRUM_RUN_2026-08-23_67_END"
+}
