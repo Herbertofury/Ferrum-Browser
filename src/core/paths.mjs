@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
+const WINDOWS_RESERVED_DEVICE_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
+
 export function expandHome(value) {
   if (typeof value !== 'string') return value;
   if (value === '~') return os.homedir();
@@ -21,11 +23,16 @@ export async function ensureDir(dir) {
 }
 
 export function safeName(value) {
-  return String(value || 'run')
+  let name = String(value || 'run')
     .trim()
     .replace(/[^a-zA-Z0-9._-]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'run';
+    .slice(0, 80)
+    .replace(/[. ]+$/g, '');
+
+  if (!name) return 'run';
+  if (WINDOWS_RESERVED_DEVICE_NAME.test(name)) name = `_${name}`;
+  return name.slice(0, 80) || 'run';
 }
 
 export function timestampId(date = new Date()) {
