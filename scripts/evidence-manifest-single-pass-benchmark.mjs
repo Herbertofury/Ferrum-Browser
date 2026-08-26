@@ -38,17 +38,14 @@ async function hashFile(file) {
 
 async function hashFileWithBytes(file) {
   const hash = crypto.createHash('sha256');
-  let bytes = 0;
+  let stream;
   await new Promise((resolve, reject) => {
-    const stream = createReadStream(file);
-    stream.on('data', chunk => {
-      bytes += chunk.length;
-      hash.update(chunk);
-    });
+    stream = createReadStream(file);
+    stream.on('data', chunk => hash.update(chunk));
     stream.on('error', reject);
     stream.on('end', resolve);
   });
-  return { bytes, digest: `sha256:${hash.digest('hex')}` };
+  return { bytes: stream.bytesRead, digest: `sha256:${hash.digest('hex')}` };
 }
 
 async function baselineDescriptor(base, file) {
