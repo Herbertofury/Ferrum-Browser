@@ -6,7 +6,7 @@ import path from 'node:path';
 const MANIFEST_NAME = 'evidence-manifest.json';
 const LIST_EVIDENCE_CONCURRENCY = 32;
 const EVIDENCE_DESCRIPTOR_CONCURRENCY = 32;
-const EVIDENCE_SINGLE_PASS_MIN_FILES = 32;
+const EVIDENCE_SINGLE_PASS_MIN_FILES = process.platform === 'win32' ? 32 : 256;
 const WATCHER_SETTLE_TURNS = 2;
 const WATCHER_RESCAN_LIMIT = 3;
 let evidenceSummaryCache = null;
