@@ -6,6 +6,7 @@ import path from 'node:path';
 const MANIFEST_NAME = 'evidence-manifest.json';
 const LIST_EVIDENCE_CONCURRENCY = 32;
 const EVIDENCE_DESCRIPTOR_CONCURRENCY = 32;
+const EVIDENCE_SINGLE_PASS_MIN_FILES = 32;
 const WATCHER_SETTLE_TURNS = 2;
 const WATCHER_RESCAN_LIMIT = 3;
 let evidenceSummaryCache = null;
@@ -55,9 +56,32 @@ async function sha256File(file) {
   return `sha256:${hash.digest('hex')}`;
 }
 
-async function fileDescriptor(base, file) {
-  const stat = await fs.stat(file);
+async function sha256FileWithBytes(file) {
+  const hash = crypto.createHash('sha256');
+  let stream;
+  await new Promise((resolve, reject) => {
+    stream = createReadStream(file);
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', resolve);
+  });
+  return {
+    bytes: stream.bytesRead,
+    digest: `sha256:${hash.digest('hex')}`
+  };
+}
+
+async function fileDescriptor(base, file, { singlePassBytes = false } = {}) {
   const relativePath = path.relative(base, file).replaceAll('\\', '/');
+  if (singlePassBytes) {
+    const descriptor = await sha256FileWithBytes(file);
+    return {
+      path: relativePath,
+      ...descriptor,
+      mediaType: mediaTypeFor(relativePath)
+    };
+  }
+  const stat = await fs.stat(file);
   return {
     path: relativePath,
     bytes: stat.size,
@@ -95,13 +119,14 @@ async function collectDescriptorFiles(base, dir = base, out = []) {
 async function walkDescriptors(base) {
   const files = await collectDescriptorFiles(base);
   const descriptors = new Array(files.length);
+  const singlePassBytes = files.length >= EVIDENCE_SINGLE_PASS_MIN_FILES;
   let cursor = 0;
 
   const worker = async () => {
     while (true) {
       const index = cursor++;
       if (index >= files.length) return;
-      descriptors[index] = await fileDescriptor(base, files[index]);
+      descriptors[index] = await fileDescriptor(base, files[index], { singlePassBytes });
     }
   };
 
