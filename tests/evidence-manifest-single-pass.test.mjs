@@ -17,10 +17,10 @@ test('single-pass evidence descriptors preserve exact bytes and digests for larg
   try {
     await fs.mkdir(path.join(dir, 'nested'), { recursive: true });
     const expected = new Map();
-    for (let index = 0; index < 64; index += 1) {
-      const relative = index === 63 ? 'nested/multi-chunk.bin' : `nested/${String(index).padStart(3, '0')}.bin`;
-      const size = index === 63 ? 256 * 1024 + 137 : 1024 + index * 7;
-      const bytes = Buffer.alloc(size, index + 1);
+    for (let index = 0; index < 300; index += 1) {
+      const relative = index === 299 ? 'nested/multi-chunk.bin' : `nested/${String(index).padStart(3, '0')}.bin`;
+      const size = index === 299 ? 256 * 1024 + 137 : 1024 + index * 7;
+      const bytes = Buffer.alloc(size, (index % 255) + 1);
       const file = path.join(dir, relative);
       await fs.writeFile(file, bytes);
       expected.set(relative, { bytes: bytes.length, digest: digest(bytes) });
