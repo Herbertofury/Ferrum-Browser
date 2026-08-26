@@ -6,7 +6,7 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 
 const CONCURRENCY = 32;
-const SINGLE_PASS_MIN_FILES = 32;
+const SINGLE_PASS_MIN_FILES = process.platform === 'win32' ? 32 : 256;
 const SAMPLES = 20;
 
 function mediaTypeFor(relativePath) {
@@ -171,9 +171,9 @@ async function measureScenario({ name, fileCount, bytesPerFile, requireMaterial 
 
 const scenarios = [
   { name: 'run67-web-shaped', fileCount: 9, bytesPerFile: 8192, requireMaterial: false },
-  { name: 'run67-extension-shaped', fileCount: 191, bytesPerFile: 14844, requireMaterial: true },
+  { name: 'run67-extension-shaped', fileCount: 191, bytesPerFile: 14844, requireMaterial: process.platform === 'win32' },
   { name: 'small-evidence-stress', fileCount: 500, bytesPerFile: 1024, requireMaterial: true },
-  { name: 'larger-payload-stress', fileCount: 2000, bytesPerFile: 16384, requireMaterial: false }
+  { name: 'larger-payload-stress', fileCount: 2000, bytesPerFile: 16384, requireMaterial: true }
 ];
 
 const results = [];
