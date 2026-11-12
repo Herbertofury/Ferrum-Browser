@@ -42,3 +42,23 @@ One replayable evidence model across extension, web, desktop, native/mobile and 
 Review official release notes, documentation and issue trackers daily when the scheduled review runs. Record the source URL, check date, version/commit, relevant change, user impact and next experiment; retain last-good information and mark inaccessible sources. No change is a valid result. A scheduled review is not continuous monitoring.
 
 This is a source-backed research shortlist, **not a head-to-head benchmark or a claim of feature/performance superiority**. Before recommending adoption, compare the current application and candidate on the same real workloads, machine, versions and correctness requirements. Retain raw timings, p50/p95 latency, CPU/memory, failures and rollback evidence. Check licensing and privacy before reuse; an open repository does not grant unrestricted reuse. New features remain proposals until approved, implemented and accepted.
+
+
+## Candidate foundations and shared acceptance infrastructure
+Added **2026-11-12**. Extend the existing runner architecture rather than replace working lanes because a new tool advertises speed.
+
+| Foundation / role | Reusable capability | Improvement to prove |
+| --- | --- | --- |
+| [Playwright](https://github.com/microsoft/playwright), existing runtime foundation | Browser contexts, locators, assertions and trace capture | Less orchestration overhead while retaining exact extension identity and native runtime fidelity |
+| [Selenium](https://www.selenium.dev/), protocol interoperability | W3C lifecycle and remote browser capability semantics | Better endpoint diagnostics and cleanup without vendor lock-in |
+| [Stagehand](https://github.com/browserbase/stagehand), optional recovery comparator | Higher-level interaction patterns | Recovery only after deterministic failure; disclose recovery, cost and reproducibility |
+| Existing Ferrum pack/evidence/Space abstractions | Versioned reusable test packs and redacted replay artifacts | Cross-project consistency without hiding failed checks |
+
+**Own-project integration candidates:** [MediaForge](https://github.com/Herbertofury/MediaForge) and [UltraDeck](https://github.com/Herbertofury/UltraDeck) can provide exact MV3 artifact and site-interaction workloads; [Enderloom](https://github.com/Herbertofury/Enderloom) can provide relevant desktop journeys. Share a versioned evidence schema and runner contract, not private browser profiles or credentials. Native Rust applications require an appropriate real native lane; a web fixture is not proof that their installed UI works.
+
+Before adding a dependency, verify revision/license, notices, browser/protocol compatibility and deployment requirements. Keep optional runtimes isolated; no new persistent service grant is authorized by this research entry.
+
+- [ ] Inventory existing packs before adding overlapping ones.
+- [ ] Define schema compatibility and missing-capability behavior.
+- [ ] Compare identical successful and failing runs, raw evidence completeness, resource use and replay after restart.
+- [ ] Reject any optimization that drops target types, diagnostics, data or real-browser steps.
