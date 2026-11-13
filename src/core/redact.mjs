@@ -1,5 +1,7 @@
 const REDACTED = '[REDACTED]';
-const TEMPLATE = /\$\{(?:VAR|ENV):[A-Za-z_][A-Za-z0-9_]*\}/;
+// Only a complete unresolved placeholder is safe to preserve wholesale.
+// A placeholder inside a diagnostic must not exempt adjacent runtime secrets.
+const TEMPLATE = /^\$\{(?:VAR|ENV):[A-Za-z_][A-Za-z0-9_]*\}$/;
 const URL_IN_TEXT = /\b(?:https?|wss?):\/\/[^\s"'<>]+/gi;
 const BEARER_IN_TEXT = /\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi;
 const SENSITIVE_VARIABLE_PART = /(?:^|_)(?:AUTH|AUTHORIZATION|BEARER|CLIENT_SECRET|CREDENTIAL|CREDENTIALS|PASSWORD|PASSWD|PAT|PRIVATE_KEY|SECRET|TOKEN|ACCESS_KEY|API_KEY|USERNAME|USER_NAME)(?:_|$)/i;
@@ -71,7 +73,7 @@ function redactSingleUrl(value) {
     changed = true;
   }
   for (const key of [...parsed.searchParams.keys()]) {
-    if (isSensitiveKey(key)) {
+    if (isSensitiveKey(key) && !parsed.searchParams.getAll(key).every(isTemplate)) {
       parsed.searchParams.set(key, REDACTED);
       changed = true;
     }

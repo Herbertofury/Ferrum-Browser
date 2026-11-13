@@ -113,3 +113,48 @@ test('EvidenceWriter sanitizes records, JSON, text, resolved secrets, and return
     await fs.rm(root, { recursive: true, force: true });
   }
 });
+
+test('template text does not exempt neighboring literal credentials from redaction', () => {
+  const safe = redactSensitive({
+    message: 'template ${ENV:UNRESOLVED} failed with Bearer literal-bearer and resolved-secret',
+    password: 'literal-password ${VAR:UNRESOLVED}',
+    endpoint: 'https://example.test/?token=literal-query&hint=${ENV:UNRESOLVED}'
+  }, null, ['resolved-secret']);
+  const text = JSON.stringify(safe);
+  for (const secret of ['literal-bearer', 'resolved-secret', 'literal-password', 'literal-query']) {
+    assert.equal(text.includes(secret), false, secret);
+  }
+  assert.ok(safe.message.includes('${ENV:UNRESOLVED}'));
+  assert.equal(redactSensitive({ password: '${ENV:PASSWORD}' }).password, '${ENV:PASSWORD}');
+});
+
+test('EvidenceWriter persists sanitized mixed-template diagnostics through finalize and disk replay', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ferrum-mixed-template-'));
+  try {
+    const evidence = await new EvidenceWriter({ root, name: 'mixed-template', redactValues: ['fixture-resolved-secret'] }).init();
+    const message = 'request ${ENV:UNRESOLVED} failed with Bearer fixture-bearer-secret and fixture-resolved-secret';
+    evidence.record('console', { level: 'error', message });
+    await evidence.writeText('failure.txt', message);
+    await evidence.writeJson('failure.json', { message });
+    const result = await evidence.finalize({ status: 'failed', error: message });
+    const files = await fs.readdir(evidence.dir);
+    let persisted = JSON.stringify(result);
+    for (const file of files) if (/\.(?:json|jsonl|txt)$/.test(file)) persisted += await fs.readFile(path.join(evidence.dir, file), 'utf8');
+    assert.equal(persisted.includes('fixture-bearer-secret'), false);
+    assert.equal(persisted.includes('fixture-resolved-secret'), false);
+    assert.ok(persisted.includes('${ENV:UNRESOLVED}'));
+    assert.ok(persisted.includes('request'));
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test('URL query placeholders survive but literal credentials in the same URL do not', () => {
+  const safe = redactSensitive('https://example.test/?token=${ENV:TOKEN}&api_key=literal-key&build=42');
+  const url = new URL(safe);
+  assert.equal(url.searchParams.get('token'), '${ENV:TOKEN}');
+  assert.equal(url.searchParams.get('api_key'), REDACTED);
+  assert.equal(url.searchParams.get('build'), '42');
+  const duplicate = redactSensitive('https://example.test/?token=${ENV:TOKEN}&token=literal-token');
+  assert.equal(duplicate.includes('literal-token'), false);
+});
