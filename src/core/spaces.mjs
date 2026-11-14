@@ -47,7 +47,7 @@ export async function createSpace(name, { root, cloneFrom } = {}) {
     if (cloneFrom) {
       const source = pathsFor(cloneFrom, root);
       if (!(await exists(source.profileDir))) throw new Error(`Source space does not exist: ${source.name}`);
-      await fs.cp(source.profileDir, target.profileDir, { recursive: true, force: false, errorOnExist: true });
+      await copyIdleProfile(source, target.profileDir);
       clonedFrom = source.name;
     } else {
       await fs.mkdir(target.profileDir, { recursive: true });
@@ -105,6 +105,17 @@ async function acquireLock(target) {
   }
 }
 
+async function copyIdleProfile(source, destination) {
+  // Copy only while holding the same lock used by persistent browser runs.
+  // Checking lock existence alone would race a newly starting browser.
+  const release = await acquireLock(source);
+  try {
+    await fs.cp(source.profileDir, destination, { recursive: true, force: false, errorOnExist: true });
+  } finally {
+    await release();
+  }
+}
+
 export async function prepareRunSpace({ name, root, mode = 'persistent', runId, keepClone = false } = {}) {
   if (!name) return null;
   const base = await ensureSpace(name, { root });
@@ -125,7 +136,12 @@ export async function prepareRunSpace({ name, root, mode = 'persistent', runId, 
   const runDir = path.join(runsRoot, `${safeRun}-${base.name}-${suffix}`);
   const profileDir = path.join(runDir, 'profile');
   await fs.mkdir(runDir, { recursive: false });
-  await fs.cp(base.profileDir, profileDir, { recursive: true, force: false, errorOnExist: true });
+  try {
+    await copyIdleProfile(target, profileDir);
+  } catch (error) {
+    await fs.rm(runDir, { recursive: true, force: true }).catch(() => {});
+    throw error;
+  }
   return {
     info: { name: base.name, mode, persistent: false, clonedFrom: base.name, runDir, keepClone: Boolean(keepClone) },
     profileDir,

@@ -72,7 +72,7 @@ npx ferrum spaces create bert-auth
 npx ferrum spaces clone bert-auth isolated-task
 ```
 
-Use a Space directly or clone it safely for concurrent work:
+Use a Space directly or clone it safely for concurrent work. Cloning requires the source Space to be idle and holds its lock until copying finishes; close its persistent run first. Once copied, isolated runs can execute concurrently:
 
 ```bash
 npx ferrum test path/to/spec.json --space bert-auth --space-mode clone --headless
