@@ -121,3 +121,26 @@ test('cleanup does not delete a replacement lock owned by another run', async ()
     await assert.rejects(prepareRunSpace({ name: 'replaced', root }), /already in use/);
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
+
+test('manifest name cannot redirect a requested Space profile or its lock', async () => {
+  const root = await tempRoot();
+  let run;
+  try {
+    const selected = await createSpace('selected', { root });
+    const other = await createSpace('other', { root });
+    await fs.writeFile(path.join(selected.profileDir, 'state'), 'selected-private-state');
+    await fs.writeFile(path.join(other.profileDir, 'state'), 'other-private-state');
+    await fs.writeFile(path.join(selected.dir, 'space.json'), JSON.stringify({ name: 'other' }));
+    run = await prepareRunSpace({ name: 'selected', root });
+    assert.equal(run.info.name, 'selected');
+    assert.equal((await listSpaces({ root })).find(s => s.name === 'selected').locked, true);
+    await assert.rejects(createSpace('copy-live', { root, cloneFrom: 'selected' }), /already in use/);
+    const independent = await prepareRunSpace({ name: 'other', root });
+    await independent.cleanup();
+    await run.cleanup(); run = null;
+    const cloned = await prepareRunSpace({ name: 'selected', root, mode: 'clone' });
+    try {
+      assert.equal(await fs.readFile(path.join(cloned.profileDir, 'state'), 'utf8'), 'selected-private-state');
+    } finally { await cloned.cleanup(); }
+  } finally { await run?.cleanup(); await fs.rm(root, { recursive: true, force: true }); }
+});

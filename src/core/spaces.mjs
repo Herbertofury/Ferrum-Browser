@@ -71,7 +71,9 @@ export async function ensureSpace(name, options = {}) {
   if (!(await exists(target.dir))) return await createSpace(name, options);
   if (!(await exists(target.profileDir))) await fs.mkdir(target.profileDir, { recursive: true });
   const manifest = await readManifest(target);
-  return { ...manifest, dir: target.dir, profileDir: target.profileDir };
+  // The requested directory is the identity authority. A renamed or damaged
+  // manifest must not redirect cloning or lock a different browser profile.
+  return { ...manifest, name: target.name, dir: target.dir, profileDir: target.profileDir };
 }
 
 export async function listSpaces({ root } = {}) {
