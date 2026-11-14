@@ -1,0 +1,39 @@
+name: GameSync runner-pool recovery probe
+
+# Additive infrastructure diagnostic for the blocked GameSync cross-repository recovery path.
+# This does not replace any acceptance gate. It only proves whether GitHub's distinct
+# single-CPU container runner pool can dispatch work for this public Ferrum repository.
+on:
+  push:
+    branches:
+      - automation/gamesync-infra-recovery-20260819-0450
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-slim-dispatch:
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - name: Prove alternate hosted runner dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${RUNNER_OS}" = "Linux"
+          test "${RUNNER_ARCH}" = "X64"
+          printf 'runner_name=%s\nrunner_os=%s\nrunner_arch=%s\n' "${RUNNER_NAME}" "${RUNNER_OS}" "${RUNNER_ARCH}"
+          uname -a
+          df -h
+          {
+            echo '## Alternate runner-pool probe'
+            echo
+            echo '- requested label: `ubuntu-slim`'
+            echo "- runner: \`${RUNNER_NAME}\`"
+            echo "- OS: \`${RUNNER_OS}\`"
+            echo "- arch: \`${RUNNER_ARCH}\`"
+            echo '- result: dispatched successfully'
+          } >> "${GITHUB_STEP_SUMMARY}"
