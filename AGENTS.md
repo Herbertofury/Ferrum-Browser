@@ -21,3 +21,9 @@ With Playwright Chromium installed:
 `npm run smoke:web`
 
 `npm run smoke:extension`
+
+## Shared core and project skill
+
+Read `.agents/foundry/AGENTS-adapter.md` for the pinned Agent-Foundry engineering core. The existing Ferrum execution contract above remains repository-owned and unchanged; never sync these target-specific acceptance details into the shared core.
+
+For tester changes, evidence integrity, target selection or performance proposals, use `.agents/skills/evidence-acceptance/SKILL.md`. Keep independent target adapters usable without optional lanes installed; integrate through explicit contracts rather than coupling unrelated targets.
