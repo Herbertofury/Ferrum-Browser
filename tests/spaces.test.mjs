@@ -92,3 +92,32 @@ test('profile copy owns the source lock and failed copies leave no clone or lock
     await run.cleanup();
   } finally { mock.restoreAll(); await fs.rm(root, { recursive: true, force: true }); }
 });
+
+test('repeated old cleanup cannot release a newer persistent run lock', async () => {
+  const root = await tempRoot();
+  let second;
+  try {
+    await createSpace('owned', { root });
+    const first = await prepareRunSpace({ name: 'owned', root });
+    await first.cleanup();
+    second = await prepareRunSpace({ name: 'owned', root });
+    await Promise.all([first.cleanup(), first.cleanup()]);
+    await assert.rejects(prepareRunSpace({ name: 'owned', root }), /already in use/);
+    await second.cleanup(); second = null;
+    const third = await prepareRunSpace({ name: 'owned', root });
+    await third.cleanup();
+  } finally { await second?.cleanup(); await fs.rm(root, { recursive: true, force: true }); }
+});
+
+test('cleanup does not delete a replacement lock owned by another run', async () => {
+  const root = await tempRoot();
+  try {
+    const base = await createSpace('replaced', { root });
+    const prepared = await prepareRunSpace({ name: 'replaced', root });
+    const replacement = JSON.stringify({ pid: 99999, host: 'fixture', acquiredAt: 'replacement' });
+    await fs.writeFile(path.join(base.dir, '.lock'), replacement);
+    await prepared.cleanup();
+    assert.equal(await fs.readFile(path.join(base.dir, '.lock'), 'utf8'), replacement);
+    await assert.rejects(prepareRunSpace({ name: 'replaced', root }), /already in use/);
+  } finally { await fs.rm(root, { recursive: true, force: true }); }
+});

@@ -93,10 +93,23 @@ export async function listSpaces({ root } = {}) {
 async function acquireLock(target) {
   try {
     const handle = await fs.open(target.lockPath, 'wx');
-    const payload = { pid: process.pid, host: os.hostname(), acquiredAt: new Date().toISOString() };
-    await handle.writeFile(JSON.stringify(payload) + '\n', 'utf8');
+    const payload = { pid: process.pid, host: os.hostname(), acquiredAt: new Date().toISOString(), owner: crypto.randomUUID() };
+    const written = JSON.stringify(payload) + '\n';
+    await handle.writeFile(written, 'utf8');
     await handle.close();
-    return async () => { await fs.rm(target.lockPath, { force: true }).catch(() => {}); };
+    let releasePromise;
+    return () => {
+      // Every cleanup of this lease shares one attempt. A late/repeated cleanup
+      // must never remove the lock acquired by a later persistent run.
+      releasePromise ??= (async () => {
+        try {
+          if (await fs.readFile(target.lockPath, 'utf8') === written) {
+            await fs.rm(target.lockPath, { force: true });
+          }
+        } catch { /* Missing/replaced/unreadable locks are not ours to remove. */ }
+      })();
+      return releasePromise;
+    };
   } catch (error) {
     if (error?.code !== 'EEXIST') throw error;
     let detail = '';
